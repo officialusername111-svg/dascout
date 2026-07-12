@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DaScout — Properties for Sale in SOCCSKSARGEN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></symbol>
+  <symbol id="i-bath" viewBox="0 0 24 24"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-.5C4.7 3 4 3.7 4 4.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M10 5 8 7"/><path d="M2 12h20"/><path d="M7 19v2"/><path d="M17 19v2"/></symbol>
+  <symbol id="i-area" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h6V3"/><path d="M15 21v-6h6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.6 2.9 21 11.3a2 2 0 0 1 0 2.8l-6.9 6.9a2 2 0 0 1-2.8 0L2.9 12.6A2 2 0 0 1 2.3 11L2 4a2 2 0 0 1 2-2l7 .3a2 2 0 0 1 1.6.6z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.8-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/></symbol>
+</svg>
+
+<!-- HEADER -->
+<header>
+  <div class="hd">
+    <button class="burger" aria-label="Open menu" onclick="toggleSidebar(true)"><span></span><span></span><span></span></button>
+    <a class="logo" href="index.html"><span class="mark"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Da<span style="color:var(--gold)">Scout</span></a>
+    <nav class="main" aria-label="Primary">
+      <a href="#listings">Lots</a>
+      <a href="#listings">Farm Land</a>
+      <a href="#listings">Buildings</a>
+      <a href="#locations">Locations</a>
+      <a href="#schedule">Trippings</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="hd-actions">
+      <button class="acct" aria-label="Sign in" onclick="openModal('authModal')"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg></button>
+      <a class="btn btn-gold" href="#" onclick="openModal('authModal');return false;">List a property</a>
+    </div>
+  </div>
+</header>
+
+<!-- SIDEBAR (mobile) -->
+<div class="scrim" id="scrim" onclick="toggleSidebar(false)"></div>
+<nav class="sidebar" id="sidebar" aria-label="Menu">
+  <button class="sb-close" aria-label="Close menu" onclick="toggleSidebar(false)"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+  <a class="logo" href="index.html" style="color:var(--ink)"><span class="mark"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Da<span style="color:var(--gold-d)">Scout</span></a>
+  <div class="sb-title">Browse</div>
+  <div class="sb-links">
+    <a href="#" class="now">Home</a>
+    <a href="#listings">Newest</a>
+    <a href="#listings">Updated</a>
+    <a href="#listings">Available now</a>
+    <a href="#listings">Recently added</a>
+  </div>
+  <div class="sb-title">Property types</div>
+  <div class="sb-links">
+    <a href="#listings">Residential Lot</a>
+    <a href="#listings">Farm Land</a>
+    <a href="#listings">Commercial Lot</a>
+    <a href="#listings">Residential Building</a>
+    <a href="#listings">Commercial Building</a>
+  </div>
+  <div class="sb-title">Features</div>
+  <div class="sb-feat">
+    <a href="#">Titled</a><a href="#">Corner lot</a><a href="#">Highway frontage</a><a href="#">Gated</a>
+    <a href="#">Irrigated</a><a href="#">With fruit trees</a><a href="#">Flat terrain</a><a href="#">Sea view</a>
+    <a href="#">With garage</a><a href="#">With garden</a><a href="#">Income-generating</a><a href="#">Newly built</a>
+  </div>
+  <div class="sb-title">More</div>
+  <div class="sb-links">
+    <a href="#" onclick="openModal('requestModal');toggleSidebar(false);return false;">Request a property</a>
+    <a href="#"><svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg> Surprise me</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid">
+    <div>
+      <h1>Where Dreams<br>Turn Into <span class="script">Addresses</span></h1>
+      <p class="sub">Scout titled lots, farm land, and buildings for sale across SOCCSKSARGEN — South Cotabato, Cotabato, Sultan Kudarat, Sarangani, and General Santos.</p>
+      <div class="search-card">
+        <div class="search-tabs" role="group" aria-label="Property category">
+          <button class="on" onclick="pickSearch(this,'rlot')"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> Residential Lot</button>
+          <button onclick="pickSearch(this,'farm')"><svg class="icon" aria-hidden="true"><use href="#i-tag"/></svg> Farm Land</button>
+          <button onclick="pickSearch(this,'clot')"><svg class="icon" aria-hidden="true"><use href="#i-area"/></svg> Commercial Lot</button>
+          <button onclick="pickSearch(this,'rbdg')"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg> Residential Building</button>
+          <button onclick="pickSearch(this,'cbdg')"><svg class="icon" aria-hidden="true"><use href="#i-key"/></svg> Commercial Building</button>
+        </div>
+        <div class="search-fields">
+          <div class="sf"><label for="q-loc">Location</label><input id="q-loc" type="text" placeholder="City or town in SOCCSKSARGEN"></div>
+          <div class="sf"><label for="q-size">Lot / floor area</label>
+            <select id="q-size"><option>Any size</option><option>Under 200 sqm</option><option>200 – 500 sqm</option><option>500 – 2,000 sqm</option><option>2,000 sqm – 1 ha</option><option>1 hectare+</option></select>
+          </div>
+          <div class="sf"><label for="q-price">Price range</label>
+            <select id="q-price"><option>Any price</option><option>Under ₱2M</option><option>₱2M – ₱5M</option><option>₱5M – ₱15M</option><option>₱15M – ₱40M</option><option>₱40M+</option></select>
+          </div>
+        </div>
+        <button class="btn search-btn" onclick="runSearch()">Search property <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+      </div>
+    </div>
+
+    <div class="spot" id="spot" aria-live="polite" onclick="openSpot()">
+      <div class="ph">
+        <img id="spot-img" src="assets/houses/h08.jpg" alt="Featured property photo">
+        <button class="fav" aria-label="Save to favorites" onclick="event.stopPropagation()"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg></button>
+      </div>
+      <h3 id="spot-name">Villa Consuelo Modern Home</h3>
+      <div class="loc"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> <span id="spot-loc">Calumpang, General Santos City</span></div>
+      <div class="price" id="spot-price">₱9,800,000</div>
+      <div class="specs" id="spot-specs"><span>4 Beds</span><span>3 Baths</span><span>250 sqm</span></div>
+      <div class="spot-dots" role="group" aria-label="Featured properties">
+        <button class="on" aria-label="Property 1" onclick="event.stopPropagation();goSpot(0)"></button>
+        <button aria-label="Property 2" onclick="event.stopPropagation();goSpot(1)"></button>
+        <button aria-label="Property 3" onclick="event.stopPropagation();goSpot(2)"></button>
+      </div>
+    </div>
+  </div>
+  <div class="trust">
+    <div class="wrap">
+      <span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Verified properties</span>
+      <span><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg> Trusted by thousands</span>
+      <span><svg class="icon" aria-hidden="true"><use href="#i-award"/></svg> Licensed brokers</span>
+      <span><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Secure transactions</span>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE STRIP -->
+<div class="share">
+  <div class="wrap">
+    <div class="count">12.4k<small>shares</small></div>
+    <div class="msg">Enjoying DaScout? Share it with someone hunting for their next property. Thank you!</div>
+    <div class="share-btns">
+      <button class="sb-fb">Share</button>
+      <button class="sb-x">Post</button>
+      <button class="sb-wa">WhatsApp</button>
+      <button class="sb-tg">Telegram</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- PROMOS -->
+  <div class="promos">
+    <div class="promo"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg> <span><strong>Slow connection?</strong> Try DaScout Lite: same listings, faster pages.</span> <a class="go" href="#">Open Lite →</a></div>
+    <div class="promo gold"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg> <span><strong>List your property free.</strong> Owner and broker registration now open.</span> <a class="go" href="#" onclick="openModal('authModal');return false;">Register →</a></div>
+  </div>
+
+  <!-- FEATURED LISTINGS -->
+  <section id="listings">
+    <div class="sec-head">
+      <div>
+        <h2>Featured listings, <span class="script">chosen just for you</span></h2>
+        <p>Fresh on the market across SOCCSKSARGEN.</p>
+      </div>
+      <a class="btn btn-outline viewall" href="#">View all properties <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="tabs" id="listTabs" style="margin-bottom:18px">
+      <button class="on" onclick="filterCards(this,'all')">All</button>
+      <button onclick="filterCards(this,'trend')">Trending</button>
+      <button onclick="filterCards(this,'rand')">Random</button>
+    </div>
+    <div class="grid" id="cardGrid"></div>
+    <div class="pagination" id="pagination">
+      <button aria-label="Previous page">‹</button>
+      <button class="on">1</button><button>2</button><button>3</button>
+      <button aria-label="Next page">›</button>
+    </div>
+  </section>
+
+  <!-- TOP PROPERTIES -->
+  <section id="top">
+    <div class="sec-head">
+      <div>
+        <h2>Top <span class="script">properties</span></h2>
+        <p>Most viewed by fellow scouts.</p>
+      </div>
+      <div class="tabs" id="topTabs" style="margin-left:auto">
+        <button class="on" onclick="pickTop(this,'day')">Day</button>
+        <button onclick="pickTop(this,'week')">Week</button>
+        <button onclick="pickTop(this,'month')">Month</button>
+      </div>
+    </div>
+    <div class="toplist" id="toplist"></div>
+  </section>
+
+  <!-- CONTINUE BROWSING -->
+  <section id="resume">
+    <div class="sec-head">
+      <div>
+        <h2>Continue browsing</h2>
+        <p>Pick up where you left off.</p>
+      </div>
+      <a class="btn btn-outline viewall" href="#">Clear history</a>
+    </div>
+    <div class="grid" id="resumeGrid"></div>
+  </section>
+
+  <!-- MARKET TABS: NEW / REDUCED / SOLD -->
+  <section id="market">
+    <div class="sec-head">
+      <div>
+        <h2>Market <span class="script">movements</span></h2>
+        <p>What's new, what dropped, and what's gone.</p>
+      </div>
+      <div class="tabs" id="marketTabs" style="margin-left:auto">
+        <button class="on" onclick="pickMarket(this,0)">New listings</button>
+        <button onclick="pickMarket(this,1)">Price reduced</button>
+        <button onclick="pickMarket(this,2)">Just sold</button>
+      </div>
+    </div>
+    <div class="market" id="marketPanels">
+      <div class="col new on">
+        <h3><i></i>New listings</h3>
+        <div class="rowitem" onclick="go('dacera-corner-lot')"><img loading="lazy" decoding="async" src="assets/lots/l09.jpg" alt=""><div class="t"><b>Dacera Heights Corner Lot</b><span>General Santos · Residential Lot</span></div><div class="p">₱2.9M</div></div>
+        <div class="rowitem" onclick="go('tupi-rice-farm')"><img loading="lazy" decoding="async" src="assets/lots/l13.jpg" alt=""><div class="t"><b>Tupi Irrigated Rice Farm</b><span>South Cotabato · Farm Land</span></div><div class="p">₱6.8M</div></div>
+        <div class="rowitem" onclick="go('santiago-retail-arcade')"><img loading="lazy" decoding="async" src="assets/cbldg.jpg" alt=""><div class="t"><b>Santiago Retail Arcade</b><span>General Santos · Commercial Bldg</span></div><div class="p">₱35M</div></div>
+        <div class="rowitem" onclick="go('tacurong-apartments')"><img loading="lazy" decoding="async" src="assets/houses/h10.jpg" alt=""><div class="t"><b>Tacurong 8-Door Apartments</b><span>Sultan Kudarat · Residential Bldg</span></div><div class="p">₱18.5M</div></div>
+        <div class="rowitem" onclick="go('lake-sebu-fruit-farm')"><img loading="lazy" decoding="async" src="assets/lots/l15.jpg" alt=""><div class="t"><b>Lake Sebu Fruit Farm</b><span>South Cotabato · Farm Land</span></div><div class="p">₱4.5M</div></div>
+      </div>
+      <div class="col cut">
+        <h3><i></i>Price reduced</h3>
+        <div class="rowitem" onclick="go('bula-highway-lot')"><img loading="lazy" decoding="async" src="assets/lots/l05.jpg" alt=""><div class="t"><b>National Highway Frontage Lot</b><span>General Santos · was ₱14M</span></div><div class="p was"><s>₱14M</s><b>₱12.5M</b></div></div>
+        <div class="rowitem" onclick="go('morales-view-lot')"><img loading="lazy" decoding="async" src="assets/lots/l06.jpg" alt=""><div class="t"><b>Morales Heights View Lot</b><span>Koronadal · was ₱2.1M</span></div><div class="p was"><s>₱2.1M</s><b>₱1.85M</b></div></div>
+        <div class="rowitem" onclick="go('mt-apo-family-home')"><img loading="lazy" decoding="async" src="assets/houses/h02.jpg" alt=""><div class="t"><b>Mt. Apo View Family Home</b><span>Kidapawan · was ₱8.2M</span></div><div class="p was"><s>₱8.2M</s><b>₱7.5M</b></div></div>
+        <div class="rowitem" onclick="go('rosario-bungalow')"><img loading="lazy" decoding="async" src="assets/houses/h05.jpg" alt=""><div class="t"><b>Rosario Garden Bungalow</b><span>Koronadal · was ₱4.6M</span></div><div class="p was"><s>₱4.6M</s><b>₱4.2M</b></div></div>
+        <div class="rowitem" onclick="go('mlang-coconut-grove')"><img loading="lazy" decoding="async" src="assets/lots/l17.jpg" alt=""><div class="t"><b>M'lang Coconut Grove</b><span>Cotabato · was ₱4.4M</span></div><div class="p was"><s>₱4.4M</s><b>₱3.9M</b></div></div>
+      </div>
+      <div class="col sold">
+        <h3><i></i>Just sold</h3>
+        <div class="rowitem"><img loading="lazy" decoding="async" src="assets/lots/l10.jpg" alt=""><div class="t"><b>San Isidro Homesite Lot</b><span>General Santos · 9 days on market</span></div><div class="p">Sold</div></div>
+        <div class="rowitem"><img loading="lazy" decoding="async" src="assets/houses/h12.jpg" alt=""><div class="t"><b>Villa Teresa Townhouse</b><span>Koronadal · 21 days on market</span></div><div class="p">Sold</div></div>
+        <div class="rowitem"><img loading="lazy" decoding="async" src="assets/lots/l14.jpg" alt=""><div class="t"><b>Surallah Rice Land 1.5 ha</b><span>South Cotabato · 33 days on market</span></div><div class="p">Sold</div></div>
+        <div class="rowitem"><img loading="lazy" decoding="async" src="assets/houses/h13.jpg" alt=""><div class="t"><b>Gumasa Beach House</b><span>Glan, Sarangani · 14 days on market</span></div><div class="p">Sold</div></div>
+        <div class="rowitem"><img loading="lazy" decoding="async" src="assets/lots/l07.jpg" alt=""><div class="t"><b>Isulan Poblacion Lot</b><span>Sultan Kudarat · 40 days on market</span></div><div class="p">Sold</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE + LOCATIONS -->
+  <div class="split" id="locations">
+    <section style="margin:0" id="schedule">
+      <div class="sec-head">
+        <div>
+          <h2>Site tripping schedule</h2>
+          <p>Book a slot and walk the property in person.</p>
+        </div>
+      </div>
+      <div class="sched">
+        <div class="now">All times in PHT · Now: <b id="clock">…</b></div>
+        <div class="daystrip" id="daystrip">
+          <button class="on" onclick="pickDay(this,0)"><span>SAT</span><b>Jul 12</b></button>
+          <button onclick="pickDay(this,1)"><span>SUN</span><b>Jul 13</b></button>
+          <button onclick="pickDay(this,2)"><span>MON</span><b>Jul 14</b></button>
+          <button onclick="pickDay(this,0)"><span>TUE</span><b>Jul 15</b></button>
+          <button onclick="pickDay(this,1)"><span>WED</span><b>Jul 16</b></button>
+          <button onclick="pickDay(this,2)"><span>THU</span><b>Jul 17</b></button>
+          <button onclick="pickDay(this,0)"><span>FRI</span><b>Jul 18</b></button>
+          <button onclick="pickDay(this,1)"><span>SAT</span><b>Jul 19</b></button>
+          <button onclick="pickDay(this,2)"><span>SUN</span><b>Jul 20</b></button>
+        </div>
+        <div class="visits" id="visits"></div>
+      </div>
+    </section>
+
+    <section style="margin:0">
+      <div class="sec-head">
+        <div>
+          <h2>Browse by location</h2>
+          <p>SOCCSKSARGEN cities and towns, A to Z.</p>
+        </div>
+      </div>
+      <div class="azindex">
+        <div class="az">
+          <a href="#">All</a><a href="#">A</a><a href="#">B</a><a href="#">C</a><a href="#">D</a><a href="#">E</a><a href="#">G</a><a href="#">I</a><a href="#">K</a><a href="#">L</a><a href="#">M</a><a href="#">N</a><a href="#">P</a><a href="#">S</a><a href="#">T</a><a href="#">U</a>
+        </div>
+        <p style="margin:14px 0 8px">Popular right now:</p>
+        <div class="az" style="gap:8px">
+          <a href="#" style="min-width:auto">General Santos</a><a href="#" style="min-width:auto">Koronadal</a><a href="#" style="min-width:auto">Polomolok</a><a href="#" style="min-width:auto">Kidapawan</a><a href="#" style="min-width:auto">Tacurong</a><a href="#" style="min-width:auto">Alabel</a><a href="#" style="min-width:auto">Glan</a><a href="#" style="min-width:auto">Lake Sebu</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FEATURE BAND -->
+  <section>
+    <div class="band">
+      <div>
+        <h2>Property-hunting made simple &amp; reliable</h2>
+        <p>Lots, farms, and buildings, all for sale by verified owners: easy, transparent, and hassle-free from first tripping to turnover.</p>
+        <a class="btn btn-gold" href="#listings">Learn more <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+      <div class="tiles">
+        <div class="tile"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></span><b>Smart search</b><span>Find the right property fast with filters that actually matter.</span></div>
+        <div class="tile"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><b>Verified listings</b><span>Every listing is checked against real ownership documents.</span></div>
+        <div class="tile"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg></span><b>Expert brokers</b><span>Licensed professionals guide you at every step.</span></div>
+        <div class="tile"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span><b>Secure process</b><span>Safe and smooth transactions, from offer to keys.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section>
+    <div class="stats">
+      <div class="stat"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span><div><b>+840</b><span>Active listings</span></div></div>
+      <div class="stat"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg></span><div><b>+650</b><span>Happy clients</span></div></div>
+      <div class="stat"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg></span><div><b>+45</b><span>Towns covered</span></div></div>
+      <div class="stat"><span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-award"/></svg></span><div><b>+10</b><span>Years experience</span></div></div>
+    </div>
+  </section>
+
+  <!-- LIFESTYLE CTA -->
+  <section>
+    <div class="life">
+      <div class="ph"><img loading="lazy" decoding="async" src="assets/houses/h11.jpg" alt="Two-storey plantation-style home with garden"></div>
+      <div>
+        <h2>Unlock the door to your new <span class="script">lifestyle</span></h2>
+        <p>Whether you're buying your first lot, expanding the farm, or investing in a building, we've got the right property for you in SOCCSKSARGEN. Create a free account to save favorites, follow listings, and book trippings.</p>
+        <a class="btn btn-gold" href="#" onclick="openModal('authModal');return false;">Get started today <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2>Loved by buyers, <span class="script">trusted by brokers</span></h2>
+        <p>What people say after finding their place through DaScout.</p>
+      </div>
+    </div>
+    <div class="quotes">
+      <div class="quote">
+        <div class="av" aria-hidden="true">RD</div>
+        <b>Rowena Dizon</b>
+        <div class="role">First-time homebuyer · Koronadal</div>
+        <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+        <p>"Found our house near the plaza in three weeks. The tripping scheduler alone saved us so many weekends."</p>
+      </div>
+      <div class="quote">
+        <div class="av" aria-hidden="true">JM</div>
+        <b>Jomar Mercado</b>
+        <div class="role">Property investor · General Santos</div>
+        <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+        <p>"The price-reduced feed is my morning coffee read. Caught two highway frontage lots before they moved."</p>
+      </div>
+      <div class="quote">
+        <div class="av" aria-hidden="true">AS</div>
+        <b>Amira Santos</b>
+        <div class="role">Licensed broker · Kidapawan</div>
+        <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+        <p>"My listings get verified fast and inquiries come in with real intent. Best platform I've used."</p>
+      </div>
+      <div class="quote">
+        <div class="av" aria-hidden="true">KT</div>
+        <b>Kevin Tan</b>
+        <div class="role">Farm buyer · Tupi</div>
+        <div class="stars" aria-label="4 out of 5 stars">★★★★☆</div>
+        <p>"Bought two hectares for our family farm. The tripping was booked online and the title checked out clean."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="sec-head">
+      <div>
+        <h2>Frequently asked questions</h2>
+        <p>Quick answers before you scout.</p>
+      </div>
+    </div>
+    <div class="faq-grid">
+      <div class="faq">
+        <details open>
+          <summary>How do I find the right property? <svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="a">Start with the search card above: pick a category (residential lot, farm land, commercial lot, or a building), set your town and price range, then refine with size and feature filters. Save favorites to compare them side by side.</div>
+        </details>
+        <details>
+          <summary>What is the process of buying a property? <svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="a">Shortlist, join a site tripping, make an offer, then verify documents (TCT/CCT, tax declarations, and for farm land the DAR clearance) before paying any reservation fee. Our licensed broker partners guide you through each step to turnover.</div>
+        </details>
+        <details>
+          <summary>Can I schedule a site tripping online? <svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="a">Yes. Every listing with open slots appears in the tripping schedule. Pick a date, tap "Book a slot", and you'll get a confirmation with the host broker's details.</div>
+        </details>
+        <details>
+          <summary>How do I list my own property? <svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="a">Register a free owner or broker account, submit your listing with photos and ownership documents, and it goes live once verification clears (usually within two business days).</div>
+        </details>
+      </div>
+      <div class="faq-ph"><img loading="lazy" decoding="async" src="assets/houses/h04.jpg" alt="Modern bungalow on a wide lot"></div>
+    </div>
+  </section>
+
+</div><!-- /wrap -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-cta">
+    <h2>Let's find your dream <span class="script">property</span></h2>
+    <a class="btn btn-gold" href="#" onclick="openModal('authModal');return false;">Get started today <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+  </div>
+  <div class="links">
+    <a href="#">Main</a><a href="#faq">FAQ</a><a href="#">Licenses</a><a href="#">Terms</a><a href="#">About</a><a href="#">Contact</a>
+    <a href="#" onclick="openModal('requestModal');return false;">Request a property</a>
+  </div>
+  <p class="fine">© DaScout. All rights reserved. Serving SOCCSKSARGEN: South Cotabato, Cotabato, Sultan Kudarat, Sarangani, and General Santos City.
+  Listings are published by verified owners and licensed brokers. DaScout is a listing platform and is not a party to any transaction;
+  verify all property documents (TCT/CCT, tax declarations) before paying any reservation fee.</p>
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal" id="authModal" role="dialog" aria-modal="true" aria-label="Sign in or register">
+  <div class="mbox">
+    <button class="x" aria-label="Close" onclick="closeModal('authModal')"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <h3>Welcome back</h3>
+    <div class="sub2">Save favorites, book trippings, and list properties.</div>
+    <div class="mtabs">
+      <button class="on" onclick="authTab(this,'login')">Sign in</button>
+      <button onclick="authTab(this,'register')">Register</button>
+      <button onclick="authTab(this,'forgot')">Forgot</button>
+    </div>
+    <form id="f-login" onsubmit="return false">
+      <div class="field"><label for="li-user">Email or username</label><input id="li-user" type="text" autocomplete="username"></div>
+      <div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password"></div>
+      <div class="captcha"><span class="cb"></span> I'm not a robot <span style="margin-left:auto;font-size:11px;color:var(--ink-3)">CAPTCHA</span></div>
+      <button class="mbtn">Sign in</button>
+      <div class="mmeta"><label style="font-size:12.5px"><input type="checkbox" checked> Remember me</label><a href="#" onclick="authTabByName('forgot');return false;">Forgot password?</a></div>
+    </form>
+    <form id="f-register" style="display:none" onsubmit="return false">
+      <div class="field"><label for="rg-email">Email</label><input id="rg-email" type="email" autocomplete="email"></div>
+      <div class="field"><label for="rg-user">Username</label><input id="rg-user" type="text" autocomplete="username"></div>
+      <div class="field"><label for="rg-pass">Password</label><input id="rg-pass" type="password" autocomplete="new-password"></div>
+      <div class="field"><label for="rg-pass2">Confirm password</label><input id="rg-pass2" type="password" autocomplete="new-password"></div>
+      <div class="field"><label for="rg-role">I am a…</label>
+        <select id="rg-role"><option>Buyer / investor</option><option>Property owner</option><option>Licensed broker</option></select>
+      </div>
+      <div class="captcha"><span class="cb"></span> I'm not a robot <span style="margin-left:auto;font-size:11px;color:var(--ink-3)">CAPTCHA</span></div>
+      <button class="mbtn">Create account</button>
+    </form>
+    <form id="f-forgot" style="display:none" onsubmit="return false">
+      <div class="field"><label for="fg-email">Email</label><input id="fg-email" type="email" autocomplete="email"></div>
+      <div class="captcha"><span class="cb"></span> I'm not a robot <span style="margin-left:auto;font-size:11px;color:var(--ink-3)">CAPTCHA</span></div>
+      <button class="mbtn">Send reset link</button>
+    </form>
+  </div>
+</div>
+
+<!-- REQUEST MODAL -->
+<div class="modal" id="requestModal" role="dialog" aria-modal="true" aria-label="Request a property">
+  <div class="mbox">
+    <button class="x" aria-label="Close" onclick="closeModal('requestModal')"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <h3>Can't find it? Request it.</h3>
+    <div class="sub2">Tell us what you're looking for and we'll notify you when a matching listing goes live.</div>
+    <form onsubmit="return false">
+      <div class="field"><label for="rq-type">Property type</label>
+        <select id="rq-type"><option>Residential Lot</option><option>Farm Land</option><option>Commercial Lot</option><option>Residential Building</option><option>Commercial Building</option></select>
+      </div>
+      <div class="field"><label for="rq-loc">Preferred location</label><input id="rq-loc" type="text" placeholder="e.g. Polomolok, South Cotabato"></div>
+      <div class="field"><label for="rq-budget">Budget</label><input id="rq-budget" type="text" placeholder="e.g. ₱2M – ₱6M"></div>
+      <div class="field"><label for="rq-notes">Details</label><textarea id="rq-notes" rows="3" placeholder="Lot size, must-have features, timeline…"></textarea></div>
+      <div class="field"><label for="rq-email">Your email</label><input id="rq-email" type="email"></div>
+      <button class="mbtn">Submit request</button>
+    </form>
+  </div>
+</div>
+
+<script src="listings.js"></script>
+<script>
+function go(id){ location.href = 'property.html?id=' + encodeURIComponent(id); }
+
+/* render listing cards from data */
+function cardHTML(l, extra){
+  const cat = CATS[l.cat];
+  return `<article class="card${extra ? ' ' + extra.cls : ''}" data-cat="${l.cat}"${l.trend ? ' data-trend="1"' : ''} onclick="go('${l.id}')" tabindex="0" role="link" aria-label="${l.title}, ${l.price}" onkeydown="if(event.key==='Enter')go('${l.id}')">
+    <div class="ph">
+      <img loading="lazy" decoding="async" src="${l.photos[0]}" alt="${l.title}">
+      <span class="pill ${cat.pill}">${cat.label}</span>
+      ${extra && extra.prog ? `<span class="prog" style="width:${extra.prog}"></span>` : ''}
+      <button class="fav" aria-label="Save to favorites" onclick="event.stopPropagation()"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg></button>
+    </div>
+    <div class="bd">
+      <h3>${l.title}</h3>
+      <div class="loc"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> ${l.loc}</div>
+      <div class="price">${l.price}</div>
+      ${extra && extra.seen ? `<div class="seen">${extra.seen}</div>` : `<div class="specs">${specHTML(l.specs)}</div>`}
+    </div>
+  </article>`;
+}
+document.getElementById('cardGrid').innerHTML = LISTINGS.map(l => cardHTML(l)).join('');
+
+/* continue browsing (sample of recently viewed) */
+const RESUME = [
+  ['dacera-corner-lot',   '70%', 'Viewed 2 hours ago · 7 of 10 photos seen'],
+  ['tupi-rice-farm',      '40%', 'Viewed yesterday · vicinity map not yet seen'],
+  ['santiago-retail-arcade','85%','Viewed 3 days ago · inquiry drafted']
+];
+document.getElementById('resumeGrid').innerHTML =
+  RESUME.map(([id, prog, seen]) => cardHTML(getListing(id), {cls:'resume', prog, seen})).join('');
+
+/* pagination: only show when there is more than one page */
+const PAGE_SIZE = 12;
+function updatePagination(){
+  const visible = [...document.querySelectorAll('#cardGrid .card')].filter(c => c.style.display !== 'none').length;
+  document.getElementById('pagination').style.display = visible > PAGE_SIZE ? '' : 'none';
+}
+
+/* hero spotlight rotator (real listings) */
+const SPOT_IDS = ['villa-consuelo-home', 'tupi-rice-farm', 'santiago-retail-arcade'];
+let curSpot = 0, spotTimer;
+function renderSpot(i){
+  const s = getListing(SPOT_IDS[i]);
+  document.getElementById('spot-img').src = s.photos[0];
+  document.getElementById('spot-name').textContent = s.title;
+  document.getElementById('spot-loc').textContent = s.loc;
+  document.getElementById('spot-price').textContent = s.price;
+  document.getElementById('spot-specs').innerHTML = specHTML(s.specs);
+  document.querySelectorAll('.spot-dots button').forEach((b,k)=>b.classList.toggle('on', k===i));
+}
+function goSpot(i){ curSpot=i; renderSpot(i); restartSpot(); }
+function openSpot(){ go(SPOT_IDS[curSpot]); }
+function restartSpot(){ clearInterval(spotTimer); spotTimer=setInterval(()=>{ curSpot=(curSpot+1)%SPOT_IDS.length; renderSpot(curSpot); },6000); }
+
+/* search card: tabs drive the grid filter */
+function applyFilter(cat){
+  const cards=[...document.querySelectorAll('#cardGrid .card')];
+  if(cat==='rand'){ const g=document.getElementById('cardGrid'); cards.sort(()=>Math.random()-.5).forEach(c=>{c.style.display='';g.appendChild(c);}); updatePagination(); return; }
+  cards.forEach(c=>{
+    if(cat==='all') c.style.display='';
+    else if(cat==='trend') c.style.display = c.dataset.trend?'':'none';
+    else c.style.display = c.dataset.cat===cat?'':'none';
+  });
+  updatePagination();
+}
+function pickSearch(btn,cat){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#listTabs button').forEach(b=>b.classList.remove('on'));
+  applyFilter(cat);
+}
+function runSearch(){
+  const on=document.querySelector('.search-tabs button.on');
+  if(on) pickSearch(on, ['rlot','farm','clot','rbdg','cbdg'][[...on.parentElement.children].indexOf(on)]);
+  document.getElementById('cardGrid').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* listing quick tabs */
+function filterCards(btn,cat){
+  document.querySelectorAll('#listTabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.search-tabs button').forEach(b=>b.classList.remove('on'));
+  applyFilter(cat);
+}
+
+/* market tabs */
+function pickMarket(btn,i){
+  document.querySelectorAll('#marketTabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#marketPanels .col').forEach((c,k)=>c.classList.toggle('on', k===i));
+}
+
+/* sidebar */
+function toggleSidebar(open){
+  document.getElementById('sidebar').classList.toggle('open', open);
+  document.getElementById('scrim').classList.toggle('on', open);
+}
+
+/* modals */
+let lastFocus = null;
+function openModal(id){
+  lastFocus = document.activeElement;
+  const m = document.getElementById(id);
+  m.classList.add('open');
+  const f = m.querySelector('input, select, textarea');
+  if(f) f.focus();
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  if(lastFocus){ lastFocus.focus(); lastFocus = null; }
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open')); toggleSidebar(false);} });
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+/* auth tabs */
+function authTab(btn,name){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ['login','register','forgot'].forEach(n=>document.getElementById('f-'+n).style.display = n===name?'':'none');
+}
+function authTabByName(name){
+  const idx={login:0,register:1,forgot:2}[name];
+  authTab(document.querySelectorAll('#authModal .mtabs button')[idx],name);
+}
+
+/* schedule (SOCCSKSARGEN trippings) */
+const days=[
+  [ ['9:00 AM','Dacera Heights Corner Lot','Site tripping · Lagao, General Santos · hosted by DaScout partner broker'],
+    ['11:30 AM','Villa Consuelo Modern Home','Open house · Calumpang, General Santos'],
+    ['2:00 PM','National Highway Frontage Lot','Site tripping · Bula, General Santos'],
+    ['4:30 PM','Santiago Retail Arcade','Building inspection (by appointment) · Santiago Blvd, General Santos'] ],
+  [ ['10:00 AM','Tupi Irrigated Rice Farm','Farm tripping · Tupi, South Cotabato'],
+    ['1:00 PM','Morales Heights View Lot','Site tripping · Koronadal City'],
+    ['3:30 PM','Rosario Garden Bungalow','Open house · Koronadal City'] ],
+  [ ['9:30 AM','Tacurong 8-Door Apartments','Building inspection · Tacurong City, Sultan Kudarat'],
+    ['12:00 PM','Lake Sebu Fruit Farm','Farm tripping · Lake Sebu, South Cotabato'],
+    ['3:00 PM','Mt. Apo View Family Home','Open house · Kidapawan City, Cotabato'],
+    ['5:30 PM',"M'lang Coconut Grove",'Farm tripping · M\'lang, Cotabato'] ]
+];
+function renderVisits(i){
+  document.getElementById('visits').innerHTML = days[i].map(v=>
+    `<div class="visit"><div class="time">${v[0]}</div><div class="what"><b>${v[1]}</b><span>${v[2]}</span></div><button class="rsvp">Book a slot</button></div>`
+  ).join('');
+}
+function pickDay(btn,i){
+  document.querySelectorAll('#daystrip button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); renderVisits(i);
+}
+
+/* top properties (from listings) */
+const tops={
+  day:  [['dacera-corner-lot','4.2k views'],['villa-consuelo-home','3.8k views'],['tupi-rice-farm','3.1k views'],['rosario-bungalow','2.9k views'],['bula-highway-lot','2.4k views'],['lake-sebu-fruit-farm','2.1k views']],
+  week: [['villa-consuelo-home','21k views'],['tupi-rice-farm','18k views'],['santiago-retail-arcade','14k views'],['dacera-corner-lot','12k views'],['mt-apo-family-home','9.8k views'],['morales-view-lot','8.5k views']],
+  month:[['santiago-retail-arcade','92k views'],['tacurong-apartments','85k views'],['villa-consuelo-home','61k views'],['bula-highway-lot','58k views'],['tupi-rice-farm','44k views'],['mlang-coconut-grove','39k views']]
+};
+function renderTop(k){
+  document.getElementById('toplist').innerHTML = tops[k].map(([id,views],i)=>{
+    const l=getListing(id);
+    return `<div class="topitem" onclick="go('${l.id}')"><div class="rank">${i+1}</div><img loading="lazy" decoding="async" src="${l.photos[0]}" alt=""><div class="t"><b>${l.title}</b><span>${l.loc}</span></div><div class="views">${views}</div></div>`;
+  }).join('');
+}
+function pickTop(btn,k){
+  document.querySelectorAll('#topTabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); renderTop(k);
+}
+
+/* clock */
+function tick(){ document.getElementById('clock').textContent = new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'medium'}); }
+
+/* init */
+renderSpot(0); restartSpot(); renderVisits(0); renderTop('day'); tick(); setInterval(tick,1000); updatePagination();
+
+/* reflect toggle state to assistive tech */
+function syncPressed(g){ g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x.classList.contains('on')?'true':'false')); }
+document.querySelectorAll('.tabs, .mtabs, .daystrip, .search-tabs, .spot-dots').forEach(g=>{
+  syncPressed(g);
+  g.addEventListener('click', ()=>syncPressed(g));
+});
+</script>
+</body>
+</html>
