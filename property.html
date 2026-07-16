@@ -6,7 +6,7 @@
 <title>Property Preview — DaScout</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -14,6 +14,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
   <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></symbol>
   <symbol id="i-bath" viewBox="0 0 24 24"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-.5C4.7 3 4 3.7 4 4.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M10 5 8 7"/><path d="M2 12h20"/><path d="M7 19v2"/><path d="M17 19v2"/></symbol>
@@ -21,90 +22,197 @@
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
   <symbol id="i-arrow-l" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-6"/></symbol>
-  <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
-  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
-  <symbol id="i-home2" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7L22 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.5 2.9.6a2 2 0 0 1 1.7 2z"/></symbol>
 </svg>
+
+<a class="skip" href="#main">Skip to main content</a>
+
+<!-- UTILITY BAR -->
+<div class="util">
+  <div class="in">
+    <a href="mailto:hello@dascout.ph"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg> hello@dascout.ph</a>
+    <a href="tel:+63835520000"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg> +63 (83) 552 0000</a>
+    <span class="right">Mindanao's exclusive, verified real estate platform</span>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header>
   <div class="hd">
-    <a class="logo" href="index.html"><span class="mark"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>Da<span style="color:var(--gold)">Scout</span></a>
+    <button class="burger" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar" onclick="toggleSidebar(true)"><span></span><span></span><span></span></button>
+    <a class="logo" href="index.html" aria-label="DaScout home"><img class="logo-img" src="assets/dascout-logo.png" alt="DaScout"></a>
     <nav class="main" aria-label="Primary">
-      <a href="index.html#listings">Lots</a>
-      <a href="index.html#listings">Farm Land</a>
-      <a href="index.html#listings">Buildings</a>
+      <a href="index.html">Home</a>
+      <a href="index.html?cat=lots#listings">Lots</a>
+      <a href="index.html?cat=farm#listings">Farm Land</a>
+      <a href="index.html?cat=bldgs#listings">Buildings</a>
       <a href="index.html#locations">Locations</a>
-      <a href="index.html#schedule">Trippings</a>
+      <a href="index.html#faq">FAQ</a>
     </nav>
     <div class="hd-actions">
-      <button class="acct" aria-label="Sign in"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg></button>
-      <a class="btn btn-gold" href="index.html">List a property</a>
+      <a class="btn btn-gold" href="index.html#listings">Browse Listings</a>
     </div>
   </div>
 </header>
 
-<div class="wrap">
+<!-- SIDEBAR (mobile) -->
+<div class="scrim" id="scrim" onclick="toggleSidebar(false)"></div>
+<nav class="sidebar" id="sidebar" aria-label="Menu">
+  <div class="sb-top">
+    <img class="logo-img" src="assets/dascout-logo.png" alt="DaScout">
+    <button class="sb-close" aria-label="Close menu" onclick="toggleSidebar(false)"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="sb-title">Browse</div>
+  <div class="sb-links">
+    <a href="index.html">Home</a>
+    <a href="index.html#listings">Featured listings</a>
+    <a href="index.html#top">Top properties</a>
+    <a href="index.html#market">Market movements</a>
+    <a href="index.html#locations">Locations</a>
+    <a href="index.html#faq">FAQ</a>
+  </div>
+  <div class="sb-title">Property types</div>
+  <div class="sb-links">
+    <a href="index.html?cat=rlot#listings">Residential Lot</a>
+    <a href="index.html?cat=farm#listings">Farm Land</a>
+    <a href="index.html?cat=clot#listings">Commercial Lot</a>
+    <a href="index.html?cat=rbdg#listings">Residential Building</a>
+    <a href="index.html?cat=cbdg#listings">Commercial Building</a>
+  </div>
+</nav>
+
+<main id="main" class="wrap">
   <a class="crumb" href="index.html#listings"><svg class="icon" aria-hidden="true"><use href="#i-arrow-l"/></svg> Back to listings</a>
 
   <div id="propBody"></div>
 
-  <section id="similarSec" style="display:none">
+  <section id="similarSec" hidden aria-labelledby="simH">
     <div class="sec-head">
       <div>
-        <h2>Similar <span class="script">properties</span></h2>
-        <p>More in this category across SOCCSKSARGEN.</p>
+        <h2 id="simH">Similar <em>Properties</em></h2>
+        <p>More in this category across Mindanao.</p>
       </div>
     </div>
     <div class="grid" id="similarGrid"></div>
   </section>
-</div>
+</main>
 
 <!-- FOOTER -->
 <footer>
-  <div class="foot-cta">
-    <h2>Let's find your dream <span class="script">property</span></h2>
-    <a class="btn btn-gold" href="index.html">Browse more listings <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+  <div class="foot">
+    <div class="brand">
+      <img class="logo-img" src="assets/dascout-logo.png" alt="DaScout">
+      <p>Mindanao's exclusive, verified real estate platform. Every listing title-checked, boundary-walked, and confirmed on the ground before it reaches you.</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <a href="index.html">Home</a>
+      <a href="index.html#listings">Featured listings</a>
+      <a href="index.html#locations">Locations</a>
+      <a href="index.html#faq">FAQ</a>
+    </div>
+    <div>
+      <h4>Property Types</h4>
+      <a href="index.html?cat=rlot#listings">Residential Lots</a>
+      <a href="index.html?cat=farm#listings">Farm Land</a>
+      <a href="index.html?cat=clot#listings">Commercial Lots</a>
+      <a href="index.html?cat=rbdg#listings">Residential Buildings</a>
+      <a href="index.html?cat=cbdg#listings">Commercial Buildings</a>
+    </div>
+    <div class="contact">
+      <h4>Contact Us</h4>
+      <div><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> General Santos City, Mindanao</div>
+      <div><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg> +63 (83) 552 0000</div>
+      <div><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg> hello@dascout.ph</div>
+    </div>
   </div>
-  <div class="links">
-    <a href="index.html">Main</a><a href="index.html#faq">FAQ</a><a href="#">Terms</a><a href="#">About</a><a href="#">Contact</a>
-  </div>
-  <p class="fine">© DaScout. All rights reserved. Serving SOCCSKSARGEN: South Cotabato, Cotabato, Sultan Kudarat, Sarangani, and General Santos City.
-  Verify all property documents (TCT/CCT, tax declarations) before paying any reservation fee.</p>
+  <p class="copy">© DaScout. All rights reserved. All listings are sourced, title-checked, and verified by DaScout before publication.
+  DaScout is a listing platform and is not a party to any transaction; verify all property documents (TCT/CCT, tax declarations) before paying any reservation fee.</p>
 </footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="listings.js"></script>
 <script>
-function go(id){ location.href = 'property.html?id=' + encodeURIComponent(id); }
+const $ = id => document.getElementById(id);
+
+let toastTimer;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('on'), 4000);
+}
+
+/* favorites shared with index */
+const FAV_KEY = 'ds-favs';
+const getFavs = () => { try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch { return []; } };
+function setFavs(v){ try { localStorage.setItem(FAV_KEY, JSON.stringify(v)); } catch {} }
+function toggleFav(id, title){
+  const favs = getFavs();
+  const i = favs.indexOf(id);
+  if (i >= 0) { favs.splice(i,1); toast(`Removed "${title}" from favorites`); }
+  else { favs.push(id); toast(`Saved "${title}" to favorites`); }
+  setFavs(favs);
+  document.querySelectorAll(`[data-fav="${id}"]`).forEach(b=>b.setAttribute('aria-pressed', i < 0 ? 'true' : 'false'));
+}
+
+/* record view history for index "Continue Browsing" */
+const HIST_KEY = 'ds-hist';
+function recordView(id){
+  try {
+    const hist = (JSON.parse(localStorage.getItem(HIST_KEY)) || []).filter(h => h.id !== id);
+    hist.unshift({ id, ts: Date.now() });
+    localStorage.setItem(HIST_KEY, JSON.stringify(hist.slice(0, 12)));
+  } catch {}
+}
+
+/* sidebar */
+let sbLastFocus = null;
+function toggleSidebar(open){
+  const sb = $('sidebar');
+  sb.classList.toggle('open', open);
+  $('scrim').classList.toggle('on', open);
+  document.querySelector('.burger').setAttribute('aria-expanded', open);
+  if (open){ sbLastFocus = document.activeElement; sb.querySelector('.sb-close').focus(); }
+  else if (sbLastFocus){ sbLastFocus.focus(); sbLastFocus = null; }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleSidebar(false); });
 
 const id = new URLSearchParams(location.search).get('id');
 const listing = id && getListing(id);
 
 if (!listing) {
-  document.getElementById('propBody').innerHTML = `
+  $('propBody').innerHTML = `
     <div class="notfound">
       <h1>Listing not found</h1>
       <p>This property may have been sold or removed.</p>
-      <a class="btn btn-gold" href="index.html#listings">Browse available listings <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-navy" href="index.html#listings">Browse available listings <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
     </div>`;
 } else {
   const cat = CATS[listing.cat];
+  const saved = getFavs().includes(listing.id);
   document.title = listing.title + ' — DaScout';
-  document.getElementById('propBody').innerHTML = `
+  recordView(listing.id);
+  const mailSubject = encodeURIComponent(`Inquiry: ${listing.title} (${listing.loc})`);
+  const mailBody = encodeURIComponent(`Hi DaScout,\n\nI'd like to inquire about "${listing.title}" listed at ${listing.price}.\n\nMy questions:\n\n`);
+  $('propBody').innerHTML = `
     <div class="prop-grid">
       <div class="gallery">
         <div class="main"><img id="mainPhoto" src="${listing.photos[0]}" alt="${listing.title} photo"></div>
         <div class="thumbs" role="group" aria-label="Photos">
           ${listing.photos.map((p,i)=>`
-            <button class="${i===0?'on':''}" aria-label="Photo ${i+1}" onclick="pickPhoto(this,'${p}')">
+            <button aria-pressed="${i===0}" aria-label="Photo ${i+1} of ${listing.photos.length}" onclick="pickPhoto(this,'${p}')">
               <img loading="lazy" decoding="async" src="${p}" alt="">
             </button>`).join('')}
         </div>
       </div>
       <div class="prop-info">
-        <span class="pill ${cat.pill}">${cat.label}</span>
+        <span class="pill">${cat.label}</span>
         <h1>${listing.title}</h1>
-        <div class="loc"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> ${listing.loc} · SOCCSKSARGEN</div>
+        <div class="loc"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> ${listing.loc} · Mindanao</div>
         <div class="price">${listing.price}</div>
         <div class="prop-specs">${specHTML(listing.specs)}</div>
         <h4>About this property</h4>
@@ -114,36 +222,51 @@ if (!listing) {
           ${listing.features.map(f=>`<span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>${f}</span>`).join('')}
         </div>
         <div class="prop-cta">
-          <a class="btn btn-green" href="index.html#schedule"><svg class="icon" aria-hidden="true"><use href="#i-cal"/></svg> Book a tripping</a>
-          <button class="btn btn-outline"><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg> Save to favorites</button>
+          <a class="btn btn-navy" href="mailto:hello@dascout.ph?subject=${mailSubject}&body=${mailBody}"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg> Inquire About This Property</a>
+          <button class="btn btn-ghost" data-fav="${listing.id}" aria-pressed="${saved}"
+            onclick="toggleFav('${listing.id}',${JSON.stringify(listing.title).replace(/"/g,'&quot;')})">
+            <svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg> Save to Favorites</button>
         </div>
+      </div>
+    </div>
+
+    <div class="mapblock">
+      <div class="sec-head" style="margin-bottom:18px">
+        <div>
+          <h2>Location</h2>
+          <p>${listing.loc} — approximate area shown; exact boundaries walked during verification.</p>
+        </div>
+      </div>
+      <div class="frame">
+        <iframe title="Map of ${listing.loc}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q=${encodeURIComponent(listing.loc + ', Philippines')}&output=embed"></iframe>
       </div>
     </div>`;
 
   /* similar properties: same category, excluding this one */
   const similar = LISTINGS.filter(l => l.cat === listing.cat && l.id !== listing.id).slice(0, 3);
   if (similar.length) {
-    document.getElementById('similarSec').style.display = '';
-    document.getElementById('similarGrid').innerHTML = similar.map(l => `
-      <article class="card" onclick="go('${l.id}')" tabindex="0" role="link" aria-label="${l.title}, ${l.price}" onkeydown="if(event.key==='Enter')go('${l.id}')">
-        <div class="ph">
+    $('similarSec').hidden = false;
+    $('similarGrid').innerHTML = similar.map(l => `
+      <a class="card" href="property.html?id=${encodeURIComponent(l.id)}">
+        <span class="ph">
           <img loading="lazy" decoding="async" src="${l.photos[0]}" alt="${l.title}">
-          <span class="pill ${CATS[l.cat].pill}">${CATS[l.cat].label}</span>
-        </div>
-        <div class="bd">
+          <span class="pill">${CATS[l.cat].label}</span>
+        </span>
+        <span class="bd">
           <h3>${l.title}</h3>
-          <div class="loc"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> ${l.loc}</div>
-          <div class="price">${l.price}</div>
-          <div class="specs">${specHTML(l.specs)}</div>
-        </div>
-      </article>`).join('');
+          <span class="loc"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg> ${l.loc}</span>
+          <span class="price">${l.price}</span>
+          <span class="specs">${specHTML(l.specs)}</span>
+        </span>
+      </a>`).join('');
   }
 }
 
 function pickPhoto(btn, src){
-  document.getElementById('mainPhoto').src = src;
-  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+  $('mainPhoto').src = src;
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));
+  btn.setAttribute('aria-pressed','true');
 }
 </script>
 </body>
