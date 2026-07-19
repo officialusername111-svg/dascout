@@ -111,8 +111,15 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .hero .ph img{width:100%;height:100%;object-fit:cover}
 
 /* floating spotlight card + rotator controls */
-.spotcard{position:absolute;right:14px;bottom:14px;background:#fff;border-radius:12px;box-shadow:var(--shadow);
+.spotcard{position:absolute;right:14px;bottom:14px;background:rgba(255,255,255,.66);
+  -webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.55);border-radius:12px;
+  box-shadow:0 8px 32px rgba(8,21,39,.16), inset 0 1px 0 rgba(255,255,255,.65);
   padding:12px 16px;display:flex;gap:12px;align-items:center;max-width:min(430px,calc(100% - 28px))}
+/* solid fallback where backdrop blur is unsupported (keeps text legible over photos) */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .spotcard{background:rgba(255,255,255,.94)}
+}
 .spotcard .ic{width:40px;height:40px;border-radius:10px;background:var(--navy-900);color:var(--gold);display:grid;place-items:center;flex-shrink:0}
 .spotcard .t{min-width:0}
 .spotcard b{display:block;font-size:14px;color:var(--navy-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -162,7 +169,7 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .tabs button{border:1px solid var(--line);border-radius:999px;padding:0 18px;min-height:44px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
 .tabs button[aria-pressed="true"]{background:var(--navy-900);border-color:var(--navy-900);color:var(--gold-l)}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.card{position:relative;display:block;aspect-ratio:4/4.9;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-s);
+.card{position:relative;display:block;aspect-ratio:1/1;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-s);
   background:var(--bg-2);transition:transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease)}
 @media (hover:hover) and (pointer:fine){
   .card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
@@ -206,7 +213,9 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .topitem .t{min-width:0}
 .topitem b{display:block;font-size:14.5px;color:var(--navy-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topitem .t span{font-size:12.5px;color:var(--ink-3)}
-.topitem .views{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.topitem .views{font-size:12.5px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.topitem .pv{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.topitem .pv b{font-weight:800;color:var(--gold-d);font-size:14.5px;white-space:nowrap}
 
 /* ============ MARKET ============ */
 .market .col{display:none}
@@ -217,9 +226,13 @@ a.rowitem:hover{border-color:var(--gold-d)}
 .rowitem .t{min-width:0}
 .rowitem b{display:block;font-size:14.5px;color:var(--navy-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rowitem .t span{font-size:12.5px;color:var(--ink-3)}
-.rowitem .p{margin-left:auto;font-weight:800;color:var(--gold-d);white-space:nowrap;font-size:14.5px}
-.rowitem .p.sold{color:var(--ink-3)}
+.rowitem .t .meta,.topitem .t .meta{display:block;font-size:12px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.rowitem .p{margin-left:auto;font-weight:800;color:var(--gold-d);white-space:nowrap;font-size:14.5px;text-align:right}
+.rowitem .p.sold{color:var(--ink-2)}
+.rowitem .p.sold em{display:block;font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ok)}
 .rowitem .p.was s{color:var(--ink-3);font-weight:600;font-size:12.5px;display:block;text-align:right}
+.rowitem .p.was b{display:block}
+.rowitem .p.was .drop{display:block;font-style:normal;font-size:11px;font-weight:700;color:var(--ok)}
 
 /* ============ ABOUT STRIP ============ */
 .why{background:var(--bg-2);border-radius:18px;padding:40px 38px}
