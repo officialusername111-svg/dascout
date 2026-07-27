@@ -36,6 +36,10 @@ h2{font-size:clamp(24px,3vw,32px)}
 h2 em,h1 em{font-style:italic;color:var(--gold-d)}
 .sec-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:26px;flex-wrap:wrap}
 .sec-head p{color:var(--ink-2);font-size:14.5px;margin-top:4px}
+/* kit heading rhythm: centered heading + intro, controls beneath */
+.sec-head.center{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.sec-head.center .tabs{justify-content:center}
+.sec-foot{display:flex;justify-content:center;margin-top:18px}
 .icon{width:1.05em;height:1.05em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.12em;flex-shrink:0}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:13px;
@@ -94,21 +98,33 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .sb-feat button{border:1px solid var(--line);border-radius:999px;padding:10px 14px;min-height:44px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .sb-feat button:hover{border-color:var(--gold-d);color:var(--gold-d)}
 
-/* ============ HERO ============ */
+/* ============ HERO — full-width big-media banner ============ */
 .hero{background:linear-gradient(180deg,#FBFAF6,var(--bg-hero))}
-.hero .in{display:grid;grid-template-columns:1fr 1.05fr;gap:44px;align-items:center;max-width:1220px;margin:0 auto;padding:52px 24px 96px}
+.banner{position:relative;overflow:hidden;background:var(--navy-950)}
+.banner .ph{position:absolute;inset:0;display:block}
+.banner .ph img{width:100%;height:100%;object-fit:cover}
+/* legibility scrim: dark navy from the copy side, fading over the photo */
+.banner .ph::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(8,21,39,.82) 0%,rgba(8,21,39,.55) 42%,rgba(8,21,39,.12) 78%)}
+.banner-copy{position:relative;z-index:2;max-width:1220px;margin:0 auto;padding:92px 24px 116px;pointer-events:none}
+.banner-copy .badge,.banner-copy .btn{pointer-events:auto}
 .badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--gold-d);color:var(--gold-d);border-radius:999px;
   padding:7px 16px;font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px;background:#fff}
 .hero h1{font-size:clamp(32px,4.2vw,50px);line-height:1.12}
-.hero .sub{margin:16px 0 26px;color:var(--ink-2);max-width:48ch;font-size:16px;line-height:1.75}
-.hero .ctas{display:flex;gap:12px;flex-wrap:wrap}
-.clients{display:flex;align-items:center;gap:12px;margin-top:26px;font-size:13px;color:var(--ink-2)}
+.banner-copy h1{color:#fff}
+.banner-copy h1 em{color:var(--gold-l)}
+.banner-copy .ctas{margin-top:26px}
+.banner-copy .btn-ghost{border-color:rgba(255,255,255,.85);color:#fff}
+.banner-copy .btn-ghost:hover{background:#fff;color:var(--navy-900)}
+.hero .sub{color:var(--ink-2);max-width:48ch;font-size:16px;line-height:1.75}
+.hero .ctas,.ctas{display:flex;gap:12px;flex-wrap:wrap}
+/* two-column intro beneath the banner */
+.hero .intro{max-width:1220px;margin:0 auto;padding:34px 24px 96px;display:grid;grid-template-columns:1.4fr 1fr;gap:20px 44px;align-items:center}
+.clients{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--ink-2)}
 .avs{display:flex}
 .avs span{width:34px;height:34px;border-radius:50%;border:2px solid #fff;background:var(--navy-800);color:var(--gold-l);
   display:grid;place-items:center;font-size:11px;font-weight:700;margin-left:-8px}
 .avs span:first-child{margin-left:0}
-.hero .ph{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:16/11;box-shadow:var(--shadow);display:block}
-.hero .ph img{width:100%;height:100%;object-fit:cover}
 
 /* floating spotlight card + rotator controls */
 .spotcard{position:absolute;right:14px;bottom:14px;background:rgba(255,255,255,.66);
@@ -125,7 +141,7 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .spotcard b{display:block;font-size:14px;color:var(--navy-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .spotcard .t span{font-size:12px;color:var(--ink-2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .spotcard .price{font-weight:800;color:var(--gold-d);font-size:14.5px;margin-left:6px;white-space:nowrap}
-.spot-ctrl{position:absolute;left:10px;top:10px;display:flex;align-items:center;border-radius:999px;
+.spot-ctrl{position:absolute;right:14px;top:14px;display:flex;align-items:center;border-radius:999px;
   opacity:.4;transition:opacity var(--dur-2) var(--ease)}
 .spot-ctrl:hover,.spot-ctrl:focus-within{opacity:1}
 .spot-ctrl button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.85);position:relative}
@@ -204,9 +220,18 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .pagination button{min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:var(--r-s);font-weight:700;color:var(--ink-2)}
 .pagination button[aria-current="page"]{background:var(--navy-900);border-color:var(--navy-900);color:var(--gold-l)}
 
+/* ============ TOP + MARKET side-by-side band ============ */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start}
+/* grid/flex items floor at min-content by default; the nowrap row titles inside would
+   push both columns past the viewport (140px of sideways scroll at 375px) without this */
+.duo > section{min-width:0}
+.duo section{padding:0}
+.duo .toplist{grid-template-columns:1fr}
+.duo .sec-head{flex-direction:column;align-items:start;gap:12px}
+
 /* ============ TOP LIST ============ */
 .toplist{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
-.topitem{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:74px}
+.topitem{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:74px;min-width:0}
 .topitem:hover{border-color:var(--gold-d)}
 .topitem .rank{font-family:"Playfair Display",Georgia,serif;font-size:22px;color:var(--gold-d);width:28px;text-align:center;flex-shrink:0}
 .topitem img{width:74px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0}
@@ -220,7 +245,7 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 /* ============ MARKET ============ */
 .market .col{display:none}
 .market .col.on{display:block}
-.rowitem{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;min-height:74px}
+.rowitem{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;min-height:74px;min-width:0}
 a.rowitem:hover{border-color:var(--gold-d)}
 .rowitem img{width:74px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0}
 .rowitem .t{min-width:0}
@@ -234,20 +259,34 @@ a.rowitem:hover{border-color:var(--gold-d)}
 .rowitem .p.was b{display:block}
 .rowitem .p.was .drop{display:block;font-style:normal;font-size:11px;font-weight:700;color:var(--ok)}
 
-/* ============ ABOUT STRIP ============ */
+/* ============ ABOUT STRIP — alternating feature rows ============ */
 .why{background:var(--bg-2);border-radius:18px;padding:40px 38px}
-.about-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:8px}
-.acell{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:24px 20px}
-.acell .ic{width:42px;height:42px;color:var(--gold-d);margin-bottom:14px}
-.acell .ic .icon{width:34px;height:34px;stroke-width:1.6}
-.acell b{display:block;font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--navy-900);margin-bottom:6px}
-.acell span{color:var(--ink-2);font-size:13.5px;line-height:1.6}
+.features{display:grid;gap:16px;margin-top:8px}
+.frow{display:grid;grid-template-columns:1.15fr 1fr;gap:30px;align-items:center;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px 30px}
+.frow:nth-child(even) .ftext{order:2}
+.frow:nth-child(even) .fimg{order:1}
+.ftext .ic{width:42px;height:42px;color:var(--gold-d);margin-bottom:14px}
+.ftext .ic .icon{width:34px;height:34px;stroke-width:1.6}
+.ftext b{display:block;font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--navy-900);margin-bottom:6px}
+.ftext > span{color:var(--ink-2);font-size:13.5px;line-height:1.6;display:block}
+.fcta{margin-top:16px}
+.btn-sm{min-height:40px;padding:0 18px;font-size:12px}
+.fimg{border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:var(--bg-2)}
+.fimg img{width:100%;height:100%;object-fit:cover}
 
-/* ============ VERIFY BAND ============ */
-.verify{display:grid;grid-template-columns:1fr 1.1fr;gap:48px;align-items:center}
+/* ============ VERIFY BAND — steps left, image right ============ */
+.verify{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center}
 .verify .ph{border-radius:18px;overflow:hidden;aspect-ratio:4/3;box-shadow:var(--shadow)}
 .verify .ph img{width:100%;height:100%;object-fit:cover}
-.verify p{color:var(--ink-2);margin:14px 0 24px;line-height:1.8}
+.verify p{color:var(--ink-2);margin:14px 0 20px;line-height:1.8}
+.steps{list-style:none;counter-reset:step;margin:0 0 24px;display:grid;gap:10px}
+.steps li{counter-increment:step;display:flex;gap:14px;align-items:start}
+.steps li::before{content:counter(step);flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  background:var(--navy-900);color:var(--gold-l);font-weight:800;font-size:14px;display:grid;place-items:center;
+  font-family:"Playfair Display",Georgia,serif}
+.steps b{display:block;font-size:14px;color:var(--navy-900)}
+.steps li span{font-size:13.5px;color:var(--ink-2)}
 .stats-inline{display:flex;gap:34px;margin-top:28px;flex-wrap:wrap}
 .stats-inline b{font-family:"Playfair Display",Georgia,serif;font-size:28px;color:var(--gold-d);display:block}
 .stats-inline span{font-size:12px;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase;font-weight:700}
@@ -378,14 +417,19 @@ body.dialog-open{overflow:hidden}
 /* ============ BREAKPOINTS ============ */
 @media (max-width:1020px){
   .quotes{grid-template-columns:1fr 1fr}
-  .about-grid{grid-template-columns:repeat(3,1fr)}
   .toplist{grid-template-columns:1fr}
   .grid{grid-template-columns:repeat(3,1fr)}
+  .duo{grid-template-columns:1fr;gap:0}
+  .duo #market{margin-top:54px}
 }
 @media (max-width:880px){
   nav.main{display:none}
   .burger{display:flex}
-  .hero .in{grid-template-columns:1fr;padding-bottom:110px}
+  .banner-copy{padding:64px 24px 96px}
+  .hero .intro{grid-template-columns:1fr;padding-bottom:110px}
+  .frow{grid-template-columns:1fr;gap:18px}
+  .frow:nth-child(even) .ftext{order:0}
+  .frow:nth-child(even) .fimg{order:0}
   .verify,.split2{grid-template-columns:1fr}
   .searchbar form{grid-template-columns:1fr 1fr}
   .sf{border-right:none;border-bottom:1px solid var(--line)}
@@ -400,8 +444,10 @@ body.dialog-open{overflow:hidden}
   .signin{display:none}
 }
 @media (max-width:560px){
-  .grid,.quotes,.about-grid{grid-template-columns:1fr}
+  .grid,.quotes{grid-template-columns:1fr}
   .types{grid-template-columns:repeat(2,1fr)}
+  .banner-copy{padding:56px 24px 96px}
+  .frow{padding:20px 18px}
   .hd-actions .btn-gold{padding:0 14px;font-size:12px}
   .sec-head{align-items:start;flex-direction:column}
   .why{padding:30px 22px}
