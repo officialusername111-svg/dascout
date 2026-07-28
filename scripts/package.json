@@ -1,0 +1,13 @@
+{
+  "name": "dascout-scripts",
+  "private": true,
+  "type": "module",
+  "description": "One-off maintenance scripts for DaScout. Not part of the web app.",
+  "scripts": {
+    "upload-photos": "node --env-file=.env.local upload-photos.mjs",
+    "upload-photos:dry": "node --env-file=.env.local upload-photos.mjs --dry-run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

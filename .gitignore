@@ -1,1 +1,18 @@
 .impeccable/
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# dependencies / build output
+node_modules/
+.next/
+out/
+dist/
+.vercel/
+*.tsbuildinfo
+
+# supabase local stack
+supabase/.branches/
+supabase/.temp/
