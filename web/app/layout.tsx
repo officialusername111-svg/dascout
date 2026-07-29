@@ -19,7 +19,16 @@ const playfair = Playfair_Display({
   display: 'swap',
 })
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dascout.ph'
+/**
+ * The site's own address, used for canonical links, the sitemap and share previews.
+ * A trailing slash is stripped so `${SITE_URL}/property/x` never doubles up, and the
+ * fallback is this project's real domain — pointing search engines at a domain we do
+ * not own is worse than any missing tag.
+ */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dascoutprime.com').replace(
+  /\/+$/,
+  ''
+)
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
