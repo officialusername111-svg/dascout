@@ -16,3 +16,7 @@ dist/
 # supabase local stack
 supabase/.branches/
 supabase/.temp/
+
+# autonomous run state
+PLAN.md
+AUDIT.md
