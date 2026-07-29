@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOCKUP v2 — DaScout · HomeVista structure · navy+gold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-950:#081527; --navy-900:#0B1D33; --navy-800:#122A47; --navy-700:#1B3A5E;
+  --gold:#D4AF5A; --gold-d:#B8923E; --gold-l:#E9CE8F; --on-gold:#1C1403;
+  --bg:#FFFFFF; --bg-2:#F6F4EE; --ink:#152030; --ink-2:#4E5B6B; --ink-3:#8C97A4;
+  --line:#E7E4DA; --r:14px;
+  --shadow:0 1px 2px rgba(8,21,39,.06), 0 10px 28px rgba(8,21,39,.09);
+  --ease:cubic-bezier(0.23,1,0.32,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Figtree,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.6}
+img{display:block;max-width:100%} a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.wrap{max-width:1220px;margin:0 auto;padding:0 24px}
+section{padding:56px 0}
+h2{font-family:"Playfair Display",Georgia,serif;font-size:clamp(24px,3vw,32px);font-weight:600;line-height:1.2;color:var(--navy-900)}
+h2 em{font-style:italic;color:var(--gold-d)}
+.sec-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:26px;flex-wrap:wrap}
+.sec-head p{color:var(--ink-2);font-size:14.5px;margin-top:4px}
+.icon{width:1.05em;height:1.05em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.12em;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;padding:13px 24px;border-radius:8px;white-space:nowrap;transition:filter 180ms var(--ease)}
+.btn-gold{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:var(--on-gold)}
+.btn-navy{background:var(--navy-900);color:var(--gold-l)}
+.btn-ghost{border:1.5px solid var(--navy-900);color:var(--navy-900)}
+.viewall{color:var(--gold-d);font-weight:700;font-size:13.5px;letter-spacing:.03em}
+.mock-note{background:#7A1F1F;color:#fff;text-align:center;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:6px}
+
+/* UTILITY BAR */
+.util{background:var(--navy-950);color:rgba(237,234,224,.75);font-size:12.5px}
+.util .in{display:flex;gap:26px;align-items:center;max-width:1220px;margin:0 auto;padding:7px 24px}
+.util .icon{color:var(--gold)}
+.util .socials{margin-left:auto;display:flex;gap:14px;align-items:center}
+
+/* HEADER (light) */
+header{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;gap:28px;height:66px;max-width:1220px;margin:0 auto;padding:0 24px}
+.logo-img{height:24px;width:auto}
+nav.main{display:flex;gap:24px;font-size:14px;font-weight:600;color:var(--ink-2)}
+nav.main a.now{color:var(--navy-900);box-shadow:0 2px 0 var(--gold)}
+nav.main a:hover{color:var(--navy-900)}
+.hd-actions{display:flex;align-items:center;gap:14px;margin-left:auto}
+.hd-actions .iconbtn{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;color:var(--ink-2)}
+.hd-actions .signin{font-weight:700;font-size:13.5px;color:var(--navy-900)}
+
+/* HERO — photo-led, light, floating card */
+.hero{background:linear-gradient(180deg,#FBFAF6, #F2EFE6);position:relative}
+.hero .in{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:center;max-width:1220px;margin:0 auto;padding:56px 24px 96px}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--gold-d);color:var(--gold-d);border-radius:999px;padding:7px 16px;font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px;background:#fff}
+.hero h1{font-family:"Playfair Display",Georgia,serif;font-weight:600;font-size:clamp(32px,4.2vw,50px);line-height:1.12;color:var(--navy-900)}
+.hero h1 em{font-style:italic;color:var(--gold-d)}
+.hero .sub{margin:16px 0 26px;color:var(--ink-2);max-width:48ch;font-size:16px;line-height:1.75}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap}
+.hero .clients{display:flex;align-items:center;gap:12px;margin-top:26px;font-size:13px;color:var(--ink-2)}
+.hero .avs{display:flex}
+.hero .avs span{width:34px;height:34px;border-radius:50%;border:2px solid #fff;background:var(--navy-800);color:var(--gold-l);display:grid;place-items:center;font-size:11px;font-weight:700;margin-left:-8px}
+.hero .avs span:first-child{margin-left:0}
+.hero .ph{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:16/11;box-shadow:var(--shadow)}
+.hero .ph img{width:100%;height:100%;object-fit:cover}
+.spotcard{position:absolute;right:22px;bottom:22px;background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:14px 18px;display:flex;gap:12px;align-items:center;max-width:78%}
+.spotcard .ic{width:40px;height:40px;border-radius:10px;background:var(--navy-900);color:var(--gold);display:grid;place-items:center;flex-shrink:0}
+.spotcard b{display:block;font-size:14.5px;color:var(--navy-900)}
+.spotcard span{font-size:12.5px;color:var(--ink-2)}
+.spotcard .price{font-weight:800;color:var(--gold-d);font-size:15px;margin-left:8px;white-space:nowrap}
+
+/* SEARCH BAR — overlapping card */
+.searchbar{max-width:1120px;margin:-54px auto 0;position:relative;z-index:5;padding:0 24px}
+.searchbar .card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr auto;gap:0;overflow:hidden}
+.sf{padding:16px 20px;border-right:1px solid var(--line)}
+.sf label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.sf input,.sf select{width:100%;border:none;font:inherit;font-size:14.5px;color:var(--ink);background:none;outline-offset:2px}
+.searchbar .go{display:grid;place-items:center;padding:0 10px 0 0}
+.searchbar .go .btn{border-radius:10px;margin:10px}
+
+/* PROPERTY TYPES */
+.types{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.type{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:22px 18px;text-align:center;transition:transform 180ms var(--ease), box-shadow 180ms var(--ease)}
+.type:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.type .ic{width:46px;height:46px;margin:0 auto 12px;border-radius:12px;background:var(--bg-2);color:var(--gold-d);display:grid;place-items:center}
+.type b{display:block;font-size:14.5px;color:var(--navy-900)}
+.type span{font-size:12.5px;color:var(--ink-3)}
+
+/* LISTING CARDS */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 2px rgba(8,21,39,.05);transition:transform 200ms var(--ease), box-shadow 200ms var(--ease);cursor:pointer}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.card .ph{position:relative;aspect-ratio:16/10;overflow:hidden}
+.card .ph img{width:100%;height:100%;object-fit:cover}
+.pill{position:absolute;top:12px;left:12px;background:var(--navy-900);color:var(--gold-l);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;border-radius:5px}
+.fav{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:#fff;color:var(--ink-2);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.card .bd{padding:15px 18px 17px}
+.card h3{font-family:"Playfair Display",Georgia,serif;font-size:18px;font-weight:600;color:var(--navy-900)}
+.card .loc{font-size:13px;color:var(--ink-2);margin:3px 0 8px}
+.card .price{font-size:18.5px;font-weight:800;color:var(--gold-d)}
+.card .specs{display:flex;gap:12px;font-size:12.5px;color:var(--ink-3);margin-top:8px;border-top:1px solid var(--line);padding-top:10px}
+
+/* WHY / ABOUT strip */
+.why{background:var(--bg-2)}
+.about-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.acell{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:24px 20px}
+.acell .ic{width:42px;height:42px;color:var(--gold-d);margin-bottom:14px}
+.acell .ic .icon{width:34px;height:34px;stroke-width:1.6}
+.acell b{display:block;font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--navy-900);margin-bottom:6px}
+.acell span{color:var(--ink-2);font-size:13.5px;line-height:1.6}
+
+/* VERIFY BAND */
+.verify{display:grid;grid-template-columns:1fr 1.1fr;gap:48px;align-items:center}
+.verify .ph{border-radius:18px;overflow:hidden;aspect-ratio:4/3;box-shadow:var(--shadow)}
+.verify .ph img{width:100%;height:100%;object-fit:cover}
+.verify p{color:var(--ink-2);margin:14px 0 24px;line-height:1.8}
+.stats-inline{display:flex;gap:34px;margin-top:26px;flex-wrap:wrap}
+.stats-inline b{font-family:"Playfair Display",Georgia,serif;font-size:28px;color:var(--gold-d);display:block}
+.stats-inline span{font-size:12px;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+
+/* TESTIMONIALS */
+.quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.quote{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.quote .mark{font-family:"Playfair Display",Georgia,serif;font-size:40px;color:var(--gold);line-height:1;margin-bottom:8px}
+.quote p{color:var(--ink-2);font-size:14.5px;margin-bottom:16px}
+.quote .who{display:flex;align-items:center;gap:11px}
+.quote .av{width:38px;height:38px;border-radius:50%;background:var(--navy-800);color:var(--gold-l);display:grid;place-items:center;font-size:12px;font-weight:700}
+.quote b{font-size:14px;color:var(--navy-900);display:block}
+.quote .role{font-size:12px;color:var(--ink-3)}
+.quote .stars{color:var(--gold);font-size:13px;margin-left:auto}
+
+/* REQUEST BAND */
+.reqband{background:var(--navy-900);color:#EDEAE0;border-radius:18px;display:grid;grid-template-columns:auto 1fr auto;gap:30px;align-items:center;padding:34px 40px}
+.reqband h2{color:#fff;font-size:clamp(20px,2.4vw,26px)}
+.reqband h2 em{color:var(--gold)}
+.reqband p{color:rgba(237,234,224,.7);font-size:13.5px;margin-top:4px}
+
+/* LOCATIONS + FAQ combined viz */
+.azindex{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px 32px}
+.az{display:flex;flex-wrap:wrap;gap:8px}
+.az a{min-width:42px;text-align:center;border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.az a:hover{border-color:var(--gold-d);color:var(--gold-d)}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:11px;padding:16px 20px;margin-bottom:10px}
+.faq summary{font-weight:700;font-size:15px;cursor:pointer;list-style:none;color:var(--navy-900)}
+.faq .a{color:var(--ink-2);font-size:14px;padding-top:8px}
+.split2{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start}
+
+/* FOOTER — rich, 4 columns */
+footer{background:var(--navy-950);color:rgba(237,234,224,.7);margin-top:64px;padding:52px 24px 28px}
+.foot{max-width:1220px;margin:0 auto;display:grid;grid-template-columns:1.3fr 1fr 1fr 1.2fr;gap:36px}
+.foot h4{color:#fff;font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.foot a{display:block;font-size:13.5px;padding:4px 0}
+.foot a:hover{color:var(--gold)}
+.foot .logo-img{height:26px;filter:brightness(0) invert(1);margin-bottom:14px}
+.foot .brand p{font-size:13.5px;line-height:1.7}
+.foot .contact div{display:flex;gap:9px;align-items:start;font-size:13.5px;padding:4px 0}
+.foot .contact .icon{color:var(--gold);margin-top:4px}
+.copy{max-width:1220px;margin:34px auto 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.12);font-size:12px;color:rgba(237,234,224,.45);line-height:1.7}
+@media (max-width:960px){
+  .hero .in,.verify,.split2{grid-template-columns:1fr}
+  .searchbar .card{grid-template-columns:1fr 1fr}
+  .sf{border-right:none;border-bottom:1px solid var(--line)}
+  .types{grid-template-columns:repeat(2,1fr)}
+  .grid,.quotes,.about-grid{grid-template-columns:1fr 1fr}
+  .foot{grid-template-columns:1fr 1fr}
+  nav.main{display:none}
+  .reqband{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7L22 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.5 2.9.6a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.6 2.9 21 11.3a2 2 0 0 1 0 2.8l-6.9 6.9a2 2 0 0 1-2.8 0L2.9 12.6A2 2 0 0 1 2.3 11L2 4a2 2 0 0 1 2-2l7 .3a2 2 0 0 1 1.6.6z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-area" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h6V3"/><path d="M15 21v-6h6"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M11 12V6a2 2 0 1 1 4 0v6"/><path d="M15 11V8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-1c-3 0-5-1.5-6.5-4L2 14.5a2 2 0 0 1 3.4-2L7 15V5a2 2 0 1 1 4 0"/></symbol>
+</svg>
+
+<div class="mock-note">Mockup v2 — HomeVista structure · navy+gold · v1 content · for approval</div>
+
+<!-- UTILITY BAR -->
+<div class="util">
+  <div class="in">
+    <span><svg class="icon"><use href="#i-mail"/></svg> hello@dascout.ph</span>
+    <span><svg class="icon"><use href="#i-phone"/></svg> +63 (83) 552 0000</span>
+    <span><svg class="icon"><use href="#i-pin"/></svg> General Santos City, Mindanao</span>
+    <span class="socials">Follow us: <span>f</span> <span>◎</span> <span>in</span> <span>x</span></span>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hd">
+    <a href="#"><img class="logo-img" src="assets/dascout-logo.png" alt="DaScout"></a>
+    <nav class="main">
+      <a href="#" class="now">Home</a>
+      <a href="#">Lots</a>
+      <a href="#">Farm Land</a>
+      <a href="#">Buildings</a>
+      <a href="#">Locations</a>
+      <a href="#">FAQ</a>
+    </nav>
+    <div class="hd-actions">
+      <button class="iconbtn" aria-label="Favorites"><svg class="icon"><use href="#i-heart"/></svg></button>
+      <a class="signin" href="#">Sign In</a>
+      <a class="btn btn-gold" href="#">Create Account</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="in">
+    <div>
+      <span class="badge"><svg class="icon"><use href="#i-check"/></svg> 100% Title-Verified Listings</span>
+      <h1>Own a Property<br><em>Across Mindanao</em></h1>
+      <p class="sub">Every listing title-verified at the Registry of Deeds — before it ever reaches you. Buy with confidence, wherever you are.</p>
+      <div class="ctas">
+        <a class="btn btn-navy" href="#">See Verified Listings <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-ghost" href="#">How We Verify</a>
+      </div>
+      <div class="clients">
+        <span class="avs"><span>RD</span><span>JM</span><span>AS</span><span>KT</span></span>
+        Trusted by hundreds of verified buyers
+      </div>
+    </div>
+    <div class="ph">
+      <img src="assets/houses/h08.jpg" alt="Villa Consuelo Modern Home, Calumpang, General Santos">
+      <div class="spotcard">
+        <span class="ic"><svg class="icon"><use href="#i-home"/></svg></span>
+        <div><b>Villa Consuelo Modern Home</b><span>Calumpang, General Santos</span></div>
+        <span class="price">₱9.8M</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH BAR (overlapping) -->
+<div class="searchbar">
+  <div class="card">
+    <div class="sf"><label>Location</label><input type="text" placeholder="City or town in Mindanao"></div>
+    <div class="sf"><label>Property type</label><select><option>Any type</option><option>Residential Lot</option><option>Farm Land</option><option>Commercial Lot</option><option>Residential Building</option><option>Commercial Building</option></select></div>
+    <div class="sf"><label>Price range</label><select><option>Any price</option></select></div>
+    <div class="sf" style="border-right:none"><label>Lot / floor area</label><select><option>Any size</option></select></div>
+    <div class="go"><button class="btn btn-gold">Search <svg class="icon"><use href="#i-search"/></svg></button></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- PROPERTY TYPES -->
+  <section>
+    <div class="sec-head">
+      <div><h2>Explore Property Types</h2><p>Five categories, all title-verified.</p></div>
+      <a class="viewall" href="#">View all →</a>
+    </div>
+    <div class="types">
+      <div class="type"><span class="ic"><svg class="icon"><use href="#i-pin"/></svg></span><b>Residential Lots</b><span>6 listings</span></div>
+      <div class="type"><span class="ic"><svg class="icon"><use href="#i-tag"/></svg></span><b>Farm Land</b><span>4 listings</span></div>
+      <div class="type"><span class="ic"><svg class="icon"><use href="#i-area"/></svg></span><b>Commercial Lots</b><span>3 listings</span></div>
+      <div class="type"><span class="ic"><svg class="icon"><use href="#i-home"/></svg></span><b>Residential Buildings</b><span>3 listings</span></div>
+      <div class="type"><span class="ic"><svg class="icon"><use href="#i-key"/></svg></span><b>Commercial Buildings</b><span>2 listings</span></div>
+    </div>
+  </section>
+
+  <!-- FEATURED -->
+  <section style="padding-top:0">
+    <div class="sec-head">
+      <div><h2>Featured Listings</h2><p>Fresh on the market across Mindanao.</p></div>
+      <a class="viewall" href="#">View all properties →</a>
+    </div>
+    <div class="grid">
+      <article class="card"><div class="ph"><img src="assets/lots/l09.jpg" alt=""><span class="pill">Residential Lot</span><button class="fav" aria-label="Save"><svg class="icon"><use href="#i-heart"/></svg></button></div><div class="bd"><h3>Dacera Heights Corner Lot</h3><div class="loc">Lagao, General Santos City</div><div class="price">₱2,900,000</div><div class="specs"><span>240 sqm</span><span>Titled</span><span>Corner</span></div></div></article>
+      <article class="card"><div class="ph"><img src="assets/lots/l13.jpg" alt=""><span class="pill">Farm Land</span><button class="fav" aria-label="Save"><svg class="icon"><use href="#i-heart"/></svg></button></div><div class="bd"><h3>Tupi Irrigated Rice Farm</h3><div class="loc">Tupi, South Cotabato</div><div class="price">₱6,800,000</div><div class="specs"><span>2 ha</span><span>Titled</span><span>Irrigated</span></div></div></article>
+      <article class="card"><div class="ph"><img src="assets/cbldg.jpg" alt=""><span class="pill">Commercial Bldg</span><button class="fav" aria-label="Save"><svg class="icon"><use href="#i-heart"/></svg></button></div><div class="bd"><h3>Santiago Retail Arcade</h3><div class="loc">Santiago Blvd, General Santos</div><div class="price">₱35,000,000</div><div class="specs"><span>600 sqm</span><span>Income-generating</span></div></div></article>
+    </div>
+    <p style="margin-top:14px;color:var(--ink-3);font-size:13px">… plus Top Properties (ranked), Market Movements (new / reduced / sold), and Continue Browsing sections retained below, in this same card language.</p>
+  </section>
+
+  <!-- WHY / ABOUT -->
+  <section class="why" style="border-radius:18px;padding:44px 40px">
+    <div class="sec-head" style="margin-bottom:22px">
+      <div><h2>Here's what you can expect <em>from us</em></h2><p>Mindanao's exclusive, verified real estate platform.</p></div>
+    </div>
+    <div class="about-grid">
+      <div class="acell"><span class="ic"><svg class="icon"><use href="#i-check"/></svg></span><b>Verified Listings Only</b><span>Every property is checked before it reaches you.</span></div>
+      <div class="acell"><span class="ic"><svg class="icon"><use href="#i-target"/></svg></span><b>Curated Matches</b><span>Based on what you're actually looking for.</span></div>
+      <div class="acell"><span class="ic"><svg class="icon"><use href="#i-key"/></svg></span><b>Direct Owner Access</b><span>Listings come straight from owners, not resellers.</span></div>
+      <div class="acell"><span class="ic"><svg class="icon"><use href="#i-star"/></svg></span><b>Exclusive Opportunities</b><span>Not seen anywhere else on the market.</span></div>
+      <div class="acell"><span class="ic"><svg class="icon"><use href="#i-hand"/></svg></span><b>Real Support</b><span>From first inquiry to closing day.</span></div>
+    </div>
+  </section>
+
+  <!-- VERIFY BAND -->
+  <section>
+    <div class="verify">
+      <div class="ph"><img src="assets/skyline.jpg" alt="General Santos City skyline"></div>
+      <div>
+        <h2>We Don't Just List Properties. <em>We Verify Them.</em></h2>
+        <p>Dascout exists because real estate shouldn't run on trust alone, it should run on proof. Built for buyers who can't be everywhere at once: OFWs, investors, and professionals purchasing property from thousands of miles away. Every listing is title-checked, boundary-walked, and confirmed on the ground before it ever reaches you.</p>
+        <a class="btn btn-navy" href="#">Create a Free Account <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <div class="stats-inline">
+          <div><b>+840</b><span>Verified listings</span></div>
+          <div><b>+650</b><span>Happy clients</span></div>
+          <div><b>+45</b><span>Towns covered</span></div>
+          <div><b>+10</b><span>Years experience</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section style="padding-top:0">
+    <div class="sec-head"><div><h2>What Our Clients Say</h2><p>After finding their place through DaScout.</p></div></div>
+    <div class="quotes">
+      <div class="quote"><div class="mark">"</div><p>Found our house near the plaza in three weeks. The title was already checked before we even inquired.</p><div class="who"><span class="av">RD</span><div><b>Rowena Dizon</b><span class="role">First-time homebuyer · Koronadal</span></div><span class="stars">★★★★★</span></div></div>
+      <div class="quote"><div class="mark">"</div><p>The price-reduced feed is my morning coffee read. Caught two highway frontage lots before they moved.</p><div class="who"><span class="av">JM</span><div><b>Jomar Mercado</b><span class="role">Property investor · General Santos</span></div><span class="stars">★★★★★</span></div></div>
+      <div class="quote"><div class="mark">"</div><p>Bought two hectares for our family farm from abroad. The documents checked out exactly as listed.</p><div class="who"><span class="av">KT</span><div><b>Kevin Tan</b><span class="role">Farm buyer · Tupi</span></div><span class="stars">★★★★☆</span></div></div>
+    </div>
+  </section>
+
+  <!-- REQUEST BAND -->
+  <section style="padding-top:0">
+    <div class="reqband">
+      <svg class="icon" style="width:42px;height:42px;color:var(--gold)"><use href="#i-search"/></svg>
+      <div>
+        <h2>Can't find it? <em>Request it.</em></h2>
+        <p>Tell us what you're looking for and we'll notify you when a matching verified listing goes live.</p>
+      </div>
+      <button class="btn btn-gold">Request a Property</button>
+    </div>
+  </section>
+
+  <!-- LOCATIONS + FAQ -->
+  <section style="padding-top:0">
+    <div class="split2">
+      <div>
+        <div class="sec-head"><div><h2>Browse by Location</h2><p>Mindanao cities and towns, A to Z.</p></div></div>
+        <div class="azindex">
+          <div class="az"><a href="#">All</a><a href="#">A</a><a href="#">B</a><a href="#">C</a><a href="#">D</a><a href="#">G</a><a href="#">K</a><a href="#">L</a><a href="#">M</a><a href="#">P</a><a href="#">S</a><a href="#">T</a></div>
+          <p style="margin:14px 0 8px;color:var(--ink-2);font-size:13.5px">Popular right now:</p>
+          <div class="az"><a href="#">General Santos</a><a href="#">Koronadal</a><a href="#">Polomolok</a><a href="#">Kidapawan</a><a href="#">Tacurong</a></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><div><h2>Frequently Asked Questions</h2><p>Quick answers before you scout.</p></div></div>
+        <div class="faq">
+          <details open><summary>How do I find the right property?</summary><div class="a">Use the search bar above: pick a category, town, and price range. Create a free account to save favorites and compare.</div></details>
+          <details><summary>What is the process of buying a property?</summary><div class="a">Shortlist, inquire, and make an offer. Our team walks you through document verification before any reservation fee, all the way to turnover.</div></details>
+          <details><summary>How are listings verified?</summary><div class="a">Titles are checked at the Registry of Deeds and boundaries walked on-site before any listing goes live.</div></details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot">
+    <div class="brand">
+      <img class="logo-img" src="assets/dascout-logo.png" alt="DaScout">
+      <p>Mindanao's exclusive, verified real estate platform. Every listing title-checked, boundary-walked, and confirmed on the ground.</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <a href="#">Home</a><a href="#">Listings</a><a href="#">Locations</a><a href="#">FAQ</a><a href="#">Request a property</a>
+    </div>
+    <div>
+      <h4>Property Types</h4>
+      <a href="#">Residential Lots</a><a href="#">Farm Land</a><a href="#">Commercial Lots</a><a href="#">Residential Buildings</a><a href="#">Commercial Buildings</a>
+    </div>
+    <div class="contact">
+      <h4>Contact Us</h4>
+      <div><svg class="icon"><use href="#i-pin"/></svg> General Santos City, Mindanao</div>
+      <div><svg class="icon"><use href="#i-phone"/></svg> +63 (83) 552 0000</div>
+      <div><svg class="icon"><use href="#i-mail"/></svg> hello@dascout.ph</div>
+    </div>
+  </div>
+  <p class="copy">© DaScout. All rights reserved. All listings are sourced, title-checked, and verified by DaScout before publication. DaScout is a listing platform and is not a party to any transaction; verify all property documents (TCT/CCT, tax declarations) before paying any reservation fee.</p>
+</footer>
+
+</body>
+</html>

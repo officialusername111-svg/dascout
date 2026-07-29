@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DaScout — Hero 2 sample (not the live page)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+/* ---- SAMPLE ONLY: Hero 2 (Figma kit node 105:1634) mapped to DaScout content ----
+   Scoped to .hero2 so nothing here touches the committed .hero / .banner rules. */
+.samplebar{background:var(--gold-l);color:var(--on-gold);font-size:13px;font-weight:700;
+  padding:10px 24px;text-align:center;letter-spacing:.04em}
+
+.hero2{background:linear-gradient(180deg,#FBFAF6,var(--bg-hero));padding:74px 0 96px}
+.hero2 .in{max-width:1220px;margin:0 auto;padding:0 24px;
+  display:grid;grid-template-columns:1.06fr .94fr;gap:72px;align-items:start}
+/* kit uses a plain text label, not a pill */
+.hero2 .label{display:block;font-size:12.5px;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold-d);margin-bottom:18px}
+.hero2 h1{font-size:clamp(34px,4.6vw,56px);line-height:1.08;max-width:14ch}
+.hero2 .sub{margin:20px 0 30px;color:var(--ink-2);font-size:16.5px;line-height:1.8;max-width:46ch}
+.hero2 .ctas{display:flex;gap:12px;flex-wrap:wrap}
+/* the kit's "Trusted by:" logo row is dropped — layout only, DaScout's own content */
+/* one rounded image, 3:2, top-aligned with the copy */
+.hero2 .ph{position:relative;display:block;border-radius:18px;overflow:hidden;
+  aspect-ratio:3/2;box-shadow:var(--shadow)}
+.hero2 .ph img{width:100%;height:100%;object-fit:cover}
+
+@media (max-width:880px){
+  .hero2{padding:44px 0 96px}
+  .hero2 .in{grid-template-columns:1fr;gap:34px}
+  .hero2 h1{max-width:none}
+  .hero2 .ph{order:2}            /* kit mobile: image drops to the bottom */
+  .hero2 .ctas .btn{width:100%}  /* kit mobile: full-width stacked buttons */
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+</svg>
+
+<div class="samplebar">SAMPLE — Hero 2 arrangement for review. The live home page is unchanged.</div>
+
+<!-- HEADER (unchanged, shown for context) -->
+<header>
+  <div class="hd">
+    <button class="burger" aria-label="Open menu"><span></span><span></span><span></span></button>
+    <a class="logo" href="../index.html" aria-label="DaScout home"><img class="logo-img" src="../assets/dascout-logo.png" alt="DaScout"></a>
+    <nav class="main" aria-label="Primary">
+      <a href="../index.html" aria-current="page">Home</a>
+      <a href="../index.html?cat=lots#listings">Lots</a>
+      <a href="../index.html?cat=farm#listings">Farm Land</a>
+      <a href="../index.html?cat=bldgs#listings">Buildings</a>
+      <a href="../index.html#locations">Locations</a>
+      <a href="../index.html#faq">FAQ</a>
+    </nav>
+    <div class="hd-actions">
+      <button class="signin">Sign In</button>
+      <button class="btn btn-gold">Create Account</button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO 2 -->
+<div class="hero2">
+  <div class="in">
+    <div>
+      <span class="label">100% Title-Verified Listings</span>
+      <h1>Own a Property <em>Across Mindanao</em></h1>
+      <p class="sub">Every listing title-verified at the Registry of Deeds — before it ever reaches you. Buy with confidence, wherever you are.</p>
+      <div class="ctas">
+        <a class="btn btn-gold" href="#">See Verified Listings <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-ghost" href="#">How We Verify</a>
+      </div>
+    </div>
+    <a class="ph" href="#" aria-label="Featured property">
+      <img src="../assets/houses/h08.jpg" alt="Villa Consuelo Modern Home">
+      <span class="spot-ctrl">
+        <button class="dot" aria-pressed="true" aria-label="Featured property 1"></button>
+        <button class="dot" aria-pressed="false" aria-label="Featured property 2"></button>
+        <button class="dot" aria-pressed="false" aria-label="Featured property 3"></button>
+        <button aria-label="Pause featured rotation"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+      </span>
+      <span class="spotcard">
+        <span class="ic"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg></span>
+        <span class="t"><b>Villa Consuelo Modern Home</b><span>Calumpang, General Santos City</span></span>
+        <span class="price">₱9.8M</span>
+      </span>
+    </a>
+  </div>
+</div>
+
+<!-- SEARCH BAR + TRUST STRIP (unchanged, shown to check the overlap still sits right) -->
+<div class="searchbar">
+  <form onsubmit="return false">
+    <div class="sf"><label for="s-loc">Location</label><input id="s-loc" type="text" placeholder="City or town in Mindanao"></div>
+    <div class="sf"><label for="s-cat">Property type</label><select id="s-cat"><option>Any type</option><option>Residential Lot</option><option>Farm Land</option></select></div>
+    <div class="sf"><label for="s-price">Price range</label><select id="s-price"><option>Any price</option><option>Under ₱2M</option></select></div>
+    <div class="sf" style="border-right:none"><label for="s-size">Lot / floor area</label><select id="s-size"><option>Any size</option><option>Under 200 sqm</option></select></div>
+    <div class="go"><button class="btn btn-gold" type="submit">Search <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></button></div>
+  </form>
+</div>
+
+<div class="trust">
+  <span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Title-verified listings</span>
+  <span><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg> Trusted by thousands</span>
+  <span><svg class="icon" aria-hidden="true"><use href="#i-award"/></svg> Licensed brokers</span>
+  <span><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Secure transactions</span>
+</div>
+
+<div class="wrap" style="padding-top:54px;padding-bottom:80px;color:var(--ink-3);font-size:13.5px">
+  ↑ Everything below the trust strip is unchanged on the live page.
+</div>
+
+</body>
+</html>
