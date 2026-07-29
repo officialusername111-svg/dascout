@@ -1,32 +1,22 @@
 'use client'
 
 import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { recordListingView } from '@/app/actions'
 import { recordVisit } from '@/components/ui-state'
 
 /**
- * Two records per visit: one in the browser so "Continue browsing" works, and one
- * view event in Postgres so "Top Properties" ranks on something real. Counted once
- * per browser session per listing, so a refresh does not inflate the ranking.
+ * Two records per visit: one in the browser so "Continue browsing" works, and one view
+ * event in Postgres so "Top Properties" ranks on something real.
+ *
+ * The database write goes through a server action rather than the browser's Supabase
+ * client: the session id behind it is server-issued and HttpOnly, so a page script
+ * cannot forge one and invent a ranking. Repeat visits in the same session are
+ * discarded by the database, so no client-side guard is needed.
  */
 export function RecordVisit({ listingId, slug }: { listingId: string; slug: string }) {
   useEffect(() => {
     recordVisit(slug)
-
-    const key = `ds-viewed-${listingId}`
-    try {
-      if (sessionStorage.getItem(key)) return
-      sessionStorage.setItem(key, '1')
-    } catch {
-      // Storage denied — still count the view, just possibly more than once.
-    }
-
-    createClient()
-      .from('listing_views')
-      .insert({ listing_id: listingId })
-      .then(({ error }) => {
-        if (error) console.warn('view not recorded', error.message)
-      })
+    void recordListingView(listingId)
   }, [listingId, slug])
 
   return null

@@ -42,6 +42,15 @@ const csp = [
   'upgrade-insecure-requests',
 ].join('; ')
 
+/**
+ * Preview deployments serve a full copy of the site on a public *.vercel.app address.
+ * Left indexable they compete with the real domain for the same listings and go stale.
+ * Only the production deployment should be in a search index.
+ */
+const isProductionDeploy = process.env.VERCEL_ENV
+  ? process.env.VERCEL_ENV === 'production'
+  : true
+
 const nextConfig: NextConfig = {
   // Advertising the framework only helps someone shopping for a matching CVE.
   poweredByHeader: false,
@@ -52,6 +61,9 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: [
           { key: 'Content-Security-Policy', value: csp },
+          ...(isProductionDeploy
+            ? []
+            : [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }]),
           // Belt and braces with frame-ancestors, for older browsers.
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
