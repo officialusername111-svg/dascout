@@ -1,0 +1,426 @@
+import { test, expect, type Page, type BrowserContext, type Browser } from '@playwright/test'
+import {
+  signInAsStaff,
+  staffDirectClient,
+  directClient,
+  zzTitle,
+  generateLargeJpeg,
+  generateSmallJpeg,
+} from './helpers'
+
+/**
+ * The full staff journey on one ZZ-test listing: create -> features -> photos
+ * (upload/downscale/reorder/cover/delete) -> verification events -> lifecycle
+ * (draft<->verifying, publish, live price edit, withdraw, relist, withdraw).
+ * Tests run in file order against one shared page/listing (test.describe.serial),
+ * because most of these criteria are sequential states of the same row.
+ */
+test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-13..29, 35)', () => {
+  let browser: Browser
+  let context: BrowserContext
+  let page: Page
+  let listingId: string
+  let slug: string
+  let photoIds: { a: string; b: string; c: string }
+
+  test.beforeAll(async ({ browser: b }) => {
+    browser = b
+    context = await browser.newContext()
+    page = await context.newPage()
+    await signInAsStaff(page)
+  })
+
+  test.afterAll(async () => {
+    await context.close()
+  })
+
+  test('create + AC-35a/b empty states + AC-29a/d spot check (draft offers only "Submit for verification")', async () => {
+    await page.goto('/admin/listings/new')
+    const title = zzTitle('BT journey main')
+    await page.locator('#lf-title').fill(title)
+    await page.locator('#lf-category').selectOption({ index: 1 })
+    await page.locator('#lf-town').selectOption({ index: 1 })
+    await page.locator('#lf-price').fill('2500000')
+    await page.getByRole('button', { name: 'Create draft' }).click()
+
+    await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
+    listingId = page.url().split('/').pop()!
+
+    await expect(page.getByRole('heading', { name: title })).toBeVisible()
+
+    // AC-35a
+    await expect(page.locator('.apanel:has(#photosH) .empty', { hasText: 'No photos yet' })).toBeVisible()
+    // AC-35b
+    await expect(page.locator('.apanel:has(#verifyH) .empty', { hasText: 'Nothing recorded yet' })).toBeVisible()
+
+    // AC-29a/d: from draft, the only transition offered is to verifying.
+    const transitionButtons = page.locator('.atrans > div > form button[type="button"]')
+    await expect(transitionButtons).toHaveCount(1)
+    await expect(transitionButtons.first()).toHaveText('Submit for verification')
+  })
+
+  test('AC-24a: draft -> verifying is ungated', async () => {
+    await page.getByRole('button', { name: 'Submit for verification' }).click()
+    await page.getByRole('button', { name: /Yes — submit for verification/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Verifying')
+    await expect(page.locator('.pill', { hasText: 'Verifying' })).toBeVisible()
+  })
+
+  test('AC-26 (i, iii): publish blocked with 0 events and 0 photos, blockers named', async () => {
+    const publishBtn = page.getByRole('button', { name: 'Publish', exact: true })
+    await expect(publishBtn).toBeDisabled()
+    const blockers = page.locator('.ablockers')
+    await expect(blockers).toContainText('No title check has been recorded.')
+    await expect(blockers).toContainText('No ground validation has been recorded.')
+    await expect(blockers).toContainText('The listing has no photos.')
+  })
+
+  test('AC-24b: verifying -> draft (kick back) is ungated', async () => {
+    await page.getByRole('button', { name: 'Send back to draft' }).click()
+    await page.getByRole('button', { name: /Yes — send back to draft/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Draft')
+    await expect(page.locator('.pill', { hasText: 'Draft' })).toBeVisible()
+  })
+
+  test('AC-13a: features — check 3, save, then uncheck 1 and save again', async () => {
+    const featuresForm = page.locator('form.apanel:has(input[name="featureIds"])')
+    const boxes = featuresForm.locator('input[name="featureIds"]')
+    const count = await boxes.count()
+    expect(count).toBeGreaterThanOrEqual(3)
+
+    await boxes.nth(0).check()
+    await boxes.nth(1).check()
+    await boxes.nth(2).check()
+    await featuresForm.getByRole('button', { name: 'Save features' }).click()
+    await expect(featuresForm.locator('.fmsg.ok')).toContainText('Saved 3 features')
+
+    await page.reload()
+    await expect(page.locator('input[name="featureIds"]:checked')).toHaveCount(3)
+
+    const firstId = await boxes.nth(0).getAttribute('value')
+    await page.locator(`input[name="featureIds"][value="${firstId}"]`).uncheck()
+    await featuresForm.getByRole('button', { name: 'Save features' }).click()
+    await expect(featuresForm.locator('.fmsg.ok')).toContainText('Saved 2 features')
+
+    await page.reload()
+    await expect(page.locator('input[name="featureIds"]:checked')).toHaveCount(2)
+    await expect(page.locator(`input[name="featureIds"][value="${firstId}"]`)).not.toBeChecked()
+  })
+
+  test('AC-24a (again): back to verifying to do the fieldwork', async () => {
+    await page.getByRole('button', { name: 'Submit for verification' }).click()
+    await page.getByRole('button', { name: /Yes — submit for verification/i }).click()
+    await expect(page.locator('.pill', { hasText: 'Verifying' })).toBeVisible()
+  })
+
+  test('AC-14: valid upload downscales to <=1920px and lands under 10MB; AC-15a: bad mime rejected client-side', async () => {
+    const source = await generateLargeJpeg(page, 4000, 3000)
+    expect(source.buffer.byteLength).toBeGreaterThan(0)
+
+    await page
+      .locator('#photo-input')
+      .setInputFiles([{ name: 'source.jpg', mimeType: 'image/jpeg', buffer: source.buffer }])
+
+    const queueItem = page.locator('.aqueue > div', { hasText: 'source.jpg' })
+    await expect(queueItem).toHaveClass(/good/, { timeout: 30_000 })
+    const detail = await queueItem.locator('span').last().textContent()
+    const match = detail?.match(/Added at (\d+)×(\d+)/)
+    expect(match).not.toBeNull()
+    const [, w, h] = match!
+    expect(Number(w)).toBeLessThanOrEqual(1920)
+    expect(Number(h)).toBeLessThanOrEqual(1920)
+
+    // AC-15a: unsupported type rejected before any Storage request.
+    const badFile = Buffer.from('%PDF-1.4 not a real pdf but wrong mime is what matters')
+    await page
+      .locator('#photo-input')
+      .setInputFiles([{ name: 'doc.pdf', mimeType: 'application/pdf', buffer: badFile }])
+    const failedItem = page.locator('.aqueue > div', { hasText: 'doc.pdf' })
+    await expect(failedItem).toBeVisible()
+    await expect(failedItem).toContainText('JPEG, PNG and WebP')
+
+    await page.reload()
+    await expect(page.locator('.aphotos .aphoto')).toHaveCount(1)
+  })
+
+  test('upload 2 more photos (fixture setup for AC-16/17/18)', async () => {
+    const b = await generateSmallJpeg(page)
+    await page.locator('#photo-input').setInputFiles([{ name: 'b.jpg', mimeType: 'image/jpeg', buffer: b }])
+    await expect(page.locator('.aqueue > div', { hasText: 'b.jpg' })).toHaveClass(/good/, { timeout: 15_000 })
+
+    const c = await generateSmallJpeg(page)
+    await page.locator('#photo-input').setInputFiles([{ name: 'c.jpg', mimeType: 'image/jpeg', buffer: c }])
+    await expect(page.locator('.aqueue > div', { hasText: 'c.jpg' })).toHaveClass(/good/, { timeout: 15_000 })
+
+    await page.reload()
+    await expect(page.locator('.aphotos .aphoto')).toHaveCount(3)
+
+    const staff = await staffDirectClient()
+    const { data, error } = await staff
+      .from('listing_photos')
+      .select('id, sort_order')
+      .eq('listing_id', listingId)
+      .order('sort_order', { ascending: true })
+    expect(error).toBeNull()
+    expect(data).toHaveLength(3)
+    photoIds = { a: data![0].id, b: data![1].id, c: data![2].id }
+  })
+
+  test('AC-16: moving photo C to first position persists sort_order server-side and across reload', async () => {
+    async function moveEarlier(photoId: string) {
+      const card = page.locator('.aphoto', { has: page.locator(`#alt-${photoId}`) })
+      await card.getByText('↑ Earlier').click()
+      // Wait for the mutation's own network round trip to settle rather than a fixed
+      // delay — a guessed timeout is exactly the kind of race the RPC fix (migration
+      // 20260729140300) was written to eliminate app-side; the test must not reintroduce
+      // it by reloading before the write (and its revalidation) has actually landed.
+      await page.waitForLoadState('networkidle')
+    }
+
+    await moveEarlier(photoIds.c)
+    await page.reload()
+    await moveEarlier(photoIds.c)
+    await page.reload()
+
+    const staff = await staffDirectClient()
+    const { data, error } = await staff
+      .from('listing_photos')
+      .select('id, sort_order')
+      .eq('listing_id', listingId)
+      .order('sort_order', { ascending: true })
+    expect(error).toBeNull()
+    expect(data!.map((r) => r.id)).toEqual([photoIds.c, photoIds.a, photoIds.b])
+
+    // Fresh server request shows the same order in the DOM.
+    const firstCardAltId = await page.locator('.aphotos .aphoto').first().locator('input[id^="alt-"]').getAttribute('id')
+    expect(firstCardAltId).toBe(`alt-${photoIds.c}`)
+  })
+
+  test('AC-17a: setting a new cover clears the previous one (never two primaries)', async () => {
+    const cardB = page.locator('.aphoto', { has: page.locator(`#alt-${photoIds.b}`) })
+    await cardB.getByRole('button', { name: 'Make cover' }).click()
+    // Wait for the mutation's round trip to actually settle before reloading — same
+    // reasoning as AC-16's moveEarlier: a fixed delay can race the hosted database.
+    await page.waitForLoadState('networkidle')
+    await page.reload()
+
+    const staff = await staffDirectClient()
+    const { data, error } = await staff
+      .from('listing_photos')
+      .select('id, is_primary')
+      .eq('listing_id', listingId)
+    expect(error).toBeNull()
+    const primaries = data!.filter((r) => r.is_primary)
+    expect(primaries).toHaveLength(1)
+    expect(primaries[0].id).toBe(photoIds.b)
+    await expect(page.locator('.aphoto', { has: page.locator(`#alt-${photoIds.b}`) }).locator('.pill', { hasText: 'Cover' })).toBeVisible()
+  })
+
+  test('AC-17b + AC-18: deleting the cover promotes the next photo, and removes both row and object', async () => {
+    const staff = await staffDirectClient()
+    const { data: before } = await staff
+      .from('listing_photos')
+      .select('storage_path')
+      .eq('id', photoIds.b)
+      .single()
+    const deletedPath = before!.storage_path
+
+    const cardB = page.locator('.aphoto', { has: page.locator(`#alt-${photoIds.b}`) })
+    await cardB.getByRole('button', { name: 'Delete photo' }).click()
+    await cardB.getByRole('button', { name: 'Yes, delete it' }).click()
+    await expect(page.locator('.apanel:has(#photosH) .fmsg')).toBeVisible()
+    await page.reload()
+
+    // AC-18: row gone.
+    await expect(page.locator(`#alt-${photoIds.b}`)).toHaveCount(0)
+    await expect(page.locator('.aphotos .aphoto')).toHaveCount(2)
+
+    const { data: remaining } = await staff
+      .from('listing_photos')
+      .select('id, is_primary, sort_order')
+      .eq('listing_id', listingId)
+      .order('sort_order', { ascending: true })
+    expect(remaining).toHaveLength(2)
+    // AC-17b: the invariant is_primary === (sort_order === 0) holds. Order going into
+    // this delete was B(cover),C,A (AC-17a's "Make cover" put B first and resequenced
+    // the rest, C then A, behind it) — so removing B promotes C, not A.
+    expect(remaining![0].is_primary).toBe(true)
+    expect(remaining![0].id).toBe(photoIds.c)
+    expect(remaining![1].is_primary).toBe(false)
+    expect(remaining![1].id).toBe(photoIds.a)
+
+    // AC-18: object gone too — direct fetch of the deleted object's old path denies.
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const draftResp = await fetch(`${baseUrl}/storage/v1/object/public/listing-photos-draft/${deletedPath}`)
+    expect(draftResp.status).toBeGreaterThanOrEqual(400)
+  })
+
+  test('AC-20/21: record title_check and ground_validation; short ground_validation notes rejected', async () => {
+    const titleCheckForm = page.locator('form:has(#notes-title_check)')
+    const groundValidationForm = page.locator('form:has(#notes-ground_validation)')
+
+    // Ground-validation short-notes rejection first (AC-20/21 note in the dispatch).
+    // minLength/required are convenience HTML attrs only — strip them so the click
+    // actually reaches the server instead of being blocked by native validation,
+    // same as a tampered POST with no client constraints at all would arrive.
+    await page.locator('#notes-ground_validation').evaluate((el) => {
+      el.removeAttribute('required')
+      el.removeAttribute('minlength')
+    })
+    await page.locator('#notes-ground_validation').fill('too short')
+    await groundValidationForm.getByRole('button', { name: 'Record ground validation' }).click()
+    await expect(page.locator('.field.invalid:has(#notes-ground_validation) .ferr')).toContainText(
+      '10 characters'
+    )
+
+    // No client-supplied actor field exists anywhere on this form.
+    await expect(page.locator('input[name="performed_by"], input[name="actor"]')).toHaveCount(0)
+
+    await page.locator('#notes-title_check').fill('Registry of Deeds confirmed clean title.')
+    await titleCheckForm.getByRole('button', { name: 'Record title check' }).click()
+    await expect(titleCheckForm.locator('.fmsg.ok')).toContainText('Title check recorded')
+
+    await page.locator('#notes-ground_validation').fill('Walked the boundary with the barangay captain, markers intact.')
+    await groundValidationForm.getByRole('button', { name: 'Record ground validation' }).click()
+    await expect(groundValidationForm.locator('.fmsg.ok')).toContainText('Ground validation recorded')
+  })
+
+  test('AC-23: both events visible newest-first with kind, timestamp, actor, notes', async () => {
+    await page.reload()
+    const rows = page.locator('.apanel:has(#verifyH) .alist .arow')
+    await expect(rows).toHaveCount(2)
+    // Newest first: ground_validation was recorded after title_check.
+    await expect(rows.first()).toContainText('Ground validation')
+    await expect(rows.last()).toContainText('Title check')
+    await expect(rows.first()).toContainText('Walked the boundary')
+  })
+
+  test('AC-26 (again): publish still blocked before satisfied, then AC-25 happy path publishes', async () => {
+    // At this point events + 1 photo + 1 primary all exist — no blockers left.
+    const publishBtn = page.getByRole('button', { name: 'Publish', exact: true })
+    await expect(publishBtn).toBeEnabled()
+    await publishBtn.click()
+    await page.getByRole('button', { name: /Yes — publish/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
+    await expect(page.locator('.pill', { hasText: 'Live' }).first()).toBeVisible()
+
+    const staff = await staffDirectClient()
+    const { data: listing } = await staff.from('listings').select('slug, status, published_at').eq('id', listingId).single()
+    expect(listing!.status).toBe('live')
+    expect(listing!.published_at).not.toBeNull()
+    slug = listing!.slug
+
+    const { data: events } = await staff
+      .from('verification_events')
+      .select('kind, performed_by')
+      .eq('listing_id', listingId)
+      .eq('kind', 'published')
+    expect(events).toHaveLength(1)
+    expect(events![0].performed_by).not.toBeNull()
+  })
+
+  test('AC-19/AC-25: photos moved+verified into the public bucket before the flip, and serve publicly', async () => {
+    const anon = directClient()
+    const detailResp = await page.request.get(`/property/${slug}`)
+    expect(detailResp.status()).toBe(200)
+
+    const sitemapResp = await page.request.get('/sitemap.xml')
+    const sitemapBody = await sitemapResp.text()
+    expect(sitemapBody).toContain(`/property/${slug}`)
+
+    const { data } = await anon.from('listings').select('id').eq('id', listingId).single()
+    expect(data).not.toBeNull() // sanity: anon can read it now that it's live
+
+    // AC-19/AC-25: the remaining photo (A, promoted to cover in AC-17b/18) now lives
+    // in the PUBLIC bucket, reachable without a session — proof the move-then-verify
+    // step actually ran before the status flip, not just that the row says "live".
+    const staff = await staffDirectClient()
+    const { data: photos } = await staff.from('listing_photos').select('storage_path').eq('listing_id', listingId)
+    expect(photos!.length).toBeGreaterThan(0)
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    for (const photo of photos!) {
+      const objResp = await fetch(`${baseUrl}/storage/v1/object/public/listing-photos/${photo.storage_path}`)
+      expect(objResp.status).toBe(200)
+    }
+  })
+
+  test('AC-13b: editing price on a live listing succeeds and feeds price_history', async () => {
+    const staff = await staffDirectClient()
+    const { count: before } = await staff
+      .from('price_history')
+      .select('id', { count: 'exact', head: true })
+      .eq('listing_id', listingId)
+
+    await page.locator('#lf-price').fill('2750000')
+    await page.getByRole('button', { name: 'Save details' }).click()
+    await expect(page.locator('form.apanel:has(#lf-title) .fmsg.ok')).toContainText('Listing saved')
+
+    const { count: after } = await staff
+      .from('price_history')
+      .select('id', { count: 'exact', head: true })
+      .eq('listing_id', listingId)
+    expect(after!).toBeGreaterThan(before!)
+  })
+
+  test('AC-29c spot check: a live listing offers only sold/withdraw, never back to draft/verifying', async () => {
+    await page.reload()
+    const transitionButtons = page.locator('.atrans > div > form button[type="button"]')
+    const labels = await transitionButtons.allTextContents()
+    expect(labels.sort()).toEqual(['Mark as sold', 'Withdraw from the site'].sort())
+  })
+
+  test('AC-12c: slug is not offered as editable once the listing is live', async () => {
+    await expect(page.locator('#lf-slug')).toHaveCount(0)
+    await expect(page.locator('.field.wide', { hasText: 'Web address' })).toContainText('fixed')
+    await expect(page.locator('.field.wide', { hasText: 'Web address' })).toContainText(slug)
+  })
+
+  test('AC-28b: withdraw — /property/<slug> 404s for anon, and drops out of the sitemap after revalidation', async () => {
+    await page.getByRole('button', { name: 'Withdraw from the site' }).click()
+    await page.getByRole('button', { name: /Yes — withdraw/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Withdrawn')
+
+    const detailResp = await page.request.get(`/property/${slug}`)
+    expect(detailResp.status()).toBe(404)
+
+    const sitemapResp = await page.request.get('/sitemap.xml')
+    const sitemapBody = await sitemapResp.text()
+    expect(sitemapBody).not.toContain(`/property/${slug}`)
+
+    // AC-31 (A4/A10 documented exception): a once-live listing's photos stay in the
+    // PUBLIC bucket after withdraw — already-public objects aren't moved back.
+    const staff = await staffDirectClient()
+    const { data: photos } = await staff.from('listing_photos').select('storage_path').eq('listing_id', listingId)
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    for (const photo of photos!) {
+      const objResp = await fetch(`${baseUrl}/storage/v1/object/public/listing-photos/${photo.storage_path}`)
+      expect(objResp.status).toBe(200)
+    }
+  })
+
+  test('AC-28c: relist writes a second published event (relist needs no fresh fieldwork)', async () => {
+    await page.getByRole('button', { name: 'Relist' }).click()
+    await page.getByRole('button', { name: /Yes — relist/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
+
+    const staff = await staffDirectClient()
+    const { data: events } = await staff
+      .from('verification_events')
+      .select('id')
+      .eq('listing_id', listingId)
+      .eq('kind', 'published')
+    expect(events).toHaveLength(2)
+  })
+
+  test('final withdraw (production-visibility protocol: end this fixture withdrawn)', async () => {
+    await page.reload()
+    await page.getByRole('button', { name: 'Withdraw from the site' }).click()
+    await page.getByRole('button', { name: /Yes — withdraw/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Withdrawn')
+
+    const staff = await staffDirectClient()
+    const { data } = await staff.from('listings').select('status').eq('id', listingId).single()
+    expect(data!.status).toBe('withdrawn')
+    console.log(`[journey-fixture] listing ${listingId} (slug ${slug}) ends withdrawn; has verification_events, undeletable (RESTRICT) — residual for orchestrator cleanup.`)
+  })
+})
