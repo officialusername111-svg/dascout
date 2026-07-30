@@ -19,6 +19,7 @@ supabase/.temp/
 
 # autonomous run state
 PLAN.md
+CONTRACT.md
 AUDIT.md
 REVIEW-PENDING.md
 

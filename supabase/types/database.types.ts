@@ -460,6 +460,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clear_my_listing_views: { Args: never; Returns: number }
       is_staff: { Args: never; Returns: boolean }
       reorder_listing_photos: {
         Args: { p_listing_id: string; p_photo_ids: string[] }

@@ -7,6 +7,15 @@ import { NextResponse, type NextRequest } from 'next/server'
  * token and treat a signed-in buyer as anonymous.
  */
 export async function proxy(request: NextRequest) {
+  /**
+   * `/auth/callback` is the one request where a second cookie writer is a bug rather
+   * than a refresh: the route handler exchanges a one-time code for a session and writes
+   * the session cookies itself, and a refresh attempt running here on the same request
+   * would race it — two writers, one `Set-Cookie` header, whichever lands last wins.
+   * Returning early leaves exactly one writer on that request.
+   */
+  if (request.nextUrl.pathname.startsWith('/auth/')) return NextResponse.next({ request })
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(

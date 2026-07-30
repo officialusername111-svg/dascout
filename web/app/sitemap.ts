@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createAnonClient } from '@/lib/supabase/anon'
-import { SITE_URL } from '@/app/layout'
+import { SITE_URL } from '@/lib/site'
 
 /** Home plus every live listing, so search engines can find the properties. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

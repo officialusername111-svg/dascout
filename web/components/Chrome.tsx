@@ -24,8 +24,18 @@ export function UtilityBar() {
   )
 }
 
+/**
+ * The header, in one of two states.
+ *
+ * Signed out it is exactly the approved mockup: a heart, "Sign In", "Create Account".
+ * Signed in, the two buttons become a single Account link — the sign-out control lives on
+ * the account page rather than one tap from every listing — and the heart points at the
+ * account's saved properties instead of the browser-filtered view of the home page.
+ */
 export function Header({ current }: { current?: 'home' }) {
-  const { openSidebar, sidebarOpen, favorites, openAuth, toast } = useUI()
+  const { openSidebar, sidebarOpen, favorites, openAuth, toast, accountUserId, accountName } =
+    useUI()
+  const signedIn = Boolean(accountUserId)
 
   return (
     <header>
@@ -58,10 +68,10 @@ export function Header({ current }: { current?: 'home' }) {
         <div className="hd-actions">
           <Link
             className="iconbtn"
-            href="/?favs=1#listings"
+            href={signedIn ? '/account/favorites' : '/?favs=1#listings'}
             aria-label="Saved favorites"
             onClick={(event) => {
-              if (favorites.length === 0) {
+              if (!signedIn && favorites.length === 0) {
                 event.preventDefault()
                 toast('No favorites yet — tap the heart on any listing to save it')
               }
@@ -70,12 +80,20 @@ export function Header({ current }: { current?: 'home' }) {
             <Icon name="heart" />
             {favorites.length > 0 && <span className="cnt">{favorites.length}</span>}
           </Link>
-          <button className="signin" onClick={() => openAuth('login')}>
-            Sign In
-          </button>
-          <button className="btn btn-gold" onClick={() => openAuth('register')}>
-            Create Account
-          </button>
+          {signedIn ? (
+            <Link className="btn btn-gold" href="/account">
+              {accountName ?? 'Account'}
+            </Link>
+          ) : (
+            <>
+              <button className="signin" onClick={() => openAuth('login')}>
+                Sign In
+              </button>
+              <button className="btn btn-gold" onClick={() => openAuth('register')}>
+                Create Account
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -83,7 +101,7 @@ export function Header({ current }: { current?: 'home' }) {
 }
 
 export function Sidebar({ features }: { features: string[] }) {
-  const { sidebarOpen, closeSidebar, openRequest } = useUI()
+  const { sidebarOpen, closeSidebar, openRequest, accountUserId } = useUI()
 
   return (
     <>
@@ -100,6 +118,17 @@ export function Sidebar({ features }: { features: string[] }) {
             <Icon name="x" />
           </button>
         </div>
+
+        {accountUserId && (
+          <>
+            <div className="sb-title">Your account</div>
+            <div className="sb-links">
+              <Link href="/account" onClick={closeSidebar}>Account overview</Link>
+              <Link href="/account/favorites" onClick={closeSidebar}>Saved properties</Link>
+              <Link href="/account/history" onClick={closeSidebar}>Browsing history</Link>
+            </div>
+          </>
+        )}
 
         <div className="sb-title">Browse</div>
         <div className="sb-links">

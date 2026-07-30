@@ -3,6 +3,9 @@ import { Figtree, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { IconSprite } from '@/components/IconSprite'
 import { UIProvider } from '@/components/ui-state'
+import { AccountSync } from '@/components/account/AccountSync'
+import { getAccountIdentity } from '@/lib/account/auth'
+import { SITE_URL } from '@/lib/site'
 
 const figtree = Figtree({
   variable: '--font-figtree',
@@ -19,17 +22,6 @@ const playfair = Playfair_Display({
   display: 'swap',
 })
 
-/**
- * The site's own address, used for canonical links, the sitemap and share previews.
- * A trailing slash is stripped so `${SITE_URL}/property/x` never doubles up, and the
- * fallback is this project's real domain — pointing search engines at a domain we do
- * not own is worse than any missing tag.
- */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dascoutprime.com').replace(
-  /\/+$/,
-  ''
-)
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -45,7 +37,20 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Reading the identity here is what makes the whole account section work without a
+ * client-side auth store: every page under this layout, public or not, knows whether
+ * somebody is signed in, so the header can say so and `AccountSync` can run its merge
+ * from wherever the visitor happens to be standing when they sign in.
+ *
+ * It also makes this layout dynamic. That is accepted rather than incidental: the pages
+ * beneath it already read cookies through the Supabase SSR client, so the change is to
+ * the build output's shape rather than to how anything is served.
+ */
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const identity = await getAccountIdentity()
+  const user = identity.state === 'signed-in' ? identity.user : null
+
   return (
     <html lang="en" className={`${figtree.variable} ${playfair.variable}`}>
       <body>
@@ -53,7 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a className="skip" href="#main">
           Skip to main content
         </a>
-        <UIProvider>{children}</UIProvider>
+        <UIProvider accountUserId={user?.id ?? null} accountName={user?.fullName ?? null}>
+          {children}
+        </UIProvider>
+        <AccountSync userId={user?.id ?? null} />
       </body>
     </html>
   )
