@@ -236,3 +236,51 @@ re-grant would silently undo the column grant — the BT column-grant test is th
 · view counts remain forgeable via direct PostgREST INSERT (pre-existing, out of scope) ·
 owner questions: history retention period; recovery-template switch; SMTP/Site URL/allowlist
 as already parked.
+
+## Verification summary (BT) and terminal state
+
+**BT outcome: GREEN.** 62 Vitest (10 files) + 75 Playwright (11 specs) executed and passed;
+the 33 + 48 pre-existing Phase 4 tests untouched and green in the same full-suite runs. Zero
+product defects found. Coverage: the 32-row acceptance matrix — signup outcome byte-identity
+and schema boundaries, uniform sign-in denials, staff-through-the-public-door plus the
+Phase 4 admin-door regression, favourites RLS both directions, the merge journeys (union,
+idempotency, server-removal propagation, sign-out subtraction, cross-account isolation on a
+shared browser, double-toggle), history attribution/read/clear via the RPC, the dead direct
+UPDATE surface, password change with fixture restoration, reset-bypass refusal, callback
+failure paths + next sanitization, and the noindex/no-store/robots/sitemap hygiene rows.
+BT disclosed one test-side incident: its first password spec left the live buyer fixture
+rotated when a timeout skipped the in-page restore; BT recovered the value from the
+Playwright trace, restored it, redesigned restoration into a page-independent `afterAll`,
+and verified the fixture three times after. No product impact.
+
+**Parked (recorded, not failed):** the email-delivery leg (A1 — SMTP budget spent, Site URL
+/ allowlist unreadable, no service-role key to mint links), therefore `hasRecentRecovery`'s
+true path and the callback success-path `safeNext` application; and the action-level raw-POST
+variant of the reset-bypass check (page-level proven; the action's independent gate confirmed
+by inspection).
+
+**Sweep:** all 37 ZZ test listings and their dependents removed via the postgres channel
+(98 events, 10 photo rows, 24 views, 1 price-history, 2 feature links) plus 3 orphaned
+storage objects deleted through the Storage API as the staff fixture. DB verified at content
+baseline: 12 listings all live/sold, 0 events, 0 favorites, 0 attributed views, 0 draft
+objects. Advisors: only the known-intentional definer functions plus one new owner item —
+leaked-password protection is OFF (dashboard toggle; noted in the packet).
+
+**GREEN gate:** executed tests pass · test-integrity clean (pre-existing suites untouched,
+re-run green) · no protected paths in the commit set (the push stays parked) · no staged
+secrets (`.env.local` untracked throughout). **Terminal state: done-green**, 2026-07-30
+~16:20 +08. Commits on `auto/run-p3-accounts`: 50238ec (data layer), 8078f31 (panel
+record), e5739a6 (build), cab1759 (tests), + this record.
+
+**Owner actions carried out of the run (the packet's ask list):**
+1. Custom SMTP (Resend is already Phase 5's choice) — until then, confirmation and reset
+   emails effectively do not send (F2).
+2. Supabase dashboard: Site URL = https://dascoutprime.com; add
+   `https://dascoutprime.com/auth/callback` (and localhost for dev) to the redirect
+   allowlist (F5/SL-R2 — misconfiguration fails silently).
+3. Switch the RECOVERY email template to the token_hash form (CL-3) so reset links work
+   across devices; leave the confirmation template default.
+4. Consider enabling leaked-password protection (advisor; may require a paid plan).
+5. Decide the retention period for account-attributed browsing history (SL-12).
+6. Rotate/delete the two test fixture accounts when this run is reviewed (unchanged ask
+   from Phase 4; the committed suite reads them from `web/.env.local`).
