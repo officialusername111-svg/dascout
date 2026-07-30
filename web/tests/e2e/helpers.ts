@@ -46,8 +46,125 @@ export async function signInAsBuyer(page: Page): Promise<void> {
   await page.getByRole('button', { name: /sign in/i }).click()
 }
 
+/** A real, authenticated buyer supabase-js session, for direct-DB fixture setup/assertions. */
+export async function buyerDirectClient(): Promise<SupabaseClient<Database>> {
+  const client = directClient()
+  const { error } = await client.auth.signInWithPassword({
+    email: env('TEST_BUYER_EMAIL'),
+    password: env('TEST_BUYER_PASSWORD'),
+  })
+  if (error) throw new Error(`Buyer sign-in (direct client) failed: ${error.message}`)
+  return client
+}
+
+export async function userId(client: SupabaseClient<Database>): Promise<string> {
+  const {
+    data: { user },
+  } = await client.auth.getUser()
+  if (!user) throw new Error('Client has no authenticated user.')
+  return user.id
+}
+
+/**
+ * Opens the PUBLIC auth dialog on whatever page is currently loaded — the same door
+ * every buyer uses, never `/admin/sign-in`. Reuses the app's own `?auth=` bounce
+ * mechanism (the same one `/auth/callback` uses to reopen the dialog after a failed
+ * link) rather than clicking the header's "Sign In" button, because that button is
+ * only rendered when nobody is signed in yet — the callback query string opens the
+ * dialog unconditionally, which is what a "second person signs in without the first
+ * signing out" shared-browser scenario needs (C.14).
+ */
+export async function openAuthTab(page: Page, tab: 'login' | 'register' | 'forgot' = 'login'): Promise<void> {
+  await page.goto(`/?auth=${tab}`)
+  await page.waitForSelector('dialog[aria-labelledby="authH"][open]')
+}
+
+/** Signs in through the real public modal (never `/admin/sign-in`) as either fixture. */
+export async function signInViaModal(
+  page: Page,
+  role: 'buyer' | 'staff',
+  options: { alreadyOpen?: boolean } = {}
+): Promise<void> {
+  if (!options.alreadyOpen) await openAuthTab(page, 'login')
+  const email = role === 'buyer' ? env('TEST_BUYER_EMAIL') : env('TEST_STAFF_EMAIL')
+  const password = role === 'buyer' ? env('TEST_BUYER_PASSWORD') : env('TEST_STAFF_PASSWORD')
+  await page.locator('#li-user').fill(email)
+  await page.locator('#li-pass').fill(password)
+  await page.locator('dialog[open] button.mbtn[type="submit"]').click()
+  await page.waitForLoadState('networkidle')
+}
+
+/** Reads one `localStorage` key as parsed JSON (or `null`) from the current page. */
+export async function readLocalStorageJson<T>(page: Page, key: string): Promise<T | null> {
+  return page.evaluate((k) => {
+    const raw = window.localStorage.getItem(k)
+    return raw ? (JSON.parse(raw) as unknown) : null
+  }, key) as Promise<T | null>
+}
+
+/** Writes one `localStorage` key as JSON on the current page (must be called after `page.goto`). */
+export async function writeLocalStorageJson(page: Page, key: string, value: unknown): Promise<void> {
+  await page.evaluate(({ k, v }) => window.localStorage.setItem(k, JSON.stringify(v)), { k: key, v: value })
+}
+
 export function zzTitle(suffix: string): string {
   return `ZZ Test ${suffix} ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+export function zzSlug(suffix: string): string {
+  const base = suffix.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return `zz-test-${base}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+/**
+ * A minimal LIVE listing, built directly through a staff supabase-js session rather than
+ * the admin UI — the account suite needs a resolvable, publicly-readable listing as a
+ * fixture, not a proof of the publish workflow (that is 03-listing-journey's job). Same
+ * shortcut `publish-guard-trigger`/`reorder-photos-rpc` use in the Vitest suite: both
+ * fieldwork events, then a direct UPDATE to `live` (the guard trigger only gates
+ * transitions *to* live/sold, so nothing about this path is a real bypass).
+ */
+export async function createLiveListing(
+  staff: SupabaseClient<Database>,
+  staffId: string,
+  suffix: string
+): Promise<{ id: string; slug: string }> {
+  const { data: town, error: townError } = await staff.from('towns').select('id').limit(1).single()
+  if (townError) throw townError
+
+  const slug = zzSlug(suffix)
+  const { data: listing, error } = await staff
+    .from('listings')
+    .insert({
+      title: zzTitle(suffix),
+      slug,
+      category: 'residential_lot',
+      price_php: 100000,
+      town_id: town.id,
+      status: 'draft',
+      created_by: staffId,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  const id = listing.id as string
+
+  const { error: eventError } = await staff.from('verification_events').insert([
+    { listing_id: id, kind: 'title_check', performed_by: staffId, notes: `BT fixture (${suffix}).` },
+    { listing_id: id, kind: 'ground_validation', performed_by: staffId, notes: `BT fixture (${suffix}), ten+ chars.` },
+  ])
+  if (eventError) throw eventError
+
+  const { error: liveError } = await staff.from('listings').update({ status: 'live' }).eq('id', id)
+  if (liveError) throw liveError
+
+  return { id, slug }
+}
+
+/** Withdraws a listing built by `createLiveListing` — it stays undeletable (RESTRICT). */
+export async function withdrawListing(staff: SupabaseClient<Database>, id: string): Promise<void> {
+  const { error } = await staff.from('listings').update({ status: 'withdrawn' }).eq('id', id)
+  if (error) console.warn(`[cleanup] could not withdraw fixture listing ${id}: ${error.message}`)
 }
 
 /**
