@@ -45,9 +45,26 @@ export async function recordListingView(listingId: string): Promise<void> {
   const sessionHash = createHash('sha256').update(sessionId).digest('hex')
 
   const supabase = await createClient()
+
+  /**
+   * Attribution happens here, at INSERT, and nowhere else. The row's insert policy
+   * already permits `profile_id = auth.uid()`, so a signed-in visitor's views land
+   * against their account and an anonymous visitor's land against nobody.
+   *
+   * There is no back-fill and no claim of earlier rows, because there is nothing left to
+   * claim: the view-session id is rotated at every authentication boundary (see
+   * `rotateViewSession` in `app/account/actions.ts`), so a visitor who browses
+   * anonymously and then signs in gets a fresh session hash and their later views cannot
+   * collide with the anonymous ones from the same day. The anonymous prefix of the day
+   * stays unattributed by design; the browser's own history is what shows it.
+   */
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   const { error } = await supabase
     .from('listing_views')
-    .insert({ listing_id: listingId, session_hash: sessionHash })
+    .insert({ listing_id: listingId, session_hash: sessionHash, profile_id: user?.id ?? null })
 
   if (error && error.code !== UNIQUE_VIOLATION) {
     // A missed view count is never worth failing a page over.

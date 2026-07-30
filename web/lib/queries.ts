@@ -44,8 +44,14 @@ export type TownRow = {
   initial: string
 }
 
-/** What the listing pages read. Anything else is a column the public should not see. */
-const CARD_COLUMNS = `
+/**
+ * What the listing pages read. Anything else is a column the public should not see.
+ *
+ * Exported so the account's favourites read can embed it under `favorites` and map the
+ * result with the same `toCard` below. A second column list and a second mapper is how a
+ * card ends up rendering differently on two pages for no reason anyone can find later.
+ */
+export const CARD_COLUMNS = `
   id, slug, title, category, price_php, area_detail, lot_area_sqm, floor_area_sqm,
   bedrooms, bathrooms, is_trending, published_at,
   towns!inner ( id, name, province, slug, initial ),
@@ -53,7 +59,7 @@ const CARD_COLUMNS = `
   listing_features ( features ( name ) )
 `
 
-type RawListing = {
+export type RawListing = {
   id: string
   slug: string
   title: string
@@ -118,7 +124,7 @@ function locationOf(row: RawListing): string {
   return row.area_detail ? `${row.area_detail}, ${town}` : `${town}, ${province}`
 }
 
-function toCard(row: RawListing, features?: string[]): ListingCard {
+export function toCard(row: RawListing, features?: string[]): ListingCard {
   const photos = sortedPhotos(row)
   const featureNames = features ?? featuresOf(row)
   const price = Number(row.price_php)

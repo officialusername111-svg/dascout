@@ -22,6 +22,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           <nav aria-label="Admin sections">
             <Link href="/admin">Listings</Link>
             <Link href="/admin/listings/new">New listing</Link>
+            {/* Password management is one screen for every role, on the public side. */}
+            <Link href="/account/password">Password</Link>
             <Link href="/">View site</Link>
           </nav>
           <span className="who">

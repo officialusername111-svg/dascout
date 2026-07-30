@@ -81,6 +81,26 @@ const nextConfig: NextConfig = {
         source: '/admin/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
+      {
+        // Somebody's saved properties and browsing history. `no-store` matters as much as
+        // the noindex here: a shared machine, or any proxy between it and us, must not be
+        // able to serve one visitor's account page to the next person who asks for it.
+        source: '/account/:path*',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'Cache-Control', value: 'no-store' },
+        ],
+      },
+      {
+        // These URLs carry one-time credentials in their query string. Nothing about them
+        // belongs in a cache or in a search index, and the route handler sets the same
+        // header itself — this covers the responses it never gets to write.
+        source: '/auth/:path*',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'Cache-Control', value: 'no-store' },
+        ],
+      },
     ]
   },
 }

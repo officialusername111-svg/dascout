@@ -3,15 +3,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@/components/Icon'
 import { useUI } from '@/components/ui-state'
+import { ForgotPanel, RegisterPanel, SignInPanel } from '@/components/account/AuthPanels'
 import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
 
 /**
- * The two dialogs from the approved mockup. Accounts (Phase 3) and saved property
- * requests (Phase 5) are not wired yet, so both forms validate properly and then say
- * plainly that the feature is not switched on — never a fake "you're signed in".
+ * The two dialogs from the approved mockup.
+ *
+ * The auth dialog is now real: the shell — the dialog element, the tab pair, the close
+ * button, the heading — stays here, and each tab's body is a form in
+ * `components/account/AuthPanels.tsx` that posts to a server action. Nothing about the
+ * markup or the classes changed; the placeholder that said accounts were not switched on
+ * yet is gone, along with the "Remember me" checkbox (Supabase sessions are always
+ * persistent, so a control that did nothing was a false promise).
+ *
+ * Saved property requests (Phase 5) are still not wired, so that form validates properly
+ * and then says plainly that the feature is not switched on — never a fake confirmation.
  */
 
-const NOT_LIVE_SIGNIN = 'Accounts are not switched on yet. Sign-in arrives in the next release.'
 const NOT_LIVE_REQUEST =
   'Requests are not switched on yet. Email hello@dascout.ph and our team will pick it up.'
 
@@ -64,26 +72,7 @@ function useDialog(open: boolean, onClose: () => void) {
 export function AuthDialog() {
   const { authTab, openAuth, closeAuth } = useUI()
   const ref = useDialog(authTab !== null, closeAuth)
-  const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
-  const [shownFor, setShownFor] = useState(authTab)
   const tab = authTab ?? 'login'
-
-  // Switching tab (or reopening) clears the previous answer.
-  if (authTab !== shownFor) {
-    setShownFor(authTab)
-    setMessage(null)
-  }
-
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const firstBad = validate(event.currentTarget)
-    if (firstBad) {
-      setMessage({ kind: 'err', text: 'Please fix the highlighted fields.' })
-      firstBad.focus()
-      return
-    }
-    setMessage({ kind: 'ok', text: NOT_LIVE_SIGNIN })
-  }
 
   return (
     <dialog ref={ref} aria-labelledby="authH">
@@ -103,104 +92,11 @@ export function AuthDialog() {
           </button>
         </div>
 
-        {message && (
-          <div className={`fmsg ${message.kind}`} role="status">
-            {message.text}
-          </div>
-        )}
-
-        {tab === 'login' && (
-          <form noValidate onSubmit={submit}>
-            <div className="field">
-              <label htmlFor="li-user">Email or username</label>
-              <input id="li-user" type="text" autoComplete="username" required />
-              <div className="ferr">Enter your email or username.</div>
-            </div>
-            <PasswordField id="li-pass" label="Password" autoComplete="current-password" />
-            <button className="mbtn" type="submit">Sign In</button>
-            <div className="mmeta">
-              <label style={{ display: 'flex', gap: 6, alignItems: 'center', minHeight: 44 }}>
-                <input type="checkbox" style={{ width: 'auto', minHeight: 'auto' }} /> Remember me
-              </label>
-              <button type="button" onClick={() => openAuth('forgot')}>
-                Forgot password?
-              </button>
-            </div>
-          </form>
-        )}
-
-        {tab === 'register' && (
-          <form noValidate onSubmit={submit}>
-            <div className="field">
-              <label htmlFor="rg-email">Email</label>
-              <input id="rg-email" type="email" autoComplete="email" inputMode="email" required />
-              <div className="ferr">Enter a valid email address.</div>
-            </div>
-            <div className="field">
-              <label htmlFor="rg-user">Username</label>
-              <input id="rg-user" type="text" autoComplete="username" required />
-              <div className="ferr">Choose a username.</div>
-            </div>
-            <PasswordField
-              id="rg-pass"
-              label="Password"
-              autoComplete="new-password"
-              hint="At least 8 characters."
-            />
-            <button className="mbtn" type="submit">Create Account</button>
-          </form>
-        )}
-
-        {tab === 'forgot' && (
-          <form noValidate onSubmit={submit}>
-            <div className="field">
-              <label htmlFor="fg-email">Email</label>
-              <input id="fg-email" type="email" autoComplete="email" inputMode="email" required />
-              <div className="ferr">Enter the email you registered with.</div>
-            </div>
-            <button className="mbtn" type="submit">Send Reset Link</button>
-          </form>
-        )}
+        {tab === 'login' && <SignInPanel />}
+        {tab === 'register' && <RegisterPanel />}
+        {tab === 'forgot' && <ForgotPanel />}
       </div>
     </dialog>
-  )
-}
-
-function PasswordField({
-  id,
-  label,
-  autoComplete,
-  hint,
-}: {
-  id: string
-  label: string
-  autoComplete: string
-  hint?: string
-}) {
-  const [shown, setShown] = useState(false)
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <div className="pwwrap">
-        <input
-          id={id}
-          type={shown ? 'text' : 'password'}
-          autoComplete={autoComplete}
-          required
-          minLength={8}
-        />
-        <button
-          type="button"
-          className="pwtoggle"
-          aria-label={shown ? 'Hide password' : 'Show password'}
-          onClick={() => setShown((value) => !value)}
-        >
-          {shown ? 'Hide' : 'Show'}
-        </button>
-      </div>
-      {hint && <div className="hint">{hint}</div>}
-      <div className="ferr">Password must be at least 8 characters.</div>
-    </div>
   )
 }
 
