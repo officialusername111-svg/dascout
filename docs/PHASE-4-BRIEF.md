@@ -92,8 +92,8 @@ Don't rebuild these; they exist and work.
 | Thing | What it does |
 |---|---|
 | `listing_status` enum | `draft`, `verifying`, `live`, `sold`, `withdrawn` |
-| `sync_listing_timestamps` trigger | Stamps `published_at` / `sold_at` on the status change |
-| `record_price_change` trigger | Writes every price change to `price_history` — this is what makes the home page's "Price reduced" panel real. It is empty today only because no price has changed |
+| `listings_sync_timestamps` trigger | Stamps `published_at` / `sold_at` on the status change |
+| `listings_record_price_change` trigger | Writes every price change to `price_history` — this is what makes the home page's "Price reduced" panel real. It is empty today only because no price has changed |
 | `verification_events` table | `title_check`, `ground_validation`, `published`, with who/when/notes. Staff-only. **Currently 0 rows** — the audit trail the brand rests on has never been written to |
 | `is_staff()` | `SECURITY DEFINER`, `search_path` pinned, granted to `authenticated` only |
 | `listings_staff_write`, `listing_photos_staff_write`, … | Staff write policies already exist on every table |
