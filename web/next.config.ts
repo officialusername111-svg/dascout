@@ -74,6 +74,13 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // The admin's own noindex metadata only reaches a crawler that renders the page.
+        // A header reaches the ones that do not, including anything that only follows a
+        // link far enough to read the response headers.
+        source: '/admin/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
     ]
   },
 }
