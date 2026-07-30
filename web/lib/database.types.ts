@@ -142,22 +142,25 @@ export type Database = {
           id: string
           listing_id: string
           profile_id: string | null
-          session_hash: string | null
+          session_hash: string
           viewed_at: string
+          viewed_on: string
         }
         Insert: {
           id?: string
           listing_id: string
           profile_id?: string | null
-          session_hash?: string | null
+          session_hash: string
           viewed_at?: string
+          viewed_on?: string
         }
         Update: {
           id?: string
           listing_id?: string
           profile_id?: string | null
-          session_hash?: string | null
+          session_hash?: string
           viewed_at?: string
+          viewed_on?: string
         }
         Relationships: [
           {
@@ -458,6 +461,10 @@ export type Database = {
     }
     Functions: {
       is_staff: { Args: never; Returns: boolean }
+      reorder_listing_photos: {
+        Args: { p_listing_id: string; p_photo_ids: string[] }
+        Returns: number
+      }
       top_listings: {
         Args: { period?: string; row_limit?: number }
         Returns: {
