@@ -151,3 +151,88 @@ merge is idempotent so retention is safe. 3. Other sessions → signed out, per 
 `#li-user` says "Email or username" while only an email can work. Leaving them would be
 actively misleading, so the label text changes — text only, no layout or visual change. That is
 wiring, not redesign. 5. Clear-history → de-attribution, per R3.
+
+## Panel outcome (3-lens blind panel, merged by TL)
+
+Verdicts: correctness PROCEED-WITH-BINDINGS (CL-1..8) · security/data PROCEED-WITH-BINDINGS
+(SL-1..14 + hardening list) · simplicity/scope PROCEED-WITH-BINDINGS (SP-1..11). No HALT, no
+parked slice. Two facts verified live during the merge: session JWTs carry `amr`
+`[{method, timestamp}]` (probed with the buyer fixture; probe session revoked), and the
+drafted `claim_listing_view` migration was deleted **unapplied** — superseded by SL-13.
+
+**Recorded conflicts and TL resolutions:**
+
+- **Sign-out (SP-1 = CL-2 = SL-3, three lenses, two documents).** PLAN said clear; the run
+  record's OQ-2 answer said retain. Resolution: **clear the mirrored, keep the yours** —
+  sign-out removes `ds-sync`, clears `ds-hist`, and sets `ds-favs := ds-favs ∖ mirrored`
+  (`mirrored` from `ds-sync` is the provenance record CL-2 asked for; no new bookkeeping).
+  A withdrawn-listing favourite that never reached the account survives sign-out (CL-2);
+  the next person on the machine inherits nothing account-derived (SL-3). The OQ-2 answer
+  above is superseded. Residual for unclean session end: the userId-keyed marker.
+- **Retro-attribution (CL-1 = SL-2, opposite fixes).** CL-1 proposed a definer claim
+  function; SL-2 preferred dropping same-day back-fill outright and separately flagged
+  `ds-vs` never rotating across the auth boundary (SL-13). Resolution: **SL-13 makes both
+  arguments moot** — rotate `ds-vs` on sign-in, sign-up-with-session, sign-out, and
+  clear-history. A fresh session hash means post-sign-in views never collide with anonymous
+  same-day rows, so attribution at INSERT simply works; the anonymous prefix of the day
+  stays unattributed (device history covers display). R1's upsert wording is amended to
+  insert-time attribution + rotation. No new definer function ships (smaller surface, SP
+  direction). The forbidden-repair line stands: `listing_views_own_detach` and the column
+  grant are never widened.
+- **Reset gate (SL-1 kills the `ds-pwreset` design).** The cookie was mintable
+  (attacker's own recovery + victim's stolen session cookies = takeover). Resolution:
+  **no marker cookie at all.** Recovery-ness is derived server-side from the session's own
+  `amr` claim — verified present — requiring method `otp`/`recovery`/`magiclink` with a
+  timestamp ≤ 15 min old, checked in BOTH the page (which form renders) and the
+  `resetPassword` action. The claim is Supabase-signed and lives in the same token as the
+  identity, so it cannot be transplanted between sessions. CL-6's expiry dead-end gets a
+  distinct "link expired — request a new one" message. `?reset=1` remains pure UI sugar.
+- **Uniform responses (SL-5 reverses SA-A3).** GoTrue's per-address 60s cooldown returns
+  the same error code as the project-wide budget and only fires for addresses that exist —
+  any honest rate-limit sentence on reset or signup is a one-bit-per-address oracle.
+  Resolution: `requestPasswordReset` and `signUpBuyer` return their uniform sentence for
+  EVERY outcome including rate limits; error codes go to server logs (codes only, never the
+  address — SL-9). The honest `RATE_LIMITED` sentence survives only on authenticated
+  surfaces (change-password re-auth). SA-A3 is reversed.
+- **Email templates (CL-3 vs SL-4).** token_hash links are bearer credentials (SL-4 forced
+  login), but the PKCE `?code=` shape is same-browser-only (CL-3/R3). Resolution: the
+  callback accepts `token_hash` for `type=recovery` ONLY; A1's owner actions gain "switch
+  the RECOVERY email template to the token_hash form" (fixes cross-device reset, the
+  likeliest real failure). The confirmation template stays default; cross-device
+  confirmation is handled by CL-4's distinct missing-verifier copy ("opened in a different
+  browser — your email may already be confirmed; sign in with your password").
+- **Caps (SP-4 vs CL-8).** FAV_CAP is neither a product cap nor a merge truncation: the
+  toggle stays unbounded as today (SP), the merge never truncates (CL), and abuse is bounded
+  server-side — per-request payload `.max(200)` + raw-size guard (SL-7) and a 1000-row
+  per-account ceiling checked count-first in `setFavorite` and the merge (refuse whole,
+  keep local, plain message — lossless locally even in refusal).
+
+**Adopted without conflict:** CL-4 (missing-verifier copy + test) · CL-5 (reset also
+`signOut({scope:'others'})`) · CL-7 (marker is userId-keyed; on mismatch discard stale
+mirrored entries before merging; write-back replaces the mirror) · SL-11 (on marker-match
+mounts AccountSync refreshes read-only from the account — server removals propagate to the
+mirror, uploads happen only on first merge per device per account) · SL-6 (proxy returns
+early for `/auth/*`; exactly one cookie writer on the callback request) · SL-8 (probe client
+per-call, `persistSession:false`, revoked `scope:'local'` in `finally`; bare `signOut()`
+defaults to GLOBAL and would kill the caller's own session) · SL-9 (password fields never in
+`values` — asserted by unit test; log codes never addresses) · SL-10 (`Cache-Control:
+no-store` on callback; never log the callback URL; packet note on token-in-logs) · SL-12
+(privacy line on the history screen + register form: signed-in views are saved to the
+account and visible to staff; retention period = owner question in packet; history reads
+name columns, never `session_hash`) · SL-14 (`describeSignUpOutcome` pure mapper +
+byte-identical fixture tests) · SL hardening list (tight `safeNext`, `redirectTo` from the
+compile-time constant only, `no-store` on `/account/*`, full_name control-char guard, CSRF
+posture noted not claimed, throttle residual restated as widened) · SP-2 (fast path CUT —
+`AccountSync` is the only merge trigger) · SP-3 (overview page = identity + sign-out home +
+links; header carries just the Account link) · SP-8 (staff nav link to `/account/password`
+in `app/admin/(staff)/layout.tsx`) · SP-9 (importers move to `lib/site.ts`; no permanent
+re-export) · SP-5/6/7/10/11 (keeps confirmed as ruled).
+
+**Packet notes from the panel:** migrations 060000/060100 were applied before the panel
+convened — additive and panel-reviewed sound, but the sequencing habit is named and will not
+be repeated on anything non-additive · Phase-0 grants are untracked, so a future blanket
+re-grant would silently undo the column grant — the BT column-grant test is the tripwire ·
+`revoke update` covers staff too (harmless now; named for whoever adds a staff UPDATE policy)
+· view counts remain forgeable via direct PostgREST INSERT (pre-existing, out of scope) ·
+owner questions: history retention period; recovery-template switch; SMTP/Site URL/allowlist
+as already parked.
