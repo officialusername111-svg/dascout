@@ -284,3 +284,16 @@ record), e5739a6 (build), cab1759 (tests), + this record.
 5. Decide the retention period for account-attributed browsing history (SL-12).
 6. Rotate/delete the two test fixture accounts when this run is reviewed (unchanged ask
    from Phase 4; the committed suite reads them from `web/.env.local`).
+
+## Post-deploy closure of parked item A1 (2026-07-31)
+
+The owner completed the four dashboard actions: Resend domain verified (DNS at Hostinger —
+DKIM/SPF/MX/DMARC records confirmed correct in-panel), custom SMTP connected, email rate
+limit raised, Site URL + `/auth/callback` allowlisted, recovery template switched to the
+token_hash form. Live end-to-end proof, owner-participating: `POST /auth/v1/recover` for the
+owner's address returned 200 (`recovery_sent_at` stamped, verified by SQL); the email
+arrived in Gmail; the link traversed `/auth/callback` → recovery exchange → the amr-gated
+two-field reset form rendered at `/account/password?reset=1` on dascoutprime.com. That
+closes `hasRecentRecovery`'s true path and the callback success path — the only legs BT had
+to park. Remaining owner items (unchanged): leaked-password protection, history-retention
+decision, fixture rotation.
