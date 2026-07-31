@@ -153,6 +153,9 @@ export async function sendMatchAlerts(listingId: string): Promise<void> {
       .from('property_requests')
       .select('id, category, preferred_town, budget_min, budget_max')
       .eq('is_handled', false)
+      // Double opt-in: a request nobody confirmed is a request nobody consented to.
+      // Confirmed-later requests re-enter here on the next publish of a matching listing.
+      .not('confirmed_at', 'is', null)
       .gte('created_at', since)
       .order('created_at', { ascending: true })
       .limit(CANDIDATE_CEILING)
@@ -238,7 +241,7 @@ export async function sendMatchAlerts(listingId: string): Promise<void> {
       count,
     } = await supabase
       .from('request_match_alerts')
-      .select('request_id, property_requests ( email )', { count: 'exact' })
+      .select('request_id, property_requests ( email, is_handled )', { count: 'exact' })
       .eq('listing_id', listingId)
       .is('sent_at', null)
       .order('created_at', { ascending: true })
@@ -251,13 +254,18 @@ export async function sendMatchAlerts(listingId: string): Promise<void> {
 
     const pending = (pendingRows ?? []) as unknown as {
       request_id: string
-      property_requests: { email: string } | null
+      property_requests: { email: string; is_handled: boolean } | null
     }[]
 
     const deferred = Math.max(0, (count ?? pending.length) - pending.length)
     let sent = 0
 
     for (const row of pending) {
+      // A ledger row can outlive its request's welcome: confirmed → publish wrote the
+      // row → the send failed → the person unsubscribed. The retry on the next publish
+      // must not mail somebody who has since said stop.
+      if (row.property_requests?.is_handled) continue
+
       const address = row.property_requests?.email
       if (!address) continue
 

@@ -344,6 +344,7 @@ export type Database = {
           budget_max: number | null
           budget_min: number | null
           category: Database["public"]["Enums"]["listing_category"] | null
+          confirmed_at: string | null
           created_at: string
           email: string
           id: string
@@ -356,6 +357,7 @@ export type Database = {
           budget_max?: number | null
           budget_min?: number | null
           category?: Database["public"]["Enums"]["listing_category"] | null
+          confirmed_at?: string | null
           created_at?: string
           email: string
           id?: string
@@ -368,6 +370,7 @@ export type Database = {
           budget_max?: number | null
           budget_min?: number | null
           category?: Database["public"]["Enums"]["listing_category"] | null
+          confirmed_at?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -497,6 +500,7 @@ export type Database = {
     }
     Functions: {
       clear_my_listing_views: { Args: never; Returns: number }
+      confirm_property_request: { Args: { req_id: string }; Returns: undefined }
       is_staff: { Args: never; Returns: boolean }
       reorder_listing_photos: {
         Args: { p_listing_id: string; p_photo_ids: string[] }

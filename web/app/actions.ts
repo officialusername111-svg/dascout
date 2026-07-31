@@ -96,7 +96,7 @@ export async function recordListingView(listingId: string): Promise<void> {
  * their own text back at them would be one more surface to get output encoding wrong on.
  */
 const REQUEST_RECEIVED =
-  "Got it — we'll email you when a matching verified listing goes live."
+  "Got it — check your email to confirm this request. Once confirmed, we'll email you when a matching verified listing goes live."
 
 const REQUEST_FAILED = 'That did not go through. Try again.'
 
@@ -109,6 +109,8 @@ const REQUEST_FAILED = 'That did not go through. Try again.'
 const THROTTLE_MARKERS: { marker: string; cap: string }[] = [
   { marker: 'too many property requests', cap: 'per-email (3/hour)' },
   { marker: 'briefly paused', cap: 'site-wide (30/hour)' },
+  { marker: 'awaiting confirmation', cap: 'unconfirmed per-email (3/180d)' },
+  { marker: 'several open requests', cap: 'open per-email (5/180d)' },
 ]
 
 const RequestSchema = z.object({
@@ -209,7 +211,15 @@ export async function submitPropertyRequest(
     data: { user },
   } = await supabase.auth.getUser()
 
+  /**
+   * Generated here, not by the column default, because the anon insert may not chain
+   * `.select()` (no anon SELECT policy) and the confirmation link needs the id as its
+   * token — the same token-is-the-row-uuid decision unsubscribe already made.
+   */
+  const requestId = crypto.randomUUID()
+
   const { error } = await supabase.from('property_requests').insert({
+    id: requestId,
     email,
     category: CATEGORIES[category].db,
     preferred_town,
@@ -236,6 +246,24 @@ export async function submitPropertyRequest(
   const notify = process.env.REQUEST_NOTIFY_TO
 
   after(async () => {
+    // The requester's confirmation mail goes first and does not sit behind the
+    // team-notify guard: an unset REQUEST_NOTIFY_TO must not silently disable
+    // double opt-in. No alert is ever sent until this mail's link is used.
+    await sendEmail({
+      to: email,
+      // Static. Nothing anybody typed goes in a subject line.
+      subject: 'Confirm your DaScout property request',
+      text: [
+        'You (or someone using this address) asked DaScout for alerts when a',
+        'verified listing matches a saved property request.',
+        '',
+        `Confirm this request: ${SITE_URL}/requests/confirm?token=${requestId}`,
+        '',
+        'Nothing is sent until you confirm. If you did not ask for this, ignore this',
+        'email — no alerts will be sent to this address.',
+      ].join('\n'),
+    })
+
     if (!notify) {
       console.warn('[requests] REQUEST_NOTIFY_TO is not set — no team notification sent.')
       return
