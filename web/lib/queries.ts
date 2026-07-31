@@ -457,14 +457,29 @@ export async function getMarketMovements(limit = 5): Promise<MarketMovements> {
     (row) => ({ ...toCard(row), soldAt: row.sold_at })
   )
 
-  // One row per listing: the most recent drop, which is what "price reduced" means.
-  const drops = new Map<string, { previousPrice: number; newPrice: number }>()
+  /**
+   * One row per listing: its MOST RECENT price change, and only if that change was a
+   * drop.
+   *
+   * The direction test has to come after the "first seen wins" test, not before it. The
+   * rows arrive newest first, so skipping increases while filling the map made a listing
+   * that was cut to ₱4M and then put back up to ₱6M still read as "price reduced" — the
+   * older drop was the first row that survived the filter. Recording every listing's
+   * latest change first, whichever way it went, and keeping it only when it was a cut,
+   * is what makes the panel say what it claims to say.
+   */
+  const latest = new Map<string, { previousPrice: number; newPrice: number }>()
   for (const change of historyResult.data ?? []) {
+    if (latest.has(change.listing_id)) continue
     const previous = Number(change.old_price ?? 0)
     const next = Number(change.new_price)
-    if (!previous || next >= previous) continue
-    if (!drops.has(change.listing_id)) drops.set(change.listing_id, { previousPrice: previous, newPrice: next })
+    if (!previous) continue
+    latest.set(change.listing_id, { previousPrice: previous, newPrice: next })
   }
+
+  const drops = new Map(
+    [...latest].filter(([, change]) => change.newPrice < change.previousPrice)
+  )
 
   let reduced: PriceDrop[] = []
   if (drops.size) {
