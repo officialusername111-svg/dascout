@@ -43,7 +43,9 @@ market panels real.* Concretely:
 - **Email now actually sends.** Resend SMTP is live for AUTH mail (domain
   `dascoutprime.com` verified, DNS at Hostinger, sender `no-reply@dascoutprime.com`).
   **BUT the app has no Resend API key** — the only key lives inside Supabase's SMTP config,
-  which the app cannot use. Phase 5's transactional mail (request notifications, match
+  which the app cannot use. *(Correction, run-p5-requests 2026-07-31: an app key WAS found
+  in `web/.env.local` at build time — see run record F1/P2; `REQUEST_NOTIFY_TO` remains
+  unset.)* Phase 5's transactional mail (request notifications, match
   alerts) needs its OWN key: owner creates a second key in Resend → goes into
   `web/.env.local` AND Vercel env as `RESEND_API_KEY` (server-only, never `NEXT_PUBLIC_`).
   This is an owner action to request EARLY. BUILD-PLAN §2 already names Resend for exactly
