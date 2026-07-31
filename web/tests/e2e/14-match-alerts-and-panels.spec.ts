@@ -83,6 +83,10 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
   const emailNeverSent = `zz-bt-never-sent-${Date.now()}@example.com`
   const emailNoMatch = zzEmail('no-match')
   const emailHandled = zzEmail('handled')
+  // Double opt-in negative case (AC-2): matches on every field, confirmed_at IS NULL —
+  // sendMatchAlerts' `.not('confirmed_at', 'is', null)` filter must exclude this row from
+  // the candidate set entirely, so it must never get a request_match_alerts row.
+  const emailUnconfirmed = zzEmail('unconfirmed')
 
   test.beforeAll(async ({ browser }) => {
     const context = await browser.newContext()
@@ -97,9 +101,14 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
     townProvince = town.province
     console.log(`[BT fixture] town for this run: ${townName}, ${townProvince} (${townId})`)
 
-    // Four candidate requests, inserted directly (matching is about the request ROW, not
+    // Five candidate requests, inserted directly (matching is about the request ROW, not
     // how it was filed — 13-request-form.spec.ts already proves the public form writes
-    // an equivalent row).
+    // an equivalent row). BT fixture-data update (double opt-in): sendMatchAlerts now
+    // requires `confirmed_at is not null` (`.not('confirmed_at', 'is', null)`), so every
+    // row that IS expected to alert carries a `confirmed_at` — otherwise this whole spec
+    // would silently stop receiving alerts under the new schema, which is a fixture gap,
+    // not a real assertion about the double opt-in feature.
+    const confirmedAt = new Date().toISOString()
     const { error: reqErr } = await staff.from('property_requests').insert([
       {
         email: emailSuccess,
@@ -108,6 +117,7 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
         budget_min: 1_000_000,
         budget_max: 10_000_000,
         is_handled: false,
+        confirmed_at: confirmedAt,
       },
       {
         email: emailNeverSent,
@@ -116,6 +126,7 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
         budget_min: 1_000_000,
         budget_max: 10_000_000,
         is_handled: false,
+        confirmed_at: confirmedAt,
       },
       {
         // Wrong category — must be excluded from the candidate set entirely.
@@ -125,6 +136,7 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
         budget_min: 1_000_000,
         budget_max: 10_000_000,
         is_handled: false,
+        confirmed_at: confirmedAt,
       },
       {
         // Matches on every field but already handled — must be excluded.
@@ -134,6 +146,18 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
         budget_min: 1_000_000,
         budget_max: 10_000_000,
         is_handled: true,
+        confirmed_at: confirmedAt,
+      },
+      {
+        // AC-2 negative case: matches on every field but was NEVER confirmed
+        // (confirmed_at left null) — must be excluded from the candidate set entirely,
+        // same as wrong-category and already-handled.
+        email: emailUnconfirmed,
+        category: 'residential_lot',
+        preferred_town: townName,
+        budget_min: 1_000_000,
+        budget_max: 10_000_000,
+        is_handled: false,
       },
     ])
     if (reqErr) throw reqErr
@@ -165,7 +189,7 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
     const { error } = await staff
       .from('property_requests')
       .delete()
-      .in('email', [emailSuccess, emailNeverSent, emailNoMatch, emailHandled])
+      .in('email', [emailSuccess, emailNeverSent, emailNoMatch, emailHandled, emailUnconfirmed])
     if (error) console.warn('[BT cleanup] property_requests delete failed:', error.message)
 
     await page.context().close()
@@ -233,6 +257,10 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
     // this is the matching logic (AC-12), and needs no email to actually go out to prove.
     expect(byEmail.has(emailNoMatch)).toBe(false)
     expect(byEmail.has(emailHandled)).toBe(false)
+    // AC-2 negative case: matches on every field but was never confirmed (confirmed_at
+    // null) — the double opt-in filter (`.not('confirmed_at', 'is', null)`) must exclude
+    // it from the candidate set entirely, so it gets NO request_match_alerts row.
+    expect(byEmail.has(emailUnconfirmed)).toBe(false)
 
     // AC-13/R4 (internal consistency, quota-independent): the @example.com row can NEVER
     // have a sent_at — Resend rejects that host outright, every time, by design.
