@@ -386,6 +386,42 @@ export type Database = {
           },
         ]
       }
+      request_match_alerts: {
+        Row: {
+          created_at: string
+          listing_id: string
+          request_id: string
+          sent_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          request_id: string
+          sent_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          request_id?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_match_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_match_alerts_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "property_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       towns: {
         Row: {
           created_at: string
@@ -472,6 +508,10 @@ export type Database = {
           listing_id: string
           views: number
         }[]
+      }
+      unsubscribe_property_request: {
+        Args: { req_id: string }
+        Returns: undefined
       }
     }
     Enums: {
