@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { Icon } from '@/components/Icon'
 import { useUI } from '@/components/ui-state'
 import { ForgotPanel, RegisterPanel, SignInPanel } from '@/components/account/AuthPanels'
+import { submitPropertyRequest } from '@/app/actions'
+import type { ActionResult } from '@/app/admin/actions'
 import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
 
 /**
@@ -16,12 +18,11 @@ import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
  * yet is gone, along with the "Remember me" checkbox (Supabase sessions are always
  * persistent, so a control that did nothing was a false promise).
  *
- * Saved property requests (Phase 5) are still not wired, so that form validates properly
- * and then says plainly that the feature is not switched on — never a fake confirmation.
+ * The request dialog is now real too. It keeps its own `validate()` pass so a missing
+ * email is caught without a round trip, but nothing about the OUTCOME is decided here —
+ * the sentence the visitor reads is the server's, always the same one, and it echoes
+ * nothing they typed.
  */
-
-const NOT_LIVE_REQUEST =
-  'Requests are not switched on yet. Email hello@dascout.ph and our team will pick it up.'
 
 /** Marks the fields the browser rejects, and returns the first one so it can take focus. */
 function validate(form: HTMLFormElement): HTMLElement | null {
@@ -103,24 +104,45 @@ export function AuthDialog() {
 export function RequestDialog({ towns }: { towns: string[] }) {
   const { requestOpen, closeRequest } = useUI()
   const ref = useDialog(requestOpen, closeRequest)
-  const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
+    submitPropertyRequest,
+    null
+  )
+  const [clientError, setClientError] = useState<string | null>(null)
   const [shownWhileOpen, setShownWhileOpen] = useState(requestOpen)
+  /** The answer the visitor has already read and closed the dialog on. */
+  const [dismissed, setDismissed] = useState<ActionResult | null>(null)
 
-  // Closing the dialog clears the previous answer.
+  // Closing the dialog clears the previous answer. The server result cannot be unset —
+  // `useActionState` owns it — so it is remembered as read instead, and a NEW result
+  // (a different object) shows again.
   if (requestOpen !== shownWhileOpen) {
     setShownWhileOpen(requestOpen)
-    if (!requestOpen) setMessage(null)
+    if (!requestOpen) {
+      setClientError(null)
+      setDismissed(state)
+    }
   }
 
+  const failure = state && !state.ok ? state : null
+  const fieldErrors = failure?.fieldErrors ?? {}
+  const values = failure?.values ?? {}
+  const outcome = state && state !== dismissed ? state : null
+
+  /**
+   * The browser's own check first, so an empty email costs nothing. `preventDefault`
+   * stops React from running the server action; without it the form would post anyway.
+   */
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
     const firstBad = validate(event.currentTarget)
     if (firstBad) {
-      setMessage({ kind: 'err', text: 'Please fix the highlighted fields.' })
+      event.preventDefault()
+      setClientError('Please fix the highlighted fields.')
       firstBad.focus()
       return
     }
-    setMessage({ kind: 'ok', text: NOT_LIVE_REQUEST })
+    setClientError(null)
+    setDismissed(null)
   }
 
   return (
@@ -135,53 +157,98 @@ export function RequestDialog({ towns }: { towns: string[] }) {
           goes live.
         </div>
 
-        {message && (
-          <div className={`fmsg ${message.kind}`} role="status">
-            {message.text}
+        {clientError ? (
+          <div className="fmsg err" role="alert">
+            {clientError}
           </div>
-        )}
+        ) : outcome ? (
+          <div className={`fmsg ${outcome.ok ? 'ok' : 'err'}`} role={outcome.ok ? 'status' : 'alert'}>
+            {outcome.message}
+          </div>
+        ) : null}
 
-        <form noValidate onSubmit={submit}>
-          <div className="field">
+        <form noValidate action={formAction} onSubmit={submit}>
+          <div className={`field${fieldErrors.category ? ' invalid' : ''}`}>
             <label htmlFor="rq-type">Property type</label>
-            <select id="rq-type" defaultValue="rlot">
+            <select id="rq-type" name="category" defaultValue={values.category ?? 'rlot'}>
               {CATEGORY_KEYS.map((key) => (
                 <option key={key} value={key}>
                   {CATEGORIES[key].label}
                 </option>
               ))}
             </select>
+            <div className="ferr">
+              {fieldErrors.category ?? 'Choose one of the five property types.'}
+            </div>
           </div>
-          <div className="field">
+          <div className={`field${fieldErrors.preferred_town ? ' invalid' : ''}`}>
             <label htmlFor="rq-loc">Preferred location</label>
             <input
               id="rq-loc"
+              name="preferred_town"
               type="text"
               placeholder="e.g. Polomolok, South Cotabato"
               list="requestTownList"
               autoComplete="off"
+              maxLength={120}
               required
+              defaultValue={values.preferred_town ?? ''}
             />
-            <div className="ferr">Tell us where you&rsquo;re looking.</div>
+            <div className="ferr">
+              {fieldErrors.preferred_town ?? 'Tell us where you’re looking.'}
+            </div>
           </div>
-          <div className="field">
+          <div className={`field${fieldErrors.budget ? ' invalid' : ''}`}>
             <label htmlFor="rq-budget">
               Budget <span style={{ fontWeight: 400, color: 'var(--ink-3)' }}>(optional)</span>
             </label>
-            <input id="rq-budget" type="text" inputMode="numeric" placeholder="e.g. ₱2M – ₱6M" />
+            <input
+              id="rq-budget"
+              name="budget"
+              type="text"
+              placeholder="e.g. ₱2M – ₱6M"
+              maxLength={40}
+              defaultValue={values.budget ?? ''}
+            />
+            <div className="ferr">
+              {fieldErrors.budget ?? 'Try something like “2M – 6M”, “5M” or “2M+”.'}
+            </div>
           </div>
-          <div className="field">
+          <div className={`field${fieldErrors.notes ? ' invalid' : ''}`}>
             <label htmlFor="rq-notes">
               Details <span style={{ fontWeight: 400, color: 'var(--ink-3)' }}>(optional)</span>
             </label>
-            <textarea id="rq-notes" rows={3} placeholder="Lot size, must-have features, timeline…" />
+            <textarea
+              id="rq-notes"
+              name="notes"
+              rows={3}
+              maxLength={2000}
+              placeholder="Lot size, must-have features, timeline…"
+              defaultValue={values.notes ?? ''}
+            />
+            <div className="ferr">
+              {fieldErrors.notes ?? 'Keep the details under 2000 characters.'}
+            </div>
           </div>
-          <div className="field">
+          <div className={`field${fieldErrors.email ? ' invalid' : ''}`}>
             <label htmlFor="rq-email">Your email</label>
-            <input id="rq-email" type="email" autoComplete="email" inputMode="email" required />
-            <div className="ferr">Enter a valid email so we can notify you.</div>
+            <input
+              id="rq-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              maxLength={254}
+              required
+              defaultValue={values.email ?? ''}
+            />
+            <div className="ferr">
+              {fieldErrors.email ?? 'Enter a valid email so we can notify you.'}
+            </div>
           </div>
-          <button className="mbtn" type="submit">Submit Request</button>
+          <button className="mbtn" type="submit" disabled={pending}>
+            {pending ? 'Sending…' : 'Submit Request'}
+          </button>
         </form>
 
         <datalist id="requestTownList">

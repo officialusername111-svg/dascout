@@ -2,8 +2,10 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import * as z from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { sendMatchAlerts } from '@/lib/match-alerts'
 import { getStaffUser, isStaffRole } from '@/lib/admin/auth'
 import {
   STATUS_LABELS,
@@ -1248,6 +1250,21 @@ export async function transitionListing(
   revalidateAdmin(listingId)
   revalidatePublic(flipped[0].slug)
 
+  /**
+   * Saved-request alerts, after the response has gone back to the clerk.
+   *
+   * Publishing is the statutory act; mailing people about it is a courtesy on top. So
+   * it runs in `after()` — outside this action's result entirely — and `sendMatchAlerts`
+   * itself never throws. A mail provider having a bad afternoon cannot turn a successful
+   * publish into an error on this screen, and nothing below this line can change what
+   * this function returns.
+   *
+   * Withdraw → relist fires it again for the same listing, which is safe: the alert
+   * table's primary key is (request_id, listing_id) and the insert ignores duplicates,
+   * so the second run only picks up requests filed since the first.
+   */
+  if (to === 'live') after(() => sendMatchAlerts(listingId))
+
   return { ok: true, message: `Listing moved to ${STATUS_LABELS[to]}.` }
 }
 
@@ -1270,6 +1287,65 @@ async function compensateMovedPhotos(
   return ` These photos are still sitting in the public bucket and may be reachable by their direct link: ${back.failed.join(
     ', '
   )}. Tell whoever administers the Supabase project.`
+}
+
+// ---------------------------------------------------------------------------
+// Property requests
+// ---------------------------------------------------------------------------
+
+const ToggleRequestSchema = z.object({
+  requestId: z.uuid({ error: 'That request could not be identified.' }),
+  handled: z.preprocess((value) => value === 'true', z.boolean()),
+})
+
+/**
+ * Marks a saved property request as dealt with, or puts it back on the pile.
+ *
+ * Last write wins, deliberately: two staff ticking the same row mean the same thing, and
+ * a compare-and-set here would only produce a "reload the page" message for an outcome
+ * both of them wanted. Nothing statutory hangs on the flag — it is a worklist marker.
+ *
+ * It is not cosmetic, though: `is_handled` is also what takes a request out of the match
+ * candidate set, so ticking it stops that person's alerts. The unsubscribe link sets the
+ * same column through its own function.
+ */
+export async function toggleRequestHandled(
+  _previous: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const user = await getStaffUser()
+  if (!user) return denied()
+
+  const parsed = ToggleRequestSchema.safeParse({
+    requestId: formData.get('requestId'),
+    handled: formData.get('handled'),
+  })
+  if (!parsed.success) return invalid(parsed.error)
+
+  const { requestId, handled } = parsed.data
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('property_requests')
+    .update({ is_handled: handled })
+    .eq('id', requestId)
+    .select('id')
+
+  if (error) {
+    if (error.code === RLS_DENIED) return denied()
+    throw error
+  }
+
+  if (!data.length) {
+    return { ok: false, code: 'not_found', message: 'That request no longer exists.' }
+  }
+
+  revalidatePath('/admin/requests')
+
+  return {
+    ok: true,
+    message: handled ? 'Marked as handled.' : 'Put back on the open list.',
+  }
 }
 
 /** The slug and status a revalidation needs, read after a write that did not return them. */

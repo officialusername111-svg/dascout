@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireStaff } from '@/lib/admin/auth'
 import { bucketForStatus, displayUrls, type PhotoBucket } from '@/lib/admin/photos'
 import { labelFromDb, type DbCategory } from '@/lib/categories'
+import { describeBudget } from '@/lib/budget'
 import { peso } from '@/lib/format'
 import type { Database } from '@/lib/database.types'
 
@@ -497,4 +498,80 @@ export async function getFeatureOptions(): Promise<FeatureOption[]> {
 
   if (error) throw error
   return data ?? []
+}
+
+// ---------------------------------------------------------------------------
+// Property requests
+// ---------------------------------------------------------------------------
+
+export type AdminRequestRow = {
+  id: string
+  createdAtLabel: string | null
+  categoryLabel: string
+  preferredTown: string
+  budgetLabel: string
+  notes: string | null
+  email: string
+  isHandled: boolean
+  alertsSent: number
+}
+
+/** One screen's worth. There is no paging here yet; add it when the list warrants it. */
+export const REQUEST_PAGE_SIZE = 200
+
+/**
+ * Every saved property request, open ones first and newest first inside each group.
+ *
+ * The alert counts come from a second read rather than an embed because the count that
+ * matters is "how many alerts have actually GONE OUT for this request" — `sent_at` is not
+ * null — and PostgREST cannot express a filtered count inside an embed without a view.
+ * Two small reads beat a view nobody maintains.
+ *
+ * Nothing here is formatted as HTML and nothing is linkified. Every field below is
+ * somebody else's typing and the page renders all of it as plain text.
+ */
+export async function getPropertyRequests(): Promise<AdminRequestRow[]> {
+  await requireStaff()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('property_requests')
+    .select('id, created_at, category, preferred_town, budget_min, budget_max, notes, email, is_handled')
+    .order('is_handled', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(REQUEST_PAGE_SIZE)
+
+  if (error) throw error
+
+  const rows = data ?? []
+  const sent = new Map<string, number>()
+
+  if (rows.length) {
+    const { data: alerts, error: alertError } = await supabase
+      .from('request_match_alerts')
+      .select('request_id')
+      .in('request_id', rows.map((row) => row.id))
+      .not('sent_at', 'is', null)
+
+    if (alertError) throw alertError
+    for (const alert of alerts ?? []) {
+      sent.set(alert.request_id, (sent.get(alert.request_id) ?? 0) + 1)
+    }
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    createdAtLabel: stampLabel(row.created_at),
+    categoryLabel: row.category ? labelFromDb(row.category) : 'Any type',
+    preferredTown: row.preferred_town?.trim() || 'Anywhere',
+    budgetLabel: describeBudget(
+      row.budget_min === null ? null : Number(row.budget_min),
+      row.budget_max === null ? null : Number(row.budget_max),
+      peso
+    ),
+    notes: row.notes,
+    email: row.email,
+    isHandled: row.is_handled,
+    alertsSent: sent.get(row.id) ?? 0,
+  }))
 }
