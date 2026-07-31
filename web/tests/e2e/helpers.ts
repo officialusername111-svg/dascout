@@ -111,6 +111,17 @@ export function zzTitle(suffix: string): string {
   return `ZZ Test ${suffix} ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+/**
+ * A unique email for a ZZ-prefixed test fixture. `.invalid` is the RFC 2606 TLD reserved
+ * to never resolve — nothing sent there ever reaches a real mailbox, which matters because
+ * (BT finding, see the BT report) `RESEND_API_KEY` is actually configured in this
+ * environment's `.env.local`, so `sendEmail` really attempts a send rather than skipping.
+ */
+export function zzEmail(suffix: string): string {
+  const slug = suffix.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return `zz-bt-${slug}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@dascout-test.invalid`
+}
+
 export function zzSlug(suffix: string): string {
   const base = suffix.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
   return `zz-test-${base}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
