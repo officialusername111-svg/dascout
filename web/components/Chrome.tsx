@@ -191,7 +191,6 @@ export function Footer() {
       </div>
       <div className="copy">
         <span>© DaScout — Verified properties across Mindanao.</span>
-        <span>General Santos City, SOCCSKSARGEN</span>
         <p className="legal">
           All listings are sourced, title-checked, and verified by DaScout before publication.
           DaScout is a listing platform and is not a party to any transaction; verify all property

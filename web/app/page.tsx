@@ -112,7 +112,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
       <main id="main" className="wrap">
         <section id="listings" aria-labelledby="listH">
-          <div className="sec-head center">
+          <div className="sec-head">
             <div>
               <h2 id="listH">{showFavorites ? 'Saved Properties' : 'Featured Listings'}</h2>
               {/* The search strip is gone, so this line carries the filter feedback — and

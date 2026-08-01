@@ -39,9 +39,6 @@ h2{font-size:clamp(22px,2.6vw,30px)}
 h2 em,h1 em{font-style:normal;color:var(--gold-d)}
 .sec-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:26px;flex-wrap:wrap}
 .sec-head p{color:var(--ink-2);font-size:14.5px;margin-top:4px}
-/* kit heading rhythm: centered heading + intro, controls beneath */
-.sec-head.center{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
-.sec-head.center .tabs{justify-content:center}
 .sec-foot{display:flex;justify-content:center;margin-top:18px}
 .icon{width:1.05em;height:1.05em;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.12em;flex-shrink:0}
 
