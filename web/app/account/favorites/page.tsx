@@ -33,8 +33,8 @@ export default async function AccountFavoritesPage() {
 
         {listings.length ? (
           <div className="grid">
-            {listings.map((listing) => (
-              <ListingCardTile key={listing.slug} listing={listing} />
+            {listings.map(({ card, sold }) => (
+              <ListingCardTile key={card.slug} listing={card} sold={sold} />
             ))}
           </div>
         ) : (

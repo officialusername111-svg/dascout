@@ -176,6 +176,45 @@ test.describe('Favourites merge (C.9-15)', () => {
     expect(staffRows.data ?? []).toEqual([])
   })
 
+  test('LH-5: a favourited listing that sells renders as a Sold card — pill, no link, heart kept', async ({
+    page,
+  }) => {
+    // Own fixture: the suite's shared A/B must stay live for the other tests. The guard
+    // trigger only gates transitions TO live/sold and the fieldwork events exist, so a
+    // direct staff UPDATE to sold is the same shortcut createLiveListing already uses;
+    // afterwards withdrawListing (sold → withdrawn is ungated) retires it.
+    const soldListing = await createLiveListing(staff, staffId, 'merge-sold')
+    try {
+      const { error: favError } = await buyer
+        .from('favorites')
+        .insert({ profile_id: buyerId, listing_id: soldListing.id })
+      expect(favError).toBeNull()
+
+      const { error: sellError } = await staff
+        .from('listings')
+        .update({ status: 'sold' })
+        .eq('id', soldListing.id)
+      expect(sellError).toBeNull()
+
+      await page.goto('/')
+      await signInViaModal(page, 'buyer')
+      await page.goto('/account/favorites')
+
+      // The card is still there — a sold favourite must not silently vanish — but it is
+      // the history page's sold treatment in card form: a Sold pill and nothing to click
+      // through to (the public property page is live-only and would 404).
+      const card = page.locator('.grid .card')
+      await expect(card).toHaveCount(1)
+      await expect(card.locator('.pill')).toHaveText('Sold')
+      await expect(card.locator('a')).toHaveCount(0)
+      // The heart stays: unsaving a sold property must remain possible.
+      await expect(card.locator('.fav')).toHaveCount(1)
+    } finally {
+      await buyer.from('favorites').delete().eq('listing_id', soldListing.id)
+      await withdrawListing(staff, soldListing.id)
+    }
+  })
+
   test('C.15: toggling the heart on a property page saves and unsaves the row; double-toggle is not an error', async ({
     page,
   }) => {

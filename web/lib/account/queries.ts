@@ -41,6 +41,9 @@ function stampLabel(value: string | null | undefined): string | null {
   return Number.isNaN(date.getTime()) ? null : MANILA_STAMP.format(date)
 }
 
+/** A favourite card plus the one account-only fact the public card type does not carry. */
+export type AccountFavorite = { card: ListingCard; sold: boolean }
+
 /**
  * The favourites saved on the account, newest first, as the same cards the rest of the
  * site renders.
@@ -50,24 +53,31 @@ function stampLabel(value: string | null | undefined): string | null {
  * An outer join would hand the grid a row with no listing attached, which renders as a
  * broken card. Inner means the page shows what it can show, and the count of what it
  * cannot comes from the browser's own mirror instead.
+ *
+ * `status` rides alongside the card columns because public policy also exposes SOLD
+ * rows: without it a sold favourite is indistinguishable from a live one and renders as
+ * a normal card whose property link 404s (LH-5). It stays out of `CARD_COLUMNS` itself —
+ * the public grids are live-only by query and have no use for it.
  */
-export async function getAccountFavorites(): Promise<ListingCard[]> {
+export async function getAccountFavorites(): Promise<AccountFavorite[]> {
   const user = await requireAccountUser()
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('favorites')
-    .select(`created_at, listings!inner ( ${CARD_COLUMNS} )`)
+    .select(`created_at, listings!inner ( status, ${CARD_COLUMNS} )`)
     .eq('profile_id', user.id)
     .order('created_at', { ascending: false })
     .limit(FAVORITES_LIMIT)
 
   if (error) throw error
 
-  return (data as unknown as { created_at: string; listings: RawListing | null }[])
+  return (
+    data as unknown as { created_at: string; listings: (RawListing & { status: string }) | null }[]
+  )
     .map((row) => row.listings)
-    .filter((listing): listing is RawListing => Boolean(listing))
-    .map((listing) => toCard(listing))
+    .filter((listing): listing is RawListing & { status: string } => Boolean(listing))
+    .map((listing) => ({ card: toCard(listing), sold: listing.status === 'sold' }))
 }
 
 export type HistoryEntryView = {
