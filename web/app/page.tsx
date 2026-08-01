@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Header, Sidebar, Footer } from '@/components/Chrome'
-import { AuthDialog, RequestDialog } from '@/components/Dialogs'
+import { AuthDialog } from '@/components/Dialogs'
 import { ListingCardTile } from '@/components/ListingCard'
 import { SearchBar } from '@/components/home/SearchBar'
 import { SIZE_BANDS } from '@/lib/search-bands'
@@ -8,15 +8,13 @@ import {
   ContinueBrowsing,
   FavoritesGrid,
   FavoritesStatus,
-  RequestBand,
   TopProperties,
 } from '@/components/home/Panels'
-import { AboutRows, LocationsAndFaq, Testimonials, TypeTiles } from '@/components/home/Sections'
+import { AboutRows, VerifiedBand } from '@/components/home/Sections'
 import { describeCategory } from '@/lib/categories'
 import {
   PAGE_SIZE,
   getAllCards,
-  getCategoryCounts,
   getListings,
   getPopularFeatures,
   getSpotlightListings,
@@ -37,7 +35,7 @@ function one(value: string | string[] | undefined): string | undefined {
 /** The filters as a query string, so tab and page links keep the rest of the search. */
 function withParams(filters: Search, changes: Record<string, string | undefined>): string {
   const params = new URLSearchParams()
-  for (const key of ['cat', 'loc', 'size', 'feat', 'az', 'tab', 'page']) {
+  for (const key of ['cat', 'loc', 'size', 'feat', 'tab', 'page']) {
     const value = one(filters[key])
     if (value) params.set(key, value)
   }
@@ -57,7 +55,6 @@ function describeFilters(filters: ListingFilters, total: number, labels: { size?
     if (label) bits.push(label)
   }
   if (filters.loc) bits.push(`in "${filters.loc}"`)
-  if (filters.az) bits.push(`towns starting with ${filters.az.toUpperCase()}`)
   if (filters.feat) bits.push(filters.feat.toLowerCase())
   if (labels.size) bits.push(labels.size)
   if (!bits.length) return null
@@ -76,16 +73,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     loc: one(params.loc),
     size: one(params.size),
     feat: one(params.feat),
-    az: one(params.az),
     trending: tab === 'trend',
     shuffle: tab === 'rand',
     page,
   }
 
-  const [towns, counts, spotlight, results, day, week, month, allCards, features] =
-    await Promise.all([
+  const [towns, spotlight, results, day, week, month, allCards, features] = await Promise.all([
     getTowns(),
-    getCategoryCounts(),
     getSpotlightListings(3),
     getListings(filters),
     getTopListings('day'),
@@ -101,41 +95,38 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     size: SIZE_BANDS.find((band) => band.value === filters.size)?.label,
   })
 
-  const initials = [...new Set(towns.map((town) => town.initial))].sort()
-  const popularTowns = towns.slice(0, 8)
-
   return (
     <>
       <Header current="home" />
       <Sidebar features={features} />
 
-      <HeroSpotlight listings={spotlight} />
-
-      <SearchBar
-        defaults={{ loc: filters.loc, cat: filters.cat, size: filters.size }}
-        towns={towns}
-        status={
-          showFavorites ? (
-            <FavoritesStatus listings={allCards} />
-          ) : status ? (
-            <>
-              <span>{status}</span> <Link href="/#listings">Clear filters</Link>
-            </>
-          ) : null
+      <HeroSpotlight
+        listings={spotlight}
+        search={
+          <SearchBar
+            defaults={{ loc: filters.loc, cat: filters.cat, size: filters.size }}
+            towns={towns}
+          />
         }
       />
 
       <main id="main" className="wrap">
-        <TypeTiles counts={counts} />
-
         <section id="listings" aria-labelledby="listH">
           <div className="sec-head center">
             <div>
               <h2 id="listH">{showFavorites ? 'Saved Properties' : 'Featured Listings'}</h2>
-              <p>
-                {showFavorites
-                  ? 'The listings you tapped the heart on.'
-                  : 'Fresh on the market across Mindanao.'}
+              {/* The search strip is gone, so this line carries the filter feedback — and
+                  with it the only way back out of a filtered page. */}
+              <p role="status" aria-live="polite">
+                {showFavorites ? (
+                  <FavoritesStatus listings={allCards} />
+                ) : status ? (
+                  <>
+                    <span>{status}</span> <Link href="/#listings">Clear filters</Link>
+                  </>
+                ) : (
+                  'Fresh on the market across Mindanao.'
+                )}
               </p>
             </div>
             {!showFavorites && (
@@ -175,7 +166,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               <b>That page doesn&rsquo;t exist</b>
               This search has {pages} page{pages === 1 ? '' : 's'}. Start again from the first one.
               <div>
-                <Link className="btn btn-navy" href={withParams(params, { page: undefined })}>
+                <Link className="btn btn-dark" href={withParams(params, { page: undefined })}>
                   Go to page 1
                 </Link>
               </div>
@@ -185,7 +176,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               <b>No properties match your search</b>
               Try widening the size band or clearing a filter.
               <div>
-                <Link className="btn btn-navy" href="/#listings">
+                <Link className="btn btn-dark" href="/#listings">
                   Clear all filters
                 </Link>
               </div>
@@ -209,22 +200,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
         <AboutRows />
 
+        <VerifiedBand />
+
         <TopProperties periods={{ day, week, month }} />
 
         <ContinueBrowsing listings={allCards} />
-        <Testimonials />
-        <RequestBand />
-        <LocationsAndFaq
-          initials={initials}
-          popularTowns={popularTowns}
-          activeInitial={filters.az?.toUpperCase()}
-          activeTown={filters.loc}
-        />
       </main>
 
       <Footer />
       <AuthDialog />
-      <RequestDialog towns={towns.map((town) => town.name)} />
     </>
   )
 }

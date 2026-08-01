@@ -95,13 +95,14 @@ test.describe('CSP nonce rework (AC-1, 2, 3, 5)', () => {
 
     await page.setViewportSize({ width: 1440, height: 1000 })
 
-    // home + hydration/interactivity proof: the request dialog opens on click.
+    // home + hydration/interactivity proof: a dialog opens on click. This used to probe
+    // the property-request dialog; that dialog and every entry point to it were removed
+    // in the v6 redesign, so the auth dialog carries the same proof.
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    // Scoped to the "Can't find it? Request it." band — the hero carousel has an
-    // off-screen CTA with the same accessible name (see 13-request-form.spec.ts).
-    await page.locator('.reqband').getByRole('button', { name: /request a property/i }).click()
-    await expect(page.locator('dialog[aria-labelledby="reqDH"][open]')).toBeVisible()
+    // Scoped to the header — the verified band has a CTA that opens the same dialog.
+    await page.locator('.hd-actions').getByRole('button', { name: /create account/i }).click()
+    await expect(page.locator('dialog[aria-labelledby="authH"][open]')).toBeVisible()
     await page.keyboard.press('Escape')
 
     // a real property page

@@ -43,7 +43,7 @@ export default async function AccountFavoritesPage() {
             Tap the heart on any listing and it will wait for you here, on every device you sign in
             from.
             <div>
-              <Link className="btn btn-navy" href="/#listings">
+              <Link className="btn btn-dark" href="/#listings">
                 Browse all listings
               </Link>
             </div>

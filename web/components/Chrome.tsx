@@ -43,8 +43,7 @@ export function Header({ current }: { current?: 'home' }) {
           <Link href="/?cat=lots#listings">Lots</Link>
           <Link href="/?cat=farm#listings">Farm Land</Link>
           <Link href="/?cat=bldgs#listings">Buildings</Link>
-          <Link href="/#locations">Locations</Link>
-          <Link href="/#faq">FAQ</Link>
+          <Link href="/#top">Top Properties</Link>
         </nav>
         <div className="hd-actions">
           <Link
@@ -82,7 +81,7 @@ export function Header({ current }: { current?: 'home' }) {
 }
 
 export function Sidebar({ features }: { features: string[] }) {
-  const { sidebarOpen, closeSidebar, openRequest, accountUserId } = useUI()
+  const { sidebarOpen, closeSidebar, accountUserId } = useUI()
 
   return (
     <>
@@ -116,8 +115,6 @@ export function Sidebar({ features }: { features: string[] }) {
           <Link href="/" onClick={closeSidebar}>Home</Link>
           <Link href="/#listings" onClick={closeSidebar}>Featured listings</Link>
           <Link href="/#top" onClick={closeSidebar}>Top properties</Link>
-          <Link href="/#locations" onClick={closeSidebar}>Locations</Link>
-          <Link href="/#faq" onClick={closeSidebar}>FAQ</Link>
         </div>
 
         <div className="sb-title">Property types</div>
@@ -146,24 +143,13 @@ export function Sidebar({ features }: { features: string[] }) {
           </>
         )}
 
-        <div className="sb-title">More</div>
-        <div className="sb-links">
-          <button
-            onClick={() => {
-              closeSidebar()
-              openRequest()
-            }}
-          >
-            Request a property
-          </button>
-        </div>
       </nav>
     </>
   )
 }
 
 export function Footer() {
-  const { openRequest } = useUI()
+  const { openAuth } = useUI()
 
   return (
     <footer>
@@ -172,45 +158,46 @@ export function Footer() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="logo-img" src="/assets/dascout-logo.png" alt="DaScout" />
           <p>
-            Mindanao&rsquo;s exclusive, verified real estate platform. Every listing title-checked,
-            boundary-walked, and confirmed on the ground before it reaches you.
+            Verified properties for sale across Mindanao. Title-checked and boundary-walked before
+            they ever reach you.
           </p>
         </div>
         <div>
-          <h4>Quick Links</h4>
-          <Link href="/">Home</Link>
-          <Link href="/#listings">Featured listings</Link>
-          <Link href="/#locations">Locations</Link>
-          <Link href="/#faq">FAQ</Link>
-          <button onClick={openRequest}>Request a property</button>
+          <h4>Get in touch</h4>
+          <div className="flinks">
+            <a href="tel:+639206685742">
+              <Icon name="phone" /> 0920 668 5742
+            </a>
+            <a href="mailto:dascoutph@gmail.com">
+              <Icon name="mail" /> dascoutph@gmail.com
+            </a>
+            <a
+              href="https://www.facebook.com/profile.php?id=61582876857220"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon name="facebook" /> DaScout on Facebook
+            </a>
+          </div>
         </div>
         <div>
-          <h4>Property Types</h4>
-          {CATEGORY_KEYS.map((key) => (
-            <Link key={key} href={`/?cat=${key}#listings`}>
-              {CATEGORIES[key].plural}
-            </Link>
-          ))}
-        </div>
-        <div className="contact">
-          <h4>Contact Us</h4>
-          <div>
-            <Icon name="pin" /> General Santos City, Mindanao
-          </div>
-          <div>
-            <Icon name="phone" /> +63 (83) 552 0000
-          </div>
-          <div>
-            <Icon name="mail" /> hello@dascout.ph
+          <h4>Browse</h4>
+          <div className="flinks">
+            <Link href="/#listings">All listings</Link>
+            <Link href="/#top">Top properties</Link>
+            <button onClick={() => openAuth('register')}>Create a free account</button>
           </div>
         </div>
       </div>
-      <p className="copy">
-        © DaScout. All rights reserved. All listings are sourced, title-checked, and verified by
-        DaScout before publication. DaScout is a listing platform and is not a party to any
-        transaction; verify all property documents (TCT/CCT, tax declarations) before paying any
-        reservation fee.
-      </p>
+      <div className="copy">
+        <span>© DaScout — Verified properties across Mindanao.</span>
+        <span>General Santos City, SOCCSKSARGEN</span>
+        <p className="legal">
+          All listings are sourced, title-checked, and verified by DaScout before publication.
+          DaScout is a listing platform and is not a party to any transaction; verify all property
+          documents (TCT/CCT, tax declarations) before paying any reservation fee.
+        </p>
+      </div>
     </footer>
   )
 }

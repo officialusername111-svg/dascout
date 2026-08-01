@@ -143,7 +143,7 @@ function RecordForm({
         <div className="ferr">{notesError ?? 'Add a little more detail.'}</div>
       </div>
 
-      <button className="btn btn-navy" type="submit" disabled={pending}>
+      <button className="btn btn-dark" type="submit" disabled={pending}>
         {pending ? 'Recording…' : submitLabel}
       </button>
     </form>

@@ -136,7 +136,7 @@ export function PhotoCard({
         {confirming ? (
           <>
             <button
-              className="btn btn-navy"
+              className="btn btn-dark"
               type="button"
               disabled={busy}
               onClick={() => {

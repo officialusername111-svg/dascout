@@ -105,7 +105,7 @@ export default async function AdminListingsPage({
             ))}
           </select>
         </div>
-        <button className="btn btn-navy" type="submit">
+        <button className="btn btn-dark" type="submit">
           Apply
         </button>
         {(q || sort) && (
@@ -131,7 +131,7 @@ export default async function AdminListingsPage({
                   {row.updatedAtLabel ? ` · changed ${row.updatedAtLabel}` : ''}
                 </span>
               </div>
-              <Link className="btn btn-navy abtn-sm" href={`/admin/listings/${row.id}`}>
+              <Link className="btn btn-dark abtn-sm" href={`/admin/listings/${row.id}`}>
                 Open
               </Link>
               {(row.status === 'live' || row.status === 'sold') && (
@@ -148,7 +148,7 @@ export default async function AdminListingsPage({
           This list has {result.pageCount} page{result.pageCount === 1 ? '' : 's'} of{' '}
           {ADMIN_PAGE_SIZE}. Start again from the first one.
           <div>
-            <Link className="btn btn-navy" href={withParams(params, { page: undefined })}>
+            <Link className="btn btn-dark" href={withParams(params, { page: undefined })}>
               Go to page 1
             </Link>
           </div>

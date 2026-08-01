@@ -1,18 +1,21 @@
-/* DaScout v2 — HomeVista structure · navy+gold · light theme
+/* DaScout v6 — HomeVista structure · black+gold · light theme
    Tokens → base → chrome (util/header/sidebar) → hero/search → sections → cards →
-   bands → footer → dialogs/forms → a11y/motion → breakpoints */
+   bands → footer → dialogs/forms → a11y/motion → breakpoints
+
+   The dark ramp is black, not navy: the warm cream ground (--bg-2) carries a true
+   black better than it carried the old blue-tinted one. Gold is unchanged. */
 
 :root{
   /* palette */
-  --navy-950:#081527; --navy-900:#0B1D33; --navy-800:#122A47; --navy-700:#1B3A5E;
+  --ink-950:#000000; --ink-900:#0D0D0F; --ink-800:#1C1C20; --ink-700:#2E2E34;
   --gold:#D4AF5A; --gold-d:#B8923E; --gold-l:#E9CE8F; --on-gold:#1C1403;
-  --bg:#FFFFFF; --bg-2:#F6F4EE; --bg-hero:#F2EFE6;
-  --ink:#152030; --ink-2:#49566A; --ink-3:#77828F; --line:#E7E4DA;
+  --bg:#FFFFFF; --bg-2:#F6F4EE;
+  --ink:#16161A; --ink-2:#52525B; --ink-3:#7A7A83; --line:#E7E4DA;
   --ok:#1E7A46; --err:#B3261E;
   /* shape & shadow */
   --r:14px; --r-s:8px;
-  --shadow:0 1px 2px rgba(8,21,39,.06), 0 10px 28px rgba(8,21,39,.09);
-  --shadow-s:0 1px 3px rgba(8,21,39,.08);
+  --shadow:0 1px 2px rgba(0,0,0,.06), 0 10px 28px rgba(0,0,0,.10);
+  --shadow-s:0 1px 3px rgba(0,0,0,.08);
   /* motion */
   --dur-1:150ms; --dur-2:220ms; --ease:cubic-bezier(.23,1,.32,1);
   /* z ladder */
@@ -31,7 +34,7 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
 .wrap{max-width:1220px;margin:0 auto;padding:0 24px}
 section{padding:54px 0 0}
-h1,h2,h3{font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;color:var(--navy-900);font-weight:700;line-height:1.2;letter-spacing:-0.015em}
+h1,h2,h3{font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;color:var(--ink-900);font-weight:700;line-height:1.2;letter-spacing:-0.015em}
 h2{font-size:clamp(22px,2.6vw,30px)}
 h2 em,h1 em{font-style:normal;color:var(--gold-d)}
 .sec-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:26px;flex-wrap:wrap}
@@ -47,14 +50,14 @@ h2 em,h1 em{font-style:normal;color:var(--gold-d)}
   white-space:nowrap;transition:filter var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease)}
 .btn-gold{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:var(--on-gold)}
 .btn-gold:hover{filter:brightness(1.05)}
-.btn-navy{background:var(--navy-900);color:var(--gold-l)}
-.btn-navy:hover{background:var(--navy-800)}
-.btn-ghost{border:1.5px solid var(--navy-900);color:var(--navy-900)}
-.btn-ghost:hover{background:var(--navy-900);color:var(--gold-l)}
+.btn-dark{background:var(--ink-900);color:var(--gold-l)}
+.btn-dark:hover{background:var(--ink-800)}
+.btn-ghost{border:1.5px solid var(--ink-900);color:var(--ink-900)}
+.btn-ghost:hover{background:var(--ink-900);color:var(--gold-l)}
 .viewall{color:var(--gold-d);font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;min-height:44px}
 
 /* skip link */
-.skip{position:absolute;left:-9999px;top:0;z-index:100;background:var(--navy-900);color:#fff;padding:12px 20px;border-radius:0 0 var(--r-s) 0}
+.skip{position:absolute;left:-9999px;top:0;z-index:100;background:var(--ink-900);color:#fff;padding:12px 20px;border-radius:0 0 var(--r-s) 0}
 .skip:focus{left:0}
 
 /* ============ HEADER ============ */
@@ -63,19 +66,19 @@ header{position:sticky;top:0;z-index:var(--z-sticky);background:#fff;border-bott
 .logo-img{height:24px;width:auto}
 nav.main{display:flex;gap:2px;font-size:14px;font-weight:600;color:var(--ink-2)}
 nav.main a{padding:10px 12px;min-height:44px;display:inline-flex;align-items:center;border-radius:6px}
-nav.main a:hover{color:var(--navy-900);background:var(--bg-2)}
-nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 0 var(--gold)}
+nav.main a:hover{color:var(--ink-900);background:var(--bg-2)}
+nav.main a[aria-current="page"]{color:var(--ink-900);box-shadow:inset 0 -2.5px 0 var(--gold)}
 .hd-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
 .iconbtn{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;color:var(--ink-2);position:relative}
 .iconbtn:hover{color:var(--gold-d);border-color:var(--gold-d)}
 .iconbtn .cnt{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:var(--gold);color:var(--on-gold);font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 4px}
-.signin{font-weight:700;font-size:13.5px;color:var(--navy-900);padding:10px 12px;min-height:44px;display:inline-flex;align-items:center;border-radius:6px}
+.signin{font-weight:700;font-size:13.5px;color:var(--ink-900);padding:10px 12px;min-height:44px;display:inline-flex;align-items:center;border-radius:6px}
 .signin:hover{background:var(--bg-2)}
 .burger{display:none;width:44px;height:44px;border:1px solid var(--line);border-radius:var(--r-s);flex-direction:column;justify-content:center;align-items:center;gap:4.5px}
-.burger span{display:block;width:19px;height:2px;background:var(--navy-900);border-radius:2px}
+.burger span{display:block;width:19px;height:2px;background:var(--ink-900);border-radius:2px}
 
 /* ============ SIDEBAR (mobile drawer) ============ */
-.scrim{position:fixed;inset:0;background:rgba(8,21,39,.5);opacity:0;pointer-events:none;transition:opacity var(--dur-2) var(--ease);z-index:calc(var(--z-drawer) - 1)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity var(--dur-2) var(--ease);z-index:calc(var(--z-drawer) - 1)}
 .scrim.on{opacity:1;pointer-events:auto}
 .sidebar{position:fixed;top:0;left:0;bottom:0;width:min(320px,88vw);background:#fff;z-index:var(--z-drawer);
   padding:18px 22px 40px;overflow-y:auto;transform:translateX(-102%);transition:transform var(--dur-2) var(--ease)}
@@ -84,93 +87,88 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .sb-close{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;color:var(--ink-2)}
 .sb-title{font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 6px}
 .sb-links a,.sb-links button{display:flex;align-items:center;gap:8px;padding:9px 8px;min-height:44px;border-radius:var(--r-s);font-weight:600;font-size:14.5px;color:var(--ink-2);width:100%;text-align:left}
-.sb-links a:hover,.sb-links button:hover{background:var(--bg-2);color:var(--navy-900)}
-.sb-links a[aria-current="page"]{color:var(--navy-900);background:var(--bg-2)}
+.sb-links a:hover,.sb-links button:hover{background:var(--bg-2);color:var(--ink-900)}
+.sb-links a[aria-current="page"]{color:var(--ink-900);background:var(--bg-2)}
 .sb-feat{display:flex;flex-wrap:wrap;gap:8px}
 .sb-feat button,.sb-feat a{border:1px solid var(--line);border-radius:999px;padding:10px 14px;min-height:44px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .sb-feat button:hover,.sb-feat a:hover{border-color:var(--gold-d);color:var(--gold-d)}
 
-/* ============ HERO — night-photo backdrop, glass featured card on the left ============
-   The approved redesign: the lit building sits on the photo's right, so all content
-   (copy, then the glass listing card) lives in the left column over dark sky, and the
-   scrim fades left-to-right so the building itself stays unveiled. */
-.hero{position:relative;background:#050B14 url(/assets/hero-night.jpg) center right/cover no-repeat}
+/* ============ HERO — night-photo backdrop, featured tile + search card ============
+   v6: the headline block sits on its own, and beneath it the featured photo tile and the
+   white glass search card sit on ONE line with `space-between`. The gap that leaves in
+   the middle is deliberate — it is where the lit building in the photo stays visible. */
+.hero{position:relative;background:#000 url(/assets/hero-night2.jpg) center/cover no-repeat}
 .hero::before{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(5,11,20,.62) 0%,rgba(5,11,20,.3) 45%,rgba(5,11,20,.05) 72%)}
-.hero .in{position:relative;max-width:1220px;margin:0 auto;padding:64px 24px 60px;
-  display:grid;grid-template-columns:minmax(340px,540px) 1fr;align-items:center}
+  background:linear-gradient(90deg,rgba(0,0,0,.86) 0%,rgba(0,0,0,.66) 46%,rgba(0,0,0,.42) 74%,rgba(0,0,0,.52) 100%)}
+.hero .in{position:relative;max-width:1220px;margin:0 auto;padding:56px 24px 52px}
+.hero .lead{max-width:640px;margin-bottom:32px}
 .hero .label{display:block;font-size:12px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--gold-l);margin-bottom:14px}
-.hero h1{font-size:clamp(30px,3.8vw,46px);line-height:1.15;color:#fff;max-width:16ch}
+.hero h1{font-size:clamp(30px,3.6vw,44px);line-height:1.15;color:#fff;max-width:16ch}
 .hero h1 em{color:var(--gold)}
-.hero .sub{margin:18px 0 26px;color:rgba(237,240,245,.82);font-size:16.5px;line-height:1.75;max-width:44ch}
+.hero .sub{margin:16px 0 22px;color:rgba(240,240,244,.82);font-size:16px;line-height:1.7;max-width:46ch}
 .hero .ctas,.ctas{display:flex;gap:12px;flex-wrap:wrap}
-.hero .ctas{margin-bottom:36px}
-.hero .btn-ghost{border-color:rgba(255,255,255,.55);color:#fff}
-.hero .btn-ghost:hover{background:rgba(255,255,255,.14);color:#fff}
+.hero .row{display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 
-/* glass featured-listing card — photo snippet + details, no price on the public site */
-.glasscard{position:relative;width:min(440px,100%);border-radius:20px;padding:18px;color:#fff;
-  background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
-  border:1px solid rgba(255,255,255,.28);box-shadow:0 18px 50px rgba(0,0,0,.45)}
-/* solid fallback where backdrop blur is unsupported (keeps text legible over the photo) */
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .glasscard{background:rgba(8,21,39,.9)}
-}
+/* featured listing — a photograph with overlays, nothing else. No price: amounts are an
+   admin-only surface. The gradient span is `.fade`, NOT `.scrim`: the global `.scrim` is
+   the sidebar backdrop and carries `opacity:0`, which would render this invisible. */
+.glasscard{position:relative;width:404px;max-width:100%;border-radius:20px;overflow:hidden;color:#fff;
+  border:1px solid rgba(255,255,255,.26);box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.glasscard .shot{display:block;width:100%;height:322px;object-fit:cover}
+.glasscard .noshot{display:block;width:100%;height:322px;background:var(--ink-800)}
+.glasscard .fade{position:absolute;left:0;right:0;bottom:0;height:68%;pointer-events:none;z-index:1;
+  background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 38%,rgba(0,0,0,0) 100%)}
 .glasscard > .cardlink{position:absolute;inset:0;z-index:1;border-radius:20px}
-.glasscard .fav{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.22);color:#fff;
-  border:1px solid rgba(255,255,255,.35);box-shadow:none;z-index:2}
-.glasscard .snap{display:flex;gap:14px;align-items:center;margin-bottom:14px;padding-right:40px}
-.glasscard .snap img{width:118px;height:88px;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,.3);flex-shrink:0}
-.glasscard .t{min-width:0}
-.glasscard .cat{display:inline-block;background:linear-gradient(180deg,var(--gold-l),var(--gold));color:var(--on-gold);
-  font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:3px 10px;margin-bottom:8px}
-.glasscard .t b{display:block;font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;font-weight:700;font-size:19px;line-height:1.3;letter-spacing:-0.015em}
-.glasscard .loc{display:flex;align-items:center;gap:6px;color:rgba(237,240,245,.85);font-size:13.5px;margin-top:4px}
-.glasscard .specs{display:flex;gap:16px;border-top:1px solid rgba(255,255,255,.22);padding-top:12px;font-size:13.5px;font-weight:600;flex-wrap:wrap}
-.glasscard .specs span{display:inline-flex;align-items:center;gap:7px;color:rgba(255,255,255,.92)}
+/* 44px, not the mockup's 38px: this is the accessible touch-target floor the rest of the
+   site holds to, and the 6px is invisible against a photo. */
+.glasscard .fav{position:absolute;top:16px;right:16px;background:rgba(0,0,0,.42);color:#fff;
+  border:1px solid rgba(255,255,255,.45);box-shadow:none;z-index:2}
+/* above the fade, but transparent to clicks so the stretched card link still covers it */
+.glasscard .t{position:absolute;left:20px;right:20px;bottom:54px;z-index:2;pointer-events:none}
+.glasscard .t b{display:block;font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;font-weight:700;
+  font-size:21px;line-height:1.28;letter-spacing:-0.015em;text-shadow:0 1px 12px rgba(0,0,0,.55)}
+.glasscard .loc{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.9);font-size:13.5px;
+  margin-top:6px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 
-/* rotator controls, inside the glass card under the specs */
-.spot-ctrl{position:relative;z-index:2;display:flex;align-items:center;gap:2px;margin-top:10px}
+/* rotator controls, bottom-left ON the photo */
+.spot-ctrl{position:absolute;left:14px;bottom:8px;z-index:2;display:flex;align-items:center;gap:2px}
 .spot-ctrl button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.85);position:relative}
 .spot-ctrl button:hover{color:#fff}
 .spot-ctrl .dot::after{content:"";position:absolute;inset:0;margin:auto;width:7px;height:7px;border-radius:50%;
-  background:rgba(255,255,255,.45)}
+  background:rgba(255,255,255,.5)}
 .spot-ctrl .dot[aria-pressed="true"]::after{background:var(--gold);width:18px;border-radius:4px}
 
-/* ============ SEARCH BAR ============ */
-.searchbar{max-width:1120px;margin:-56px auto 0;position:relative;z-index:5;padding:0 24px}
-.searchbar form{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
-  display:grid;grid-template-columns:1.25fr 1fr .9fr auto;overflow:hidden}
-.sf{padding:13px 20px;border-right:1px solid var(--line)}
-.sf label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
-.sf input,.sf select{width:100%;border:none;font:inherit;font-size:16px;color:var(--ink);background:none;min-height:30px}
-.sf input:focus,.sf select:focus{outline:none}
-.sf:focus-within{background:var(--bg-2)}
-.searchbar .go{display:grid;place-items:center;padding:10px}
-.search-status{max-width:1120px;margin:10px auto 0;padding:0 24px;font-size:13.5px;color:var(--ink-2);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.search-status button,.search-status a{color:var(--gold-d);font-weight:700;min-height:44px}
-
-/* trust strip */
-.trust{max-width:1120px;margin:14px auto 0;padding:0 24px;display:flex;gap:26px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink-2)}
-.trust span{display:inline-flex;gap:8px;align-items:center}
-.trust .icon{color:var(--gold-d)}
-
-/* ============ PROPERTY TYPES ============ */
-.types{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-.type{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px 10px;text-align:center;
-  transition:transform var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease)}
-.type .ic{width:42px;height:42px;margin:0 auto 10px;border-radius:12px;background:var(--bg-2);color:var(--gold-d);display:grid;place-items:center}
-.type b{display:block;font-size:13.5px;color:var(--navy-900)}
-.type span{font-size:12px;color:var(--ink-3)}
-@media (hover:hover) and (pointer:fine){
-  .type:hover{transform:translateY(-3px);border-color:var(--gold-d)}
+/* ============ SEARCH CARD — white glass, inside the hero ============ */
+.searchcard{width:562px;max-width:100%;border-radius:18px;padding:20px 20px 18px;position:relative;
+  background:rgba(255,255,255,.80);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.72);box-shadow:0 20px 54px rgba(0,0,0,.46)}
+/* solid fallback where backdrop blur is unsupported (keeps the fields legible over the photo) */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .searchcard{background:rgba(255,255,255,.95)}
 }
+.searchcard h2{font-size:18px;margin-bottom:14px}
+.sfrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.sf{border:1px solid rgba(0,0,0,.10);border-radius:11px;padding:7px 12px;background:rgba(255,255,255,.72);min-width:0}
+.sf label{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:1px}
+.sf select{width:100%;border:none;font:inherit;font-size:14px;color:var(--ink);background:none;min-height:26px;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2352525B' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;background-position:right 0 center;background-size:15px;padding-right:19px;text-overflow:ellipsis}
+.sf select:focus{outline:none}
+.sf:focus-within{border-color:var(--gold-d)}
+.searchcard .go{margin-top:14px;width:100%;min-height:52px;background:var(--ink-900);color:#fff;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;
+  font-weight:700;font-size:15.5px;position:relative}
+.searchcard .go:hover{background:var(--ink-800)}
+.searchcard .go .circ{position:absolute;right:8px;width:36px;height:36px;border-radius:50%;background:#fff;color:var(--ink-900);display:grid;place-items:center}
 
 /* ============ LISTING CARDS ============ */
 .tabs{display:flex;gap:8px;flex-wrap:wrap}
-.tabs button,.tabs a{border:1px solid var(--line);border-radius:999px;padding:0 18px;min-height:44px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
-.tabs button[aria-pressed="true"],.tabs a[aria-current="true"]{background:var(--navy-900);border-color:var(--navy-900);color:var(--gold-l)}
+/* inline-flex + centring: as `display:block` the label sat at the TOP of the 44px pill
+   instead of in the middle. Fixes Featured Listings and Top Properties alike. */
+.tabs button,.tabs a{display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:999px;padding:0 18px;min-height:44px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.tabs button[aria-pressed="true"],.tabs a[aria-current="true"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--gold-l)}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 /* listing tile (approved listing_ref): photo on top, white body below — quieter type,
    monochrome gray icons. Photo card look is scoped to the public grids so the admin
@@ -183,7 +181,7 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 }
 .card .ph{position:relative;display:block;aspect-ratio:4/3;background:var(--bg-2);overflow:hidden}
 .card .ph img{width:100%;height:100%;object-fit:cover}
-.pill{position:absolute;top:12px;left:12px;background:var(--navy-900);color:var(--gold-l);font-size:10px;font-weight:800;
+.pill{position:absolute;top:12px;left:12px;background:var(--ink-900);color:var(--gold-l);font-size:10px;font-weight:800;
   letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;border-radius:5px}
 .fav{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:50%;background:#fff;color:var(--ink-2);
   display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:2}
@@ -200,13 +198,13 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 
 /* zero results / empty states */
 .empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:38px 26px;text-align:center;color:var(--ink-2)}
-.empty b{display:block;font-size:16px;color:var(--navy-900);margin-bottom:6px;font-family:var(--font-figtree),sans-serif}
+.empty b{display:block;font-size:16px;color:var(--ink-900);margin-bottom:6px;font-family:var(--font-figtree),sans-serif}
 .empty .btn{margin-top:16px}
 
 /* pagination */
 .pagination{display:flex;gap:8px;justify-content:center;margin-top:26px}
 .pagination button,.pagination a{min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:var(--r-s);font-weight:700;color:var(--ink-2)}
-.pagination button[aria-current="page"],.pagination a[aria-current="page"]{background:var(--navy-900);border-color:var(--navy-900);color:var(--gold-l)}
+.pagination button[aria-current="page"],.pagination a[aria-current="page"]{background:var(--ink-900);border-color:var(--ink-900);color:var(--gold-l)}
 
 /* ============ TOP LIST ============ */
 .toplist{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
@@ -215,80 +213,63 @@ nav.main a[aria-current="page"]{color:var(--navy-900);box-shadow:inset 0 -2.5px 
 .topitem .rank{font-family:var(--font-head),system-ui,sans-serif;font-weight:700;font-size:20px;color:var(--gold-d);width:28px;text-align:center;flex-shrink:0}
 .topitem img{width:74px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0}
 .topitem .t{min-width:0}
-.topitem b{display:block;font-size:14.5px;color:var(--navy-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topitem b{display:block;font-size:14.5px;color:var(--ink-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topitem .t span{font-size:12.5px;color:var(--ink-3)}
 .topitem .views{font-size:12.5px;font-weight:700;color:var(--ink-2);white-space:nowrap}
 .topitem .pv{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
 .topitem .t .meta{display:block;font-size:12px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 
-/* ============ ABOUT STRIP — pure-text feature blocks (approved: no images) ============ */
-.why{background:var(--bg-2);border-radius:18px;padding:40px 38px}
-.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 28px;margin-top:8px}
-.frow{padding:20px 6px}
-.ftext .ic{width:42px;height:42px;color:var(--gold-d);margin-bottom:12px}
-.ftext .ic .icon{width:34px;height:34px;stroke-width:1.6}
-.ftext b{display:block;font-family:var(--font-head),system-ui,sans-serif;font-weight:700;font-size:14.5px;letter-spacing:-0.01em;color:var(--navy-900);margin-bottom:6px}
-.ftext > span{color:var(--ink-2);font-size:13.5px;line-height:1.65;display:block}
-.fcta{margin-top:14px}
+/* ============ EXPECT-FROM-US BAND — dark band, copy left, 2x2 cards right ============ */
+.expect{background:var(--ink-900);border-radius:20px;padding:42px 40px;display:grid;
+  grid-template-columns:minmax(260px,.85fr) 1.15fr;gap:40px;align-items:center}
+.expect .lead h2{color:#fff;font-size:clamp(24px,2.5vw,32px);max-width:14ch}
+.expect .lead h2 em{color:var(--gold)}
+.expect .lead p{color:rgba(240,240,244,.78);font-size:14.5px;line-height:1.7;margin:16px 0 22px;max-width:38ch}
+.ecards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ecard{background:#fff;border-radius:14px;padding:20px}
+.ecard .ic{width:38px;height:38px;border-radius:10px;background:var(--bg-2);color:var(--gold-d);display:grid;place-items:center;margin-bottom:12px}
+.ecard .ic .icon{width:20px;height:20px;stroke-width:1.7}
+.ecard b{display:block;font-family:var(--font-head),system-ui,sans-serif;font-size:14.5px;color:var(--ink-900);margin-bottom:6px}
+.ecard span{color:var(--ink-2);font-size:13px;line-height:1.6;display:block}
 .btn-sm{min-height:40px;padding:0 18px;font-size:12px}
 
-/* ============ TESTIMONIALS ============ */
-.quotes{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-.quote{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:22px}
-.quote .qm{font-family:var(--font-head),Georgia,serif;font-weight:700;font-size:34px;color:var(--gold);line-height:1;margin-bottom:6px}
-.quote p{color:var(--ink-2);font-size:14px;margin-bottom:14px}
-.quote .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.quote .av{width:38px;height:38px;border-radius:50%;background:var(--navy-800);color:var(--gold-l);display:grid;place-items:center;font-size:12px;font-weight:700}
-.quote b{font-size:13.5px;color:var(--navy-900);display:block;font-family:var(--font-figtree),sans-serif}
-.quote .role{font-size:11.5px;color:var(--ink-3)}
-.quote .stars{color:var(--gold);font-size:12.5px;margin-left:auto}
+/* ============ VERIFIED BAND — photo left, statement + account CTA right ============ */
+.verify{background:var(--bg-2);border-radius:20px;padding:26px;display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
+.verify .shot{width:100%;height:100%;min-height:330px;object-fit:cover;border-radius:16px}
+.verify .vtext{padding-right:12px}
+.verify h2{font-size:clamp(23px,2.4vw,30px);max-width:20ch}
+.verify h2 em{color:var(--gold-d)}
+.verify p{color:var(--ink-2);font-size:14.5px;line-height:1.75;margin:16px 0 22px;max-width:52ch}
 
-/* ============ REQUEST BAND ============ */
-.reqband{background:var(--navy-900);color:#EDEAE0;border-radius:18px;display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;padding:32px 38px}
-.reqband h2{color:#fff;font-size:clamp(20px,2.4vw,26px)}
-.reqband h2 em{color:var(--gold)}
-.reqband p{color:rgba(237,234,224,.7);font-size:13.5px;margin-top:4px}
-.reqband > .icon{width:42px;height:42px;color:var(--gold)}
-
-/* ============ LOCATIONS / FAQ ============ */
-.split2{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start}
-.azindex{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px 30px}
-.az{display:flex;flex-wrap:wrap;gap:8px}
-.az button,.az a{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;
-  border:1px solid var(--line);border-radius:7px;padding:0 13px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
-.az button:hover,.az a:hover{border-color:var(--gold-d);color:var(--gold-d)}
-.az button[aria-pressed="true"],.az a[aria-current="true"]{background:var(--navy-900);border-color:var(--navy-900);color:var(--gold-l)}
-.faq details{background:#fff;border:1px solid var(--line);border-radius:11px;padding:4px 20px;margin-bottom:10px}
-.faq summary{font-weight:700;font-size:15px;cursor:pointer;list-style:none;color:var(--navy-900);display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px}
-.faq summary::-webkit-details-marker{display:none}
-.faq summary .icon{transition:transform var(--dur-2) var(--ease);color:var(--ink-3)}
-.faq details[open] summary .icon{transform:rotate(180deg)}
-.faq .a{color:var(--ink-2);font-size:14px;padding:0 0 16px}
-
-/* ============ FOOTER ============ */
-footer{background:var(--navy-950);color:rgba(237,234,224,.7);margin-top:64px;padding:52px 24px 28px}
-.foot{max-width:1220px;margin:0 auto;display:grid;grid-template-columns:1.3fr 1fr 1fr 1.2fr;gap:36px}
-.foot h4{color:#fff;font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;font-family:var(--font-figtree),sans-serif}
-.foot a,.foot button{display:flex;font-size:13.5px;padding:8px 0;min-height:36px;align-items:center;color:rgba(237,234,224,.7);text-align:left}
-.foot a:hover,.foot button:hover{color:var(--gold)}
-.foot .logo-img{height:26px;filter:brightness(0) invert(1);margin-bottom:14px}
-.foot .brand p{font-size:13.5px;line-height:1.7}
-.foot .contact div{display:flex;gap:9px;align-items:start;font-size:13.5px;padding:5px 0}
-.foot .contact .icon{color:var(--gold);margin-top:4px}
-.copy{max-width:1220px;margin:34px auto 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.12);font-size:12px;color:rgba(237,234,224,.45);line-height:1.7}
+/* ============ FOOTER — brand / get in touch / browse, then the bottom bar ============ */
+footer{background:var(--ink-950);color:rgba(255,255,255,.68);margin-top:56px;padding:38px 24px 30px;font-size:13px}
+.foot{max-width:1220px;margin:0 auto;display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start}
+.foot > div{min-width:0}
+.foot h4{color:#fff;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;font-family:var(--font-figtree),sans-serif;font-weight:800}
+.foot a,.foot button{display:inline-flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.82);min-height:30px;padding:4px 0;text-align:left}
+.foot a:hover,.foot button:hover{color:#fff}
+.foot .logo-img{height:26px;filter:brightness(0) invert(1);margin-bottom:10px}
+.foot .brand{max-width:34ch}
+.foot .brand p{font-size:13px;line-height:1.7}
+.foot .flinks{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.foot .flinks .icon{width:16px;height:16px;color:var(--gold);flex-shrink:0}
+/* the transaction disclaimer keeps its own full-width line under the bar */
+.copy .legal{flex-basis:100%;font-size:12px;color:rgba(255,255,255,.45);line-height:1.7;margin-top:2px}
+.copy{max-width:1220px;margin:28px auto 0;padding-top:18px;border-top:1px solid rgba(255,255,255,.12);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12.5px;color:rgba(255,255,255,.55);line-height:1.7}
 
 /* ============ DIALOGS ============ */
 dialog{border:none;border-radius:16px;padding:0;max-width:440px;width:calc(100vw - 40px);box-shadow:var(--shadow);color:var(--ink);position:relative}
-dialog::backdrop{background:rgba(8,21,39,.55)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
 body.dialog-open{overflow:hidden}
 .mbox{padding:28px 26px}
 .mbox h3{font-size:22px;margin-bottom:4px}
 .mbox .sub2{color:var(--ink-2);font-size:13.5px;margin-bottom:18px}
 .mbox .x{position:absolute;top:10px;right:10px;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:var(--ink-2)}
-.mbox .x:hover{background:var(--bg-2);color:var(--navy-900)}
+.mbox .x:hover{background:var(--bg-2);color:var(--ink-900)}
 .mtabs{display:flex;gap:6px;margin-bottom:18px;background:var(--bg-2);border-radius:999px;padding:4px}
 .mtabs button{flex:1;min-height:40px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--ink-2)}
-.mtabs button[aria-pressed="true"]{background:var(--navy-900);color:var(--gold-l)}
+.mtabs button[aria-pressed="true"]{background:var(--ink-900);color:var(--gold-l)}
 
 /* forms */
 .field{margin-bottom:14px}
@@ -304,9 +285,9 @@ body.dialog-open{overflow:hidden}
 .pwwrap{position:relative}
 .pwwrap input{padding-right:58px}
 .pwtoggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);min-width:48px;min-height:40px;font-size:12px;font-weight:700;color:var(--ink-2)}
-.pwtoggle:hover{color:var(--navy-900)}
-.mbtn{width:100%;min-height:48px;background:var(--navy-900);color:var(--gold-l);border-radius:var(--r-s);font-weight:700;font-size:14px;margin-top:6px}
-.mbtn:hover{background:var(--navy-800)}
+.pwtoggle:hover{color:var(--ink-900)}
+.mbtn{width:100%;min-height:48px;background:var(--ink-900);color:var(--gold-l);border-radius:var(--r-s);font-weight:700;font-size:14px;margin-top:6px}
+.mbtn:hover{background:var(--ink-800)}
 .mbtn[disabled]{opacity:.6;cursor:wait}
 .mmeta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12.5px;color:var(--ink-2)}
 .mmeta button{color:var(--gold-d);font-weight:700;min-height:44px;display:inline-flex;align-items:center}
@@ -315,7 +296,7 @@ body.dialog-open{overflow:hidden}
 .fmsg.err{display:block;background:#FBEAE9;color:var(--err)}
 
 /* toast / status */
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:var(--navy-900);color:#fff;
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:var(--ink-900);color:#fff;
   padding:12px 20px;border-radius:999px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;
   transition:opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease);z-index:var(--z-toast);max-width:calc(100vw - 40px)}
 .toast.on{opacity:1;transform:translateX(-50%)}
@@ -353,40 +334,36 @@ body.dialog-open{overflow:hidden}
 
 /* ============ BREAKPOINTS ============ */
 @media (max-width:1020px){
-  .quotes{grid-template-columns:1fr 1fr}
   .toplist{grid-template-columns:1fr}
   .grid{grid-template-columns:repeat(3,1fr)}
+  .expect,.verify{grid-template-columns:1fr}
+  .verify .shot{min-height:240px}
+  .verify .vtext{padding-right:0}
 }
 @media (max-width:880px){
   nav.main{display:none}
   .burger{display:flex}
-  /* mobile hero: single column over the dark photo, full-width stacked buttons */
+  /* mobile hero: the tile and the search card stack, both full width */
   .hero{background-position:70% center}
-  .hero .in{grid-template-columns:1fr;padding:48px 24px 52px}
+  .hero .in{padding:48px 24px 52px}
   .hero h1{max-width:none}
   .hero .ctas .btn{width:100%}
-  .glasscard{width:100%}
-  .split2{grid-template-columns:1fr}
-  .searchbar form{grid-template-columns:1fr 1fr}
-  .sf{border-right:none;border-bottom:1px solid var(--line)}
-  .searchbar .go{grid-column:1 / -1}
-  .searchbar .go .btn{width:100%}
+  .hero .row{flex-direction:column;align-items:stretch}
+  .glasscard,.searchcard{width:100%}
+  /* 16px is the floor that stops iOS Safari zooming the page on focus */
+  .sf select{font-size:16px}
   .grid{grid-template-columns:1fr 1fr}
   .prop-grid{grid-template-columns:1fr}
-  .foot{grid-template-columns:1fr 1fr}
-  .reqband{grid-template-columns:1fr;text-align:center;justify-items:center}
   .signin{display:none}
 }
 @media (max-width:560px){
-  .grid,.quotes{grid-template-columns:1fr}
-  .types{grid-template-columns:repeat(2,1fr)}
-  .frow{padding:16px 2px}
+  .grid{grid-template-columns:1fr}
+  .sfrow{grid-template-columns:1fr}
   .hd-actions .btn-gold{padding:0 14px;font-size:12px}
   .sec-head{align-items:start;flex-direction:column}
-  .why{padding:30px 22px}
-  .reqband{padding:26px 22px}
+  .expect{padding:30px 22px}
+  .ecards{grid-template-columns:1fr}
   .thumbs button{width:84px;height:60px}
-  .foot{grid-template-columns:1fr}
 }
 
 /* ============ APP PORT ADDITIONS ============
@@ -400,14 +377,14 @@ body.dialog-open{overflow:hidden}
 .card .fav,.card .pill{z-index:2}
 .ph-empty{position:absolute;inset:0;background:var(--bg-2)}
 .toplist-empty{border:1.5px dashed var(--line);border-radius:12px;padding:22px 18px;color:var(--ink-2);font-size:13.5px}
-.toplist-empty b{display:block;color:var(--navy-900);font-size:14.5px;margin-bottom:4px}
+.toplist-empty b{display:block;color:var(--ink-900);font-size:14.5px;margin-bottom:4px}
 
 /* ============ admin (Phase 4) ============
    Staff-only screens, built from the tokens above — no new colours, fonts or radii.
    Only the primitives the public pages never needed live here: a plain content panel
    (`.card` is the square photo tile, not a panel), a field grid, a non-link list row,
    and static variants of `.pill`, which is absolutely positioned by default. */
-.admin-bar{background:var(--navy-950);color:rgba(237,234,224,.8)}
+.admin-bar{background:var(--ink-950);color:rgba(255,255,255,.8)}
 .admin-bar .in{max-width:1220px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .admin-bar b{font-family:var(--font-head),system-ui,sans-serif;font-weight:700;color:var(--gold-l);font-size:16px}
 .admin-bar nav{display:flex;gap:2px;font-size:14px;font-weight:600}
@@ -438,13 +415,13 @@ body.dialog-open{overflow:hidden}
 
 .achecks{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 14px;margin-bottom:14px}
 .achecks label{display:flex;gap:9px;align-items:center;min-height:40px;font-size:13.5px;color:var(--ink-2)}
-.achecks input{width:18px;height:18px;min-height:0;padding:0;flex-shrink:0;accent-color:var(--navy-900)}
+.achecks input{width:18px;height:18px;min-height:0;padding:0;flex-shrink:0;accent-color:var(--ink-900)}
 
 .alist{display:grid;gap:10px}
 .alist .arow{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-height:70px;flex-wrap:wrap}
 .alist .arow:hover{border-color:var(--gold-d)}
 .alist .arow .t{min-width:0;flex:1}
-.alist .arow b{display:block;font-size:14.5px;color:var(--navy-900)}
+.alist .arow b{display:block;font-size:14.5px;color:var(--ink-900)}
 .alist .arow .meta{display:block;font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 
 .aphotos{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
@@ -459,7 +436,7 @@ body.dialog-open{overflow:hidden}
 .aqueue{display:grid;gap:6px;margin-top:14px;font-size:13px}
 .aqueue > div{display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-s);color:var(--ink-2)}
 .aqueue img{width:46px;height:34px;object-fit:cover;border-radius:6px;flex-shrink:0}
-.aqueue b{color:var(--navy-900);font-size:13px}
+.aqueue b{color:var(--ink-900);font-size:13px}
 .aqueue > div.bad{border-color:var(--err);color:var(--err)}
 .aqueue > div.good{border-color:var(--ok);color:var(--ok)}
 
@@ -468,7 +445,7 @@ body.dialog-open{overflow:hidden}
 .atrans > div{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
 .atrans > div:first-child{border-top:none;padding-top:0}
 .atrans .t{flex:1;min-width:190px}
-.atrans .t b{display:block;font-size:14px;color:var(--navy-900)}
+.atrans .t b{display:block;font-size:14px;color:var(--ink-900)}
 
 .asignin{max-width:440px;margin:64px auto 40px;padding:0 24px}
 .asignin h1{font-size:26px;margin-bottom:4px}

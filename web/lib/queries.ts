@@ -38,7 +38,6 @@ export type TownRow = {
   name: string
   province: string
   slug: string
-  initial: string
 }
 
 /**
@@ -51,7 +50,7 @@ export type TownRow = {
 export const CARD_COLUMNS = `
   id, slug, title, category, area_detail, lot_area_sqm, floor_area_sqm,
   bedrooms, bathrooms, is_trending, published_at,
-  towns!inner ( id, name, province, slug, initial ),
+  towns!inner ( id, name, province, slug ),
   listing_photos ( storage_path, alt_text, sort_order, is_primary ),
   listing_features ( features ( name ) )
 `
@@ -68,7 +67,7 @@ export type RawListing = {
   bathrooms: number | null
   is_trending: boolean
   published_at: string | null
-  towns: { id: string; name: string; province: string; slug: string; initial: string | null } | null
+  towns: { id: string; name: string; province: string; slug: string } | null
   listing_photos: { storage_path: string; alt_text: string | null; sort_order: number; is_primary: boolean }[]
   listing_features?: { features: { name: string } | null }[]
 }
@@ -149,7 +148,6 @@ export type ListingFilters = {
   loc?: string
   size?: string
   feat?: string
-  az?: string
   page?: number
   trending?: boolean
   shuffle?: boolean
@@ -197,7 +195,6 @@ export async function getListings(filters: ListingFilters): Promise<{ listings: 
 
   if (filters.feat) query = query.eq('matched.features.name', filters.feat)
 
-  if (filters.az) query = query.eq('towns.initial', filters.az.toUpperCase())
 
   if (filters.loc) {
     // The visitor types a town, a province or a barangay; match any of them.
@@ -304,7 +301,7 @@ export async function getTowns(): Promise<TownRow[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('towns')
-    .select('id, name, province, slug, initial')
+    .select('id, name, province, slug')
     .order('name')
 
   if (error) throw error
@@ -313,7 +310,6 @@ export async function getTowns(): Promise<TownRow[]> {
     name: t.name,
     province: t.province,
     slug: t.slug,
-    initial: (t.initial ?? t.name[0]).toUpperCase(),
   }))
 }
 
@@ -341,17 +337,6 @@ export async function getPopularFeatures(limit = 11): Promise<string[]> {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, limit)
     .map(([name]) => name)
-}
-
-/** How many live listings sit in each category — the count under each type tile. */
-export async function getCategoryCounts(): Promise<Record<CategoryKey, number>> {
-  const supabase = await createClient()
-  const { data, error } = await supabase.from('listings').select('category').eq('status', 'live')
-  if (error) throw error
-
-  const counts = { rlot: 0, farm: 0, clot: 0, rbdg: 0, cbdg: 0 } as Record<CategoryKey, number>
-  for (const row of data ?? []) counts[keyFromDb(row.category)] += 1
-  return counts
 }
 
 /** The rotating hero card: trending first, topped up with the newest listings. */
