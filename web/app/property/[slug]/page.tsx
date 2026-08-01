@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer, Header, Sidebar } from '@/components/Chrome'
-import { AuthDialog, RequestDialog } from '@/components/Dialogs'
+import { AuthDialog } from '@/components/Dialogs'
 import { Icon } from '@/components/Icon'
 import { ListingCardTile, Specs } from '@/components/ListingCard'
 import { Gallery } from '@/components/property/Gallery'
@@ -12,7 +12,6 @@ import {
   getListingBySlug,
   getPopularFeatures,
   getSimilarListings,
-  getTowns,
 } from '@/lib/queries'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -45,9 +44,8 @@ export default async function PropertyPage({ params }: Props) {
   const listing = await getListingBySlug(slug)
   if (!listing) notFound()
 
-  const [similar, towns, features] = await Promise.all([
+  const [similar, features] = await Promise.all([
     getSimilarListings(listing.categoryKey, listing.id),
-    getTowns(),
     getPopularFeatures(),
   ])
 
@@ -103,8 +101,8 @@ export default async function PropertyPage({ params }: Props) {
 
             <div className="prop-cta">
               <a
-                className="btn btn-navy"
-                href={`mailto:hello@dascout.ph?subject=${mailSubject}&body=${mailBody}`}
+                className="btn btn-dark"
+                href={`mailto:dascoutph@gmail.com?subject=${mailSubject}&body=${mailBody}`}
               >
                 <Icon name="mail" /> Inquire About This Property
               </a>
@@ -134,7 +132,6 @@ export default async function PropertyPage({ params }: Props) {
 
       <Footer />
       <AuthDialog />
-      <RequestDialog towns={towns.map((town) => town.name)} />
     </>
   )
 }

@@ -244,9 +244,6 @@ type UIState = {
   closeAuth: () => void
   /** Why the auth dialog opened by itself, when it did — set by the callback bounce. */
   authReason: string | null
-  requestOpen: boolean
-  openRequest: () => void
-  closeRequest: () => void
   toast: (message: string) => void
   favorites: string[]
   isFavorite: (slug: string) => boolean
@@ -278,7 +275,6 @@ export function UIProvider({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [authTab, setAuthTab] = useState<AuthTab | null>(null)
   const [authReason, setAuthReason] = useState<string | null>(null)
-  const [requestOpen, setRequestOpen] = useState(false)
   const [message, setMessage] = useState('')
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [, startTransition] = useTransition()
@@ -389,9 +385,6 @@ export function UIProvider({
         setAuthTab(null)
       },
       authReason,
-      requestOpen,
-      openRequest: () => setRequestOpen(true),
-      closeRequest: () => setRequestOpen(false),
       toast,
       favorites: saved,
       isFavorite: (slug) => saved.includes(slug),
@@ -406,7 +399,6 @@ export function UIProvider({
       closeSidebar,
       authTab,
       authReason,
-      requestOpen,
       toast,
       saved,
       toggleFavorite,

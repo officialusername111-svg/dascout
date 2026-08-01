@@ -55,7 +55,7 @@ export default async function ConfirmPage({
                 {/* Whatever arrived in the link, unchanged. The action decides whether
                     it is a request id, and answers the same way either way. */}
                 <input type="hidden" name="token" value={rawToken ?? ''} />
-                <button className="btn btn-navy" type="submit">
+                <button className="btn btn-dark" type="submit">
                   Confirm this request
                 </button>
               </form>

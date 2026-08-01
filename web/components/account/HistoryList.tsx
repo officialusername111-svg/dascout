@@ -128,7 +128,7 @@ export function HistoryList({
           <b>Nothing viewed yet</b>
           Properties you open will appear here so you can pick up where you left off.
           <div>
-            <Link className="btn btn-navy" href="/#listings">
+            <Link className="btn btn-dark" href="/#listings">
               Browse all listings
             </Link>
           </div>

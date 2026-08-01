@@ -71,7 +71,7 @@ export function FeaturesForm({
       )}
 
       <div className="aactions">
-        <button className="btn btn-navy" type="submit" disabled={pending || !features.length}>
+        <button className="btn btn-dark" type="submit" disabled={pending || !features.length}>
           {pending ? 'Saving…' : 'Save features'}
         </button>
         <span className="amuted">

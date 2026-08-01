@@ -45,7 +45,7 @@ export default async function AccountOverviewPage() {
         <p className="sub2">
           Every property you have tapped the heart on, on any device you have signed in from.
         </p>
-        <Link className="btn btn-navy abtn-sm" href="/account/favorites">
+        <Link className="btn btn-dark abtn-sm" href="/account/favorites">
           Open saved properties
         </Link>
       </section>
@@ -55,7 +55,7 @@ export default async function AccountOverviewPage() {
         <p className="sub2">
           What you have looked at recently, and the control that clears it from your account.
         </p>
-        <Link className="btn btn-navy abtn-sm" href="/account/history">
+        <Link className="btn btn-dark abtn-sm" href="/account/history">
           Open browsing history
         </Link>
       </section>
@@ -65,7 +65,7 @@ export default async function AccountOverviewPage() {
         <p className="sub2">
           Change your password. Doing so signs out every other device you are signed in on.
         </p>
-        <Link className="btn btn-navy abtn-sm" href="/account/password">
+        <Link className="btn btn-dark abtn-sm" href="/account/password">
           Change password
         </Link>
       </section>

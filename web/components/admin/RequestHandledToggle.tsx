@@ -33,7 +33,7 @@ export function RequestHandledToggle({
       <input type="hidden" name="requestId" value={requestId} />
       <input type="hidden" name="handled" value={isHandled ? 'false' : 'true'} />
       <button
-        className={isHandled ? 'btn btn-ghost abtn-sm' : 'btn btn-navy abtn-sm'}
+        className={isHandled ? 'btn btn-ghost abtn-sm' : 'btn btn-dark abtn-sm'}
         type="submit"
         disabled={pending}
       >

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Icon } from '@/components/Icon'
 import { ListingCardTile } from '@/components/ListingCard'
 import { useUI } from '@/components/ui-state'
 import { compactCount, timeAgo } from '@/lib/format'
@@ -122,7 +121,7 @@ export function FavoritesGrid({ listings }: { listings: ListingCard[] }) {
         <b>No saved properties yet</b>
         Tap the heart on any listing and it will wait for you here.
         <div>
-          <Link className="btn btn-navy" href="/#listings">
+          <Link className="btn btn-dark" href="/#listings">
             Browse all listings
           </Link>
         </div>
@@ -149,38 +148,6 @@ export function FavoritesStatus({ listings }: { listings: ListingCard[] }) {
       </span>{' '}
       <Link href="/#listings">Clear filters</Link>
     </>
-  )
-}
-
-export function RequestBand() {
-  const { openRequest } = useUI()
-  return (
-    <section aria-labelledby="reqH">
-      <div className="reqband">
-        <Icon name="search" />
-        <div>
-          <h2 id="reqH">
-            Can&rsquo;t find it? <em>Request it.</em>
-          </h2>
-          <p>
-            Tell us what you&rsquo;re looking for and we&rsquo;ll notify you when a matching verified
-            listing goes live.
-          </p>
-        </div>
-        <button className="btn btn-gold" onClick={openRequest}>
-          Request a Property
-        </button>
-      </div>
-    </section>
-  )
-}
-
-export function RequestButton({ className, children }: { className: string; children: React.ReactNode }) {
-  const { openRequest } = useUI()
-  return (
-    <button className={className} onClick={openRequest}>
-      {children}
-    </button>
   )
 }
 

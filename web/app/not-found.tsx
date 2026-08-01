@@ -11,7 +11,7 @@ export default function NotFound() {
         <div className="notfound">
           <h1>Page not found</h1>
           <p>The page you were looking for is not here.</p>
-          <Link className="btn btn-navy" href="/#listings">
+          <Link className="btn btn-dark" href="/#listings">
             Browse available listings <Icon name="arrow" />
           </Link>
         </div>

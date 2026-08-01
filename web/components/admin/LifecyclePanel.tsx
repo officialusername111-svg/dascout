@@ -109,7 +109,7 @@ export function LifecyclePanel({
                     </>
                   ) : (
                     <button
-                      className="btn btn-navy"
+                      className="btn btn-dark"
                       type="button"
                       disabled={blocked || pending}
                       onClick={() => setConfirming(option.to)}

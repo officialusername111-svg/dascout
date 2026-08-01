@@ -39,7 +39,7 @@ test.describe('Auth guard and admin unindexability (AC-1, 2, 3, 4a, 5, 6, 36)', 
     await signInAsStaff(page)
     // Any existing listing id works to prove the second page independently resolves
     // identity; the pre-existing seed data guarantees at least one row exists.
-    const firstOpen = page.locator('a.btn.btn-navy.abtn-sm').first()
+    const firstOpen = page.locator('a.btn.btn-dark.abtn-sm').first()
     await expect(firstOpen).toBeVisible()
     await firstOpen.click()
     await expect(page.locator('.admin-bar')).toBeVisible()
