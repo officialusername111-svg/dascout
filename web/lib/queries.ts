@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { CATEGORIES, dbCategoriesFor, keyFromDb, labelFromDb, type CategoryKey, type DbCategory } from '@/lib/categories'
-import { area, peso, shortPeso } from '@/lib/format'
+import { area } from '@/lib/format'
 
 const BUCKET = 'listing-photos'
 
@@ -21,9 +21,6 @@ export type ListingCard = {
   location: string
   town: string
   province: string
-  price: number
-  priceLabel: string
-  shortPrice: string
   specs: Spec[]
   photo: string | null
   photoAlt: string
@@ -52,7 +49,7 @@ export type TownRow = {
  * card ends up rendering differently on two pages for no reason anyone can find later.
  */
 export const CARD_COLUMNS = `
-  id, slug, title, category, price_php, area_detail, lot_area_sqm, floor_area_sqm,
+  id, slug, title, category, area_detail, lot_area_sqm, floor_area_sqm,
   bedrooms, bathrooms, is_trending, published_at,
   towns!inner ( id, name, province, slug, initial ),
   listing_photos ( storage_path, alt_text, sort_order, is_primary ),
@@ -64,7 +61,6 @@ export type RawListing = {
   slug: string
   title: string
   category: DbCategory
-  price_php: number
   area_detail: string | null
   lot_area_sqm: number | null
   floor_area_sqm: number | null
@@ -124,10 +120,14 @@ function locationOf(row: RawListing): string {
   return row.area_detail ? `${row.area_detail}, ${town}` : `${town}, ${province}`
 }
 
+/**
+ * The public card. Amounts are an admin-only surface, so the price is neither selected
+ * nor mapped here — a public page cannot leak into its Flight payload what its data
+ * layer never fetched.
+ */
 export function toCard(row: RawListing, features?: string[]): ListingCard {
   const photos = sortedPhotos(row)
   const featureNames = features ?? featuresOf(row)
-  const price = Number(row.price_php)
   return {
     id: row.id,
     slug: row.slug,
@@ -137,9 +137,6 @@ export function toCard(row: RawListing, features?: string[]): ListingCard {
     location: locationOf(row),
     town: row.towns?.name ?? '',
     province: row.towns?.province ?? '',
-    price,
-    priceLabel: peso(price),
-    shortPrice: shortPeso(price),
     specs: buildSpecs(row, featureNames),
     photo: photos[0]?.url ?? null,
     photoAlt: photos[0]?.alt ?? row.title,
@@ -150,7 +147,6 @@ export function toCard(row: RawListing, features?: string[]): ListingCard {
 export type ListingFilters = {
   cat?: string
   loc?: string
-  price?: string
   size?: string
   feat?: string
   az?: string
@@ -216,10 +212,6 @@ export async function getListings(filters: ListingFilters): Promise<{ listings: 
       ? query.or(`town_id.in.(${townIds.join(',')}),area_detail.ilike.%${escaped}%`)
       : query.ilike('area_detail', `%${escaped}%`)
   }
-
-  const price = parseRange(filters.price)
-  if (price.lo !== undefined) query = query.gte('price_php', price.lo)
-  if (price.hi !== undefined) query = query.lte('price_php', price.hi)
 
   const size = parseRange(filters.size)
   if (size.lo !== undefined || size.hi !== undefined) {
@@ -408,100 +400,6 @@ export async function getTopListings(period: TopPeriod, limit = 6): Promise<TopL
     .map((row) => ({ ...toCard(row), views: views.get(row.id) ?? 0 }))
     .sort((a, b) => b.views - a.views || Number(b.trending) - Number(a.trending))
     .slice(0, limit)
-}
-
-export type PriceDrop = ListingCard & { previousPrice: number; dropPercent: number }
-export type SoldListing = ListingCard & { soldAt: string | null }
-
-export type MarketMovements = {
-  fresh: ListingCard[]
-  reduced: PriceDrop[]
-  sold: SoldListing[]
-}
-
-/**
- * Three real feeds. `price_history` and sold listings are empty until staff start
- * editing prices and closing sales in Phase 4/5, so those panels show an empty state
- * instead of the mockup's invented rows.
- */
-export async function getMarketMovements(limit = 5): Promise<MarketMovements> {
-  const supabase = await createClient()
-
-  const [freshResult, soldResult, historyResult] = await Promise.all([
-    supabase
-      .from('listings')
-      .select(CARD_COLUMNS)
-      .eq('status', 'live')
-      .order('published_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-      .limit(limit),
-    supabase
-      .from('listings')
-      .select(`${CARD_COLUMNS}, sold_at`)
-      .eq('status', 'sold')
-      .order('sold_at', { ascending: false, nullsFirst: false })
-      .limit(limit),
-    supabase
-      .from('price_history')
-      .select('listing_id, old_price, new_price, changed_at')
-      .order('changed_at', { ascending: false })
-      .limit(limit * 4),
-  ])
-
-  if (freshResult.error) throw freshResult.error
-  if (soldResult.error) throw soldResult.error
-  if (historyResult.error) throw historyResult.error
-
-  const fresh = (freshResult.data as unknown as RawListing[]).map((row) => toCard(row))
-  const sold = (soldResult.data as unknown as (RawListing & { sold_at: string | null })[]).map(
-    (row) => ({ ...toCard(row), soldAt: row.sold_at })
-  )
-
-  /**
-   * One row per listing: its MOST RECENT price change, and only if that change was a
-   * drop.
-   *
-   * The direction test has to come after the "first seen wins" test, not before it. The
-   * rows arrive newest first, so skipping increases while filling the map made a listing
-   * that was cut to ₱4M and then put back up to ₱6M still read as "price reduced" — the
-   * older drop was the first row that survived the filter. Recording every listing's
-   * latest change first, whichever way it went, and keeping it only when it was a cut,
-   * is what makes the panel say what it claims to say.
-   */
-  const latest = new Map<string, { previousPrice: number; newPrice: number }>()
-  for (const change of historyResult.data ?? []) {
-    if (latest.has(change.listing_id)) continue
-    const previous = Number(change.old_price ?? 0)
-    const next = Number(change.new_price)
-    if (!previous) continue
-    latest.set(change.listing_id, { previousPrice: previous, newPrice: next })
-  }
-
-  const drops = new Map(
-    [...latest].filter(([, change]) => change.newPrice < change.previousPrice)
-  )
-
-  let reduced: PriceDrop[] = []
-  if (drops.size) {
-    const { data, error } = await supabase
-      .from('listings')
-      .select(CARD_COLUMNS)
-      .eq('status', 'live')
-      .in('id', [...drops.keys()])
-    if (error) throw error
-    reduced = (data as unknown as RawListing[])
-      .map((row) => {
-        const drop = drops.get(row.id)!
-        return {
-          ...toCard(row),
-          previousPrice: drop.previousPrice,
-          dropPercent: Math.round(((drop.previousPrice - drop.newPrice) / drop.previousPrice) * 100),
-        }
-      })
-      .slice(0, limit)
-  }
-
-  return { fresh, reduced, sold }
 }
 
 /**

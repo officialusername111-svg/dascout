@@ -46,7 +46,6 @@ export function ListingCardTile({
           <span className="loc">
             <Icon name="pin" /> {listing.location}
           </span>
-          <span className="price">{listing.priceLabel}</span>
           {seen ? (
             <span className="seen">{seen}</span>
           ) : (

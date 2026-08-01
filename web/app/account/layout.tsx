@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Header, Sidebar, UtilityBar, Footer } from '@/components/Chrome'
+import { Header, Sidebar, Footer } from '@/components/Chrome'
 import { AuthDialog } from '@/components/Dialogs'
 import { requireAccountUser } from '@/lib/account/auth'
 import { getPopularFeatures } from '@/lib/queries'
@@ -35,7 +35,6 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <>
-      <UtilityBar />
       <Header />
       <Sidebar features={features} />
 

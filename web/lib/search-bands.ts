@@ -1,16 +1,9 @@
 /**
- * The price and size bands offered in the search bar. They live outside the client
- * component because the server also needs them, to write the "12 properties · ₱2M – ₱5M"
+ * The size bands offered in the search bar. They live outside the client component
+ * because the server also needs them, to write the "12 properties · 200 – 500 sqm"
  * status line — values imported across the client boundary arrive as proxies, not data.
+ * (Deliberately no price bands: amounts are an admin-only surface on this site.)
  */
-
-export const PRICE_BANDS = [
-  { value: '0-2000000', label: 'Under ₱2M' },
-  { value: '2000000-5000000', label: '₱2M – ₱5M' },
-  { value: '5000000-15000000', label: '₱5M – ₱15M' },
-  { value: '15000000-40000000', label: '₱15M – ₱40M' },
-  { value: '40000000-', label: '₱40M+' },
-]
 
 export const SIZE_BANDS = [
   { value: '0-200', label: 'Under 200 sqm' },
