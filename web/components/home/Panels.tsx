@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { ListingCardTile } from '@/components/ListingCard'
 import { useUI } from '@/components/ui-state'
-import { compactCount, shortPeso, timeAgo } from '@/lib/format'
-import type { ListingCard, MarketMovements as Movements, TopListing, TopPeriod } from '@/lib/queries'
+import { compactCount, timeAgo } from '@/lib/format'
+import type { ListingCard, TopListing, TopPeriod } from '@/lib/queries'
 
 /** "Residential Lot · 240 sqm · Titled" — the small grey line under a ranked row. */
 function metaLine(listing: ListingCard): string {
@@ -58,7 +58,6 @@ export function TopProperties({
               <span className="meta">{metaLine(listing)}</span>
             </span>
             <span className="pv">
-              <b>{listing.shortPrice}</b>
               {listing.views > 0 && (
                 <span className="views">
                   {compactCount(listing.views)} view{listing.views === 1 ? '' : 's'}
@@ -67,114 +66,6 @@ export function TopProperties({
             </span>
           </Link>
         ))}
-      </div>
-    </section>
-  )
-}
-
-function MarketRow({ listing, price }: { listing: ListingCard; price: React.ReactNode }) {
-  return (
-    <Link className="rowitem" href={`/property/${listing.slug}`}>
-      {listing.photo && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img loading="lazy" decoding="async" src={listing.photo} alt="" />
-      )}
-      <span className="t">
-        <b>{listing.title}</b>
-        <span>
-          {listing.town} · {listing.categoryLabel}
-        </span>
-        <span className="meta">{listing.specs.map((s) => s.text).join(' · ')}</span>
-      </span>
-      {price}
-    </Link>
-  )
-}
-
-export function MarketMovements({ movements }: { movements: Movements }) {
-  const [panel, setPanel] = useState(0)
-  const tabs = ['New listings', 'Price reduced', 'Just sold']
-
-  return (
-    <section id="market" aria-labelledby="marketH">
-      <div className="sec-head">
-        <div>
-          <h2 id="marketH">
-            Market <em>Movements</em>
-          </h2>
-          <p>What&rsquo;s new, what dropped, and what&rsquo;s gone.</p>
-        </div>
-        <div className="tabs">
-          {tabs.map((label, i) => (
-            <button key={label} aria-pressed={panel === i} onClick={() => setPanel(i)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="market">
-        <div className={`col${panel === 0 ? ' on' : ''}`}>
-          {movements.fresh.map((listing) => (
-            <MarketRow
-              key={listing.slug}
-              listing={listing}
-              price={<span className="p">{listing.shortPrice}</span>}
-            />
-          ))}
-        </div>
-
-        <div className={`col${panel === 1 ? ' on' : ''}`}>
-          {movements.reduced.length ? (
-            movements.reduced.map((listing) => (
-              <MarketRow
-                key={listing.slug}
-                listing={listing}
-                price={
-                  <span className="p was">
-                    <s>{shortPeso(listing.previousPrice)}</s>
-                    <b>{listing.shortPrice}</b>
-                    <em className="drop">{listing.dropPercent}% off</em>
-                  </span>
-                }
-              />
-            ))
-          ) : (
-            <div className="rowitem-empty">
-              <b>No price drops yet</b>
-              Every price change is recorded from now on, and the ones that go down show up here.
-            </div>
-          )}
-        </div>
-
-        <div className={`col${panel === 2 ? ' on' : ''}`}>
-          {movements.sold.length ? (
-            movements.sold.map((listing) => (
-              <div className="rowitem" key={listing.slug}>
-                {listing.photo && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img loading="lazy" decoding="async" src={listing.photo} alt="" />
-                )}
-                <span className="t">
-                  <b>{listing.title}</b>
-                  <span>
-                    {listing.town} · {listing.categoryLabel}
-                  </span>
-                  <span className="meta">{listing.specs.map((s) => s.text).join(' · ')}</span>
-                </span>
-                <span className="p sold">
-                  <em>Sold</em>
-                  {listing.shortPrice}
-                </span>
-              </div>
-            ))
-          ) : (
-            <div className="rowitem-empty">
-              <b>Nothing sold yet</b>
-              Closed sales appear here once a listing is marked sold.
-            </div>
-          )}
-        </div>
       </div>
     </section>
   )

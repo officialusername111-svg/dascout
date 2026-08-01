@@ -38,19 +38,19 @@ export function TypeTiles({ counts }: { counts: Record<CategoryKey, number> }) {
   )
 }
 
+/* Approved redesign: pure text — no row images. "How We Verify" points at the FAQ,
+   which owns the verification answer now that the verify band is gone. */
 const ABOUT_ROWS = [
   {
     icon: 'check',
     title: 'Verified Listings Only',
     body: 'Every property we feature is checked before it reaches you.',
-    image: '/assets/hero1.jpg',
     cta: { kind: 'link', label: 'See Verified Listings', href: '/#listings' },
   },
   {
     icon: 'target',
     title: 'Curated Matches',
     body: "Based on what you're actually looking for, not everything on the market.",
-    image: '/assets/card3.jpg',
     cta: { kind: 'request', label: 'Request a Property' },
   },
   {
@@ -58,21 +58,18 @@ const ABOUT_ROWS = [
     title: 'Direct Owner Access',
     body:
       'Every listing comes straight from the property owner, not resellers, so pricing and details stay accurate.',
-    image: '/assets/hero2.jpg',
-    cta: { kind: 'link', label: 'How We Verify', href: '/#verify' },
+    cta: { kind: 'link', label: 'How We Verify', href: '/#faq' },
   },
   {
     icon: 'star',
     title: 'Exclusive Opportunities',
     body: "These properties aren't seen anywhere else on the market.",
-    image: '/assets/card7.jpg',
     cta: { kind: 'link', label: 'View Top Properties', href: '/#top' },
   },
   {
     icon: 'hand',
     title: 'Real Support',
     body: 'From your first inquiry to closing day, our team helps you through the process.',
-    image: '/assets/hero3.jpg',
     cta: { kind: 'account', label: 'Create a Free Account' },
   },
 ] as const
@@ -117,79 +114,8 @@ export function AboutRows() {
                   )}
                 </div>
               </div>
-              <div className="fimg">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img loading="lazy" decoding="async" src={row.image} alt="" />
-              </div>
             </div>
           ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-export function VerifyBand() {
-  return (
-    <section id="verify" aria-labelledby="verifyH">
-      <div className="verify">
-        <div>
-          <h2 id="verifyH">
-            We Don&rsquo;t Just List Properties. <em>We Verify Them.</em>
-          </h2>
-          <p>
-            Dascout exists because real estate shouldn&rsquo;t run on trust alone, it should run on
-            proof. We&rsquo;re Mindanao&rsquo;s exclusive, verified real estate platform, built for
-            buyers who can&rsquo;t be everywhere at once: OFWs, investors, and professionals
-            purchasing property from thousands of miles away. Every listing is title-checked,
-            boundary-walked, and confirmed on the ground before it ever reaches you, because owning
-            property should feel like a decision, not a leap of faith. Create a free account to save
-            favorites and follow listings.
-          </p>
-          <ol className="steps">
-            <li>
-              <b>Title check</b>
-              <span>TCT/CCT verified at the Registry of Deeds.</span>
-            </li>
-            <li>
-              <b>Ground validation</b>
-              <span>Boundaries walked and details confirmed on-site.</span>
-            </li>
-            <li>
-              <b>Listing goes live</b>
-              <span>Only verified properties ever reach you.</span>
-            </li>
-          </ol>
-          <CreateAccountButton className="btn btn-navy">
-            Create a Free Account <Icon name="arrow" />
-          </CreateAccountButton>
-          <div className="stats-inline">
-            <div>
-              <b>+840</b>
-              <span>Verified listings</span>
-            </div>
-            <div>
-              <b>+650</b>
-              <span>Happy clients</span>
-            </div>
-            <div>
-              <b>+45</b>
-              <span>Towns covered</span>
-            </div>
-            <div>
-              <b>+10</b>
-              <span>Years experience</span>
-            </div>
-          </div>
-        </div>
-        <div className="ph">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            loading="lazy"
-            decoding="async"
-            src="/assets/skyline.jpg"
-            alt="General Santos City skyline at dusk"
-          />
         </div>
       </div>
     </section>
@@ -207,7 +133,7 @@ const QUOTES = [
   },
   {
     text:
-      'The price-reduced feed is my morning coffee read. Caught two highway frontage lots before they moved.',
+      'DaScout is my morning coffee read. Caught two highway frontage lots the same week they went live.',
     initials: 'JM',
     name: 'Jomar Mercado',
     role: 'Property investor · General Santos',
@@ -271,7 +197,7 @@ const FAQS = [
   {
     q: 'How do I find the right property?',
     a:
-      'Use the search bar above: pick a category, set your town and price range, then refine with size and feature filters. Create a free account to save favorites and compare them side by side.',
+      'Use the search bar above: pick a category and your town, then refine with size and feature filters. Create a free account to save favorites and compare them side by side.',
   },
   {
     q: 'What is the process of buying a property?',

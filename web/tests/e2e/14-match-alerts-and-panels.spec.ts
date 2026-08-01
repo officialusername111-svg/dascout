@@ -345,7 +345,11 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
     expect(byEmail.get(emailNeverSent)).toBeNull()
   })
 
-  test('AC-16: a price cut writes price_history, is anon-readable, and the reduced panel shows the right previous price + drop percent', async () => {
+  test('AC-16: a price cut writes price_history and is anon-readable; the public homepage renders no market panel and no amounts', async () => {
+    // The landing redesign (run-landing-glass) removed the Market Movements panel from
+    // the public homepage: amounts are an admin-only surface now. The data layer AC-16
+    // guards stay exactly as before — price_history rows and their anon readability feed
+    // the admin side — and the public assertion inverts: the panel must be gone.
     const staff = await staffDirectClient()
     const original = 6_000_000
     const dropped = 4_000_000
@@ -372,29 +376,25 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
     expect(Number(history![0].old_price)).toBe(original)
     expect(Number(history![0].new_price)).toBe(dropped)
 
-    const title = await page.getByRole('heading', { level: 1 }).textContent()
-
     const home = await page.context().newPage()
-    await home.goto('/#market')
-    await home.getByRole('button', { name: 'Price reduced' }).click()
-    const row = home.locator('.market .col.on .rowitem', { hasText: title!.trim() })
-    await expect(row).toBeVisible({ timeout: 15_000 })
-    const expectedDrop = Math.round(((original - dropped) / original) * 100)
-    await expect(row.locator('.drop')).toHaveText(`${expectedDrop}% off`)
+    await home.goto('/')
+    await home.waitForLoadState('networkidle')
+    await expect(home.locator('#market')).toHaveCount(0)
+    await expect(home.getByRole('button', { name: 'Price reduced' })).toHaveCount(0)
+    // No peso amount anywhere on the anonymous homepage.
+    expect(await home.locator('body').innerText()).not.toContain('₱')
     await home.close()
 
     void staff
   })
 
-  test('AC-16/R7: raising the price above the ORIGINAL means the latest change is an increase — the listing must NOT appear as reduced', async () => {
+  test('AC-16/R7: price_history still records an increase as the latest change (reduced-state logic feeds admin, not the public page)', async () => {
     const aboveOriginal = 7_000_000 // above both the 6M original and the 4M interim price
 
     await page.goto(`/admin/listings/${listingId}`)
     await page.locator('#lf-price').fill(String(aboveOriginal))
     await page.getByRole('button', { name: 'Save details' }).click()
     await expect(page.locator('form.apanel:has(#lf-title) .fmsg.ok')).toContainText('Listing saved')
-
-    const title = await page.getByRole('heading', { level: 1 }).textContent()
 
     const anon = directClient()
     await expect
@@ -408,14 +408,5 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
         return data?.[0]?.new_price ? Number(data[0].new_price) : null
       })
       .toBe(aboveOriginal)
-
-    const home = await page.context().newPage()
-    await home.goto('/#market')
-    await home.getByRole('button', { name: 'Price reduced' }).click()
-    // Give the panel a moment to settle, then assert absence — not a race, since the
-    // previous test already proved this row rendered under the same conditions.
-    await home.waitForTimeout(1000)
-    await expect(home.locator('.market .col.on .rowitem', { hasText: title!.trim() })).toHaveCount(0)
-    await home.close()
   })
 })

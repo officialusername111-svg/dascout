@@ -5,25 +5,6 @@ import { Icon } from '@/components/Icon'
 import { useUI } from '@/components/ui-state'
 import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
 
-export function UtilityBar() {
-  return (
-    <div className="util">
-      <div className="in">
-        <a href="mailto:hello@dascout.ph">
-          <Icon name="mail" /> hello@dascout.ph
-        </a>
-        <a href="tel:+63835520000">
-          <Icon name="phone" /> +63 (83) 552 0000
-        </a>
-        <span>
-          <Icon name="pin" /> General Santos City, Mindanao
-        </span>
-        <span className="right">Mindanao&rsquo;s exclusive, verified real estate platform</span>
-      </div>
-    </div>
-  )
-}
-
 /**
  * The header, in one of two states.
  *
@@ -135,7 +116,6 @@ export function Sidebar({ features }: { features: string[] }) {
           <Link href="/" onClick={closeSidebar}>Home</Link>
           <Link href="/#listings" onClick={closeSidebar}>Featured listings</Link>
           <Link href="/#top" onClick={closeSidebar}>Top properties</Link>
-          <Link href="/#market" onClick={closeSidebar}>Market movements</Link>
           <Link href="/#locations" onClick={closeSidebar}>Locations</Link>
           <Link href="/#faq" onClick={closeSidebar}>FAQ</Link>
         </div>

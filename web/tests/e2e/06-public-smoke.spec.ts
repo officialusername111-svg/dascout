@@ -32,15 +32,20 @@ test.describe('Public site unchanged for live/sold (AC-32)', () => {
     await expect(page.locator('h1')).toBeVisible()
   })
 
-  test('sold listings appear in "Just sold" without a detail-page link', async ({ page }) => {
-    const anon = directClient()
-    const { data: sold } = await anon.from('listings').select('slug, title').eq('status', 'sold').limit(1).maybeSingle()
-    test.skip(!sold, 'No sold listings among the pre-existing 12 to assert against.')
-
+  test('the market panel is gone from the public homepage, and no amount or map renders publicly', async ({ page }) => {
+    // Landing redesign (run-landing-glass): amounts and the location map are admin-only.
+    // The old "Just sold" market tab no longer exists for anonymous visitors.
     await page.goto('/')
-    await page.getByRole('button', { name: 'Just sold' }).click()
-    const row = page.locator('.rowitem', { hasText: sold!.title })
-    await expect(row).toBeVisible()
-    await expect(row.locator('a[href^="/property/"]')).toHaveCount(0)
+    await expect(page.locator('#market')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Just sold' })).toHaveCount(0)
+    expect(await page.locator('body').innerText()).not.toContain('₱')
+
+    const anon = directClient()
+    const { data: live } = await anon.from('listings').select('slug').eq('status', 'live').limit(1).maybeSingle()
+    test.skip(!live, 'No live listings to assert the detail page against.')
+
+    await page.goto(`/property/${live!.slug}`)
+    expect(await page.locator('body').innerText()).not.toContain('₱')
+    await expect(page.locator('.mapblock, iframe[src*="google.com/maps"]')).toHaveCount(0)
   })
 })

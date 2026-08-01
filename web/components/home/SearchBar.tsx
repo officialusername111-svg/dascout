@@ -4,12 +4,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
-import { PRICE_BANDS, SIZE_BANDS } from '@/lib/search-bands'
+import { SIZE_BANDS } from '@/lib/search-bands'
 
+/* No price filter here: amounts are an admin-only surface on this site. */
 export type SearchDefaults = {
   loc?: string
   cat?: string
-  price?: string
   size?: string
 }
 
@@ -32,7 +32,7 @@ export function SearchBar({
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     const params = new URLSearchParams()
-    for (const key of ['loc', 'cat', 'price', 'size']) {
+    for (const key of ['loc', 'cat', 'size']) {
       const value = String(data.get(key) ?? '').trim()
       if (value) params.set(key, value)
     }
@@ -70,17 +70,6 @@ export function SearchBar({
               {CATEGORY_KEYS.map((key) => (
                 <option key={key} value={key}>
                   {CATEGORIES[key].label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="sf">
-            <label htmlFor="q-price">Price range</label>
-            <select id="q-price" name="price" defaultValue={defaults.price ?? ''}>
-              <option value="">Any price</option>
-              {PRICE_BANDS.map((band) => (
-                <option key={band.value} value={band.value}>
-                  {band.label}
                 </option>
               ))}
             </select>

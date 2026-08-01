@@ -1,11 +1,10 @@
 import Link from 'next/link'
-import { Footer, Header, Sidebar, UtilityBar } from '@/components/Chrome'
+import { Footer, Header, Sidebar } from '@/components/Chrome'
 import { Icon } from '@/components/Icon'
 
 export default function ListingNotFound() {
   return (
     <>
-      <UtilityBar />
       <Header />
       <Sidebar features={[]} />
       <main id="main" className="wrap">

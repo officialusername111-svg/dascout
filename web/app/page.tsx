@@ -1,25 +1,23 @@
 import Link from 'next/link'
-import { Header, Sidebar, UtilityBar, Footer } from '@/components/Chrome'
+import { Header, Sidebar, Footer } from '@/components/Chrome'
 import { AuthDialog, RequestDialog } from '@/components/Dialogs'
 import { ListingCardTile } from '@/components/ListingCard'
 import { SearchBar } from '@/components/home/SearchBar'
-import { PRICE_BANDS, SIZE_BANDS } from '@/lib/search-bands'
+import { SIZE_BANDS } from '@/lib/search-bands'
 import {
   ContinueBrowsing,
   FavoritesGrid,
   FavoritesStatus,
-  MarketMovements,
   RequestBand,
   TopProperties,
 } from '@/components/home/Panels'
-import { AboutRows, LocationsAndFaq, Testimonials, TypeTiles, VerifyBand } from '@/components/home/Sections'
+import { AboutRows, LocationsAndFaq, Testimonials, TypeTiles } from '@/components/home/Sections'
 import { describeCategory } from '@/lib/categories'
 import {
   PAGE_SIZE,
   getAllCards,
   getCategoryCounts,
   getListings,
-  getMarketMovements,
   getPopularFeatures,
   getSpotlightListings,
   getTopListings,
@@ -39,7 +37,7 @@ function one(value: string | string[] | undefined): string | undefined {
 /** The filters as a query string, so tab and page links keep the rest of the search. */
 function withParams(filters: Search, changes: Record<string, string | undefined>): string {
   const params = new URLSearchParams()
-  for (const key of ['cat', 'loc', 'price', 'size', 'feat', 'az', 'tab', 'page']) {
+  for (const key of ['cat', 'loc', 'size', 'feat', 'az', 'tab', 'page']) {
     const value = one(filters[key])
     if (value) params.set(key, value)
   }
@@ -52,7 +50,7 @@ function withParams(filters: Search, changes: Record<string, string | undefined>
 }
 
 /** "12 properties · Residential Lot · in "Tupi"" — what the search actually did. */
-function describeFilters(filters: ListingFilters, total: number, labels: { price?: string; size?: string }) {
+function describeFilters(filters: ListingFilters, total: number, labels: { size?: string }) {
   const bits: string[] = []
   if (filters.cat) {
     const label = describeCategory(filters.cat)
@@ -61,7 +59,6 @@ function describeFilters(filters: ListingFilters, total: number, labels: { price
   if (filters.loc) bits.push(`in "${filters.loc}"`)
   if (filters.az) bits.push(`towns starting with ${filters.az.toUpperCase()}`)
   if (filters.feat) bits.push(filters.feat.toLowerCase())
-  if (labels.price) bits.push(labels.price)
   if (labels.size) bits.push(labels.size)
   if (!bits.length) return null
   return `${total} propert${total === 1 ? 'y' : 'ies'} · ${bits.join(' · ')}`
@@ -73,10 +70,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const tab = one(params.tab) ?? 'all'
   const page = Math.max(1, Number(one(params.page) ?? '1') || 1)
 
+  /* No price filter on the public site — amounts (and the map) are admin-only surfaces. */
   const filters: ListingFilters = {
     cat: one(params.cat),
     loc: one(params.loc),
-    price: one(params.price),
     size: one(params.size),
     feat: one(params.feat),
     az: one(params.az),
@@ -85,7 +82,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     page,
   }
 
-  const [towns, counts, spotlight, results, day, week, month, movements, allCards, features] =
+  const [towns, counts, spotlight, results, day, week, month, allCards, features] =
     await Promise.all([
     getTowns(),
     getCategoryCounts(),
@@ -94,7 +91,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     getTopListings('day'),
     getTopListings('week'),
     getTopListings('month'),
-    getMarketMovements(),
     getAllCards(),
     getPopularFeatures(),
   ])
@@ -102,7 +98,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const listings = results.listings
   const pages = Math.ceil(results.total / PAGE_SIZE)
   const status = describeFilters(filters, results.total, {
-    price: PRICE_BANDS.find((band) => band.value === filters.price)?.label,
     size: SIZE_BANDS.find((band) => band.value === filters.size)?.label,
   })
 
@@ -111,14 +106,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
   return (
     <>
-      <UtilityBar />
       <Header current="home" />
       <Sidebar features={features} />
 
       <HeroSpotlight listings={spotlight} />
 
       <SearchBar
-        defaults={{ loc: filters.loc, cat: filters.cat, price: filters.price, size: filters.size }}
+        defaults={{ loc: filters.loc, cat: filters.cat, size: filters.size }}
         towns={towns}
         status={
           showFavorites ? (
@@ -189,7 +183,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           ) : (
             <div className="empty">
               <b>No properties match your search</b>
-              Try widening the price range or clearing a filter.
+              Try widening the size band or clearing a filter.
               <div>
                 <Link className="btn btn-navy" href="/#listings">
                   Clear all filters
@@ -214,14 +208,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         </section>
 
         <AboutRows />
-        <VerifyBand />
 
-        <section className="duo-wrap" aria-label="Top properties and market movements">
-          <div className="duo">
-            <TopProperties periods={{ day, week, month }} />
-            <MarketMovements movements={movements} />
-          </div>
-        </section>
+        <TopProperties periods={{ day, week, month }} />
 
         <ContinueBrowsing listings={allCards} />
         <Testimonials />

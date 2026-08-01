@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Footer, Header, Sidebar, UtilityBar } from '@/components/Chrome'
+import { Footer, Header, Sidebar } from '@/components/Chrome'
 import { AuthDialog, RequestDialog } from '@/components/Dialogs'
 import { Icon } from '@/components/Icon'
 import { ListingCardTile, Specs } from '@/components/ListingCard'
@@ -22,16 +22,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await getListingBySlug(slug)
   if (!listing) return { title: 'Listing not found' }
 
+  /* No amounts in public metadata either — prices are an admin-only surface. */
   const description =
     listing.description ??
-    `${listing.categoryLabel} in ${listing.location}, ${listing.priceLabel}. Title-verified by DaScout.`
+    `${listing.categoryLabel} in ${listing.location}. Title-verified by DaScout.`
 
   return {
     title: listing.title,
     description,
     alternates: { canonical: `/property/${listing.slug}` },
     openGraph: {
-      title: `${listing.title} — ${listing.priceLabel}`,
+      title: listing.title,
       description,
       type: 'article',
       images: listing.photo ? [{ url: listing.photo }] : undefined,
@@ -52,14 +53,12 @@ export default async function PropertyPage({ params }: Props) {
 
   const mailSubject = encodeURIComponent(`Inquiry: ${listing.title} (${listing.location})`)
   const mailBody = encodeURIComponent(
-    `Hi DaScout,\n\nI'd like to inquire about "${listing.title}" listed at ${listing.priceLabel}.\n\nMy questions:\n\n`
+    `Hi DaScout,\n\nI'd like to inquire about "${listing.title}" in ${listing.location}.\n\nMy questions:\n\n`
   )
-  const mapQuery = encodeURIComponent(`${listing.town}, ${listing.province}, Philippines`)
 
   return (
     <>
       <RecordVisit listingId={listing.id} slug={listing.slug} />
-      <UtilityBar />
       <Header />
       <Sidebar features={features} />
 
@@ -77,7 +76,6 @@ export default async function PropertyPage({ params }: Props) {
             <div className="loc">
               <Icon name="pin" /> {listing.location} · Mindanao
             </div>
-            <div className="price">{listing.priceLabel}</div>
             <div className="prop-specs">
               <Specs specs={listing.specs} />
             </div>
@@ -112,26 +110,6 @@ export default async function PropertyPage({ params }: Props) {
               </a>
               <SaveButton slug={listing.slug} title={listing.title} />
             </div>
-          </div>
-        </div>
-
-        <div className="mapblock">
-          <div className="sec-head" style={{ marginBottom: 18 }}>
-            <div>
-              <h2>Location</h2>
-              <p>
-                {listing.location} — approximate area shown; exact boundaries walked during
-                verification.
-              </p>
-            </div>
-          </div>
-          <div className="frame">
-            <iframe
-              title={`Map of ${listing.location}`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
-            />
           </div>
         </div>
 

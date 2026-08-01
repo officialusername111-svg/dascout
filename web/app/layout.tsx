@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Figtree, Playfair_Display } from 'next/font/google'
+import { Figtree, Montserrat } from 'next/font/google'
 import './globals.css'
 import { IconSprite } from '@/components/IconSprite'
 import { UIProvider } from '@/components/ui-state'
@@ -14,11 +14,13 @@ const figtree = Figtree({
   display: 'swap',
 })
 
-const playfair = Playfair_Display({
-  variable: '--font-playfair',
+/* Headings only — the approved redesign asks for Gotham Bold, which is a commercial
+   face with no licensed files in the repo; Montserrat Bold is the stand-in the human
+   approved in the mockup. Body text stays Figtree. */
+const montserrat = Montserrat({
+  variable: '--font-head',
   subsets: ['latin'],
-  style: ['normal', 'italic'],
-  weight: ['500', '600', '700'],
+  weight: ['600', '700'],
   display: 'swap',
 })
 
@@ -52,7 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = identity.state === 'signed-in' ? identity.user : null
 
   return (
-    <html lang="en" className={`${figtree.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${figtree.variable} ${montserrat.variable}`}>
       <body>
         <IconSprite />
         <a className="skip" href="#main">
