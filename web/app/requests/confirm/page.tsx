@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Footer, Header, Sidebar, UtilityBar } from '@/components/Chrome'
+import { Footer, Header, Sidebar } from '@/components/Chrome'
 import { confirmRequest } from './actions'
 
 /**
@@ -30,7 +30,6 @@ export default async function ConfirmPage({
 
   return (
     <>
-      <UtilityBar />
       <Header />
       <Sidebar features={[]} />
 
