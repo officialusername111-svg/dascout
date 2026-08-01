@@ -44,7 +44,10 @@ h2 em,h1 em{font-style:normal;color:var(--gold-d)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:13px;
   letter-spacing:.05em;text-transform:uppercase;padding:0 24px;min-height:46px;border-radius:var(--r-s);
-  white-space:nowrap;transition:filter var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease)}
+  white-space:nowrap;transition:filter var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease),
+  color var(--dur-2) var(--ease), transform var(--dur-1) var(--ease)}
+/* the press itself is the feedback: the tap registers before the page has moved */
+.btn:active{transform:translateY(1px)}
 .btn-gold{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:var(--on-gold)}
 .btn-gold:hover{filter:brightness(1.05)}
 .btn-dark{background:var(--ink-900);color:var(--gold-l)}
@@ -324,6 +327,22 @@ body.dialog-open{overflow:hidden}
 .notfound p{color:var(--ink-2);margin-bottom:22px}
 
 /* ============ MOTION / A11Y ============ */
+/* Navigation used to read as a blink: the old page vanished and the new one
+   appeared with nothing in between. Page content now eases in instead of
+   snapping. Deliberately short and subtle — this replays on every filter and
+   tab change too, and anything longer would feel like a stall rather than a
+   transition. The reduced-motion block below switches it off entirely. */
+@keyframes pagein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+main{animation:pagein .26s var(--ease) both}
+
+/* Everything clickable eases its colour/border rather than swapping instantly,
+   so hover and press feel continuous with the page transition above. */
+nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs button,
+.pagination a,.pagination button,.viewall,.crumb,.iconbtn,.signin,.topitem,.sb-feat a,.sb-feat button{
+  transition:color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease),
+  border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease)}
+.card:active,.topitem:active,.tabs a:active,.tabs button:active,.pagination a:active{transform:translateY(1px)}
+
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important}
