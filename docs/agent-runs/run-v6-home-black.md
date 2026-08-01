@@ -1,7 +1,8 @@
 # run-v6-home-black — v6 home redesign + site-wide navy→black
 
 **Terminal state:** `done-green` · **Tier:** Large · **Domain:** frontend
-**Pre-run HEAD:** `e95e46b` · **Route:** do-me → redesign-me (thin pass-through)
+**Pre-run HEAD:** `e95e46b` · **Merge:** `7cce7b6` · **Rollback:** `git revert -m 1 7cce7b6`
+**Route:** do-me → redesign-me (thin pass-through)
 **Date:** 2026-08-01
 
 Built the home redesign approved in `docs/REDESIGN-SPEC-v6.md`, contract-frozen at
