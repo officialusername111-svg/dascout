@@ -1,7 +1,14 @@
-# Home page redesign v6 — approved spec, not yet built
+# Home page redesign v6 — approved spec, BUILT
 
 **Approved:** 2026-08-01 by the owner, after three mockup rounds (v4 → v5 → v6).
-**Status:** design approved, **zero implementation done**. Main is at `6d749b7`, tree clean, tests green.
+**Status:** **built and green** in run `run-v6-home-black` — see
+[`agent-runs/run-v6-home-black.md`](agent-runs/run-v6-home-black.md) for what shipped, the four
+deliberate deviations from the mockup, and the verification record. This document is kept as the
+design rationale; the run record is authoritative on what the code now does.
+
+⚠️ **§5's open item is closed.** The owner chose to remove the Request-a-Property entry points
+outright — UI only. The `property_requests` table, `lib/match-alerts.ts`, the admin inbox and the
+confirm/unsubscribe routes are untouched and still pass their tests.
 **Frozen mockup:** [`docs/mockups/home-v6-approved.html`](mockups/home-v6-approved.html) — self-contained,
 open it in a browser. Also published at https://claude.ai/code/artifact/ed2470ca-1ed2-4a2a-9240-05c36da1a4dc
 **Owner's reference screenshots:** [`docs/refs/`](refs/)
