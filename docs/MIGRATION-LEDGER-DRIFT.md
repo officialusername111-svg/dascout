@@ -105,3 +105,20 @@ the files as below) first — do **not** let `db push` re-apply them.
 Alternative, if byte-exact repo ↔ ledger parity is preferred over the commentary: replace the
 ten files with verbatim ledger exports (same treatment as Phase 0, commit `dc9e602`), moving the
 rich comments into a companion doc. Not recommended — the comments are the more valuable artifact.
+
+## Executed — 2026-08-01
+
+Recommendation 1 was approved and executed: the seven restamped files above were renamed to
+their ledger versions, SQL text untouched. Two further filename ↔ version mismatches of the
+same class were found against the live ledger and renamed in the same pass:
+
+- `20260731070000_phase5_requests_notifications.sql` → `20260730230201_…` (noted under
+  "Matching files" above; content-identical, only the filename was off)
+- `20260731150000_request_email_confirmation.sql` → `20260731134740_…` (applied after this
+  audit, restamped by `apply_migration` the same way)
+
+All 20 repo filenames now match the 20 `schema_migrations` versions one-for-one; relative
+order was already correct and is unchanged. Recommendations 2 and 3 stand: repo SQL keeps its
+richer commentary (MD5s intentionally differ, per this doc), and the live ledger was not
+touched. Comment cross-references to pre-rename timestamps (inside migration files and run
+records) were deliberately left as-is — they are historical text, not replay inputs.
