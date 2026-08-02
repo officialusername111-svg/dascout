@@ -27,8 +27,23 @@ export const ACCOUNT_DENIAL = 'You need to be signed in to do that.'
 export const RESET_SENT =
   'If that email has a DaScout account, a reset link is on its way. The link works for one hour.'
 
+/**
+ * REWORDED for the code step (run-p9). The confirmation email carries a 6-digit code
+ * instead of a link, so "check your email for a confirmation link" now describes a
+ * message that no longer arrives in that shape.
+ *
+ * The uniformity rule above is untouched and is what matters here: this one sentence is
+ * still returned for a brand-new address, an address that already exists confirmed, an
+ * address that already exists unconfirmed, and a rate limit. It must never grow a clause
+ * that only one of those four could produce.
+ *
+ * NOTE the ordering dependency, which is why this wording survives the template change
+ * either way: while the dashboard template still sends a LINK, this sentence points at a
+ * code page that will not have a code to enter — so it names the email first and the page
+ * second, and somebody holding a link simply opens the link instead.
+ */
 export const SIGNUP_SENT =
-  'Check your email for a confirmation link, then sign in. If you already have an account, sign in instead.'
+  'Check your email — we sent a 6-digit code. Enter it on the confirmation page to finish. If you already have an account, sign in instead.'
 
 /** Authenticated surfaces only — never on sign-up or forgot-password. */
 export const RATE_LIMITED = 'Too many attempts. Wait a few minutes and try again.'

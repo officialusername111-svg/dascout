@@ -29,9 +29,11 @@ export function InviteAdminForm() {
     <form action={formAction} className="apanel">
       <h2>Invite an admin</h2>
       <p className="sub2">
-        Sends an invitation link to this address. Accepting it gives that person full
-        access to listings — creating, editing, publishing and deleting any of them — but
-        not the ability to invite or remove other admins.
+        Sends an invitation to this address. It grants nothing on its own — the person
+        creates an account, confirms their email with a code, and then appears below for
+        you to approve. Approving gives them full access to listings — creating, editing,
+        publishing and deleting any of them — but not the ability to invite or remove
+        other admins.
       </p>
 
       {state?.ok && state.message && (
@@ -57,9 +59,10 @@ export function InviteAdminForm() {
           defaultValue={failure?.values?.email ?? ''}
         />
         <div className="hint">
-          The invitation expires in seven days and can be used once. Somebody who has no
-          DaScout account yet gets a second email asking them to confirm the address —
-          they have to open that one first.
+          The invitation expires in seven days. Somebody who has no DaScout account yet
+          gets a second email with a 6-digit code to confirm the address — until they
+          enter it, their invitation sits below as &ldquo;not signed up&rdquo; and cannot
+          be approved.
         </div>
         <div className="ferr">{emailError ?? 'Enter the address to invite.'}</div>
       </div>

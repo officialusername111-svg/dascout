@@ -15,17 +15,23 @@ import {
   stampLabel,
 } from '@/lib/admin/queries'
 import {
+  APPROVAL_SUBJECT,
   DemoteAdminSchema,
   INVITE_DUPLICATE,
   INVITE_REFUSED,
   INVITE_SUBJECT,
   InviteAdminSchema,
+  InviteDecisionSchema,
+  approvalEmailBody,
+  classifyDecisionError,
   classifyInviteError,
   classifyRevokeError,
+  describeApproveOutcome,
+  describeDeclineOutcome,
   describeInviteSend,
   describeRevokeOutcome,
   inviteEmailBody,
-  inviteLinkFor,
+  inviteLandingLink,
 } from '@/lib/admin/invites'
 import {
   PROPERTY_NO_TAKEN,
@@ -1482,11 +1488,24 @@ export async function inviteAdmin(
   const invite = data?.[0]
   if (!invite) throw new Error('create_admin_invite returned no row')
 
+  /**
+   * `invite.invite_token` IS in this response and is deliberately never read.
+   *
+   * The database still mints a 256-bit secret and stores its hash, because
+   * `admin_invites.token_hash` is NOT NULL and that column is what makes an invitation a
+   * row rather than a wish. But since the self-service door was retired there is nothing
+   * a raw token can do — `redeem_admin_invite` is no longer callable by anybody — so it
+   * is not emailed, not put in a cookie, not put in a URL and not logged. It reaches this
+   * variable and is discarded with it at the end of the request.
+   *
+   * The link is the same for every invitation and carries no secret and no address: the
+   * invitation is matched to the person later by the address they sign up with.
+   */
   const delivered = await sendEmail({
     to: email,
     subject: INVITE_SUBJECT,
     text: inviteEmailBody({
-      link: inviteLinkFor(invite.invite_token),
+      link: inviteLandingLink(),
       expiresLabel: stampLabel(invite.invite_expires_at),
     }),
   })
@@ -1532,6 +1551,148 @@ export async function demoteAdmin(
   revalidatePath('/admin/admins')
 
   return describeRevokeOutcome(data)
+}
+
+/**
+ * The two approval-queue functions, reached through a cast.
+ *
+ * Same narrow, one-purpose shape as `ReorderRpcClient` above, and for the same reason:
+ * `lib/database.types.ts` is generated from the live schema, and
+ * `supabase/migrations/20260802204500_admin_invite_approval_queue.sql` is written but NOT
+ * applied, so the generator has never seen these two. Regenerating the types belongs to
+ * the apply, not to this change. The cast names both functions, their one argument and
+ * their return type, so a signature change breaks here instead of leaking `any` across
+ * the module — and until the migration is applied both calls come back as PGRST202,
+ * which `classifyDecisionError` treats as the fault it is.
+ */
+type InviteDecisionRpcClient = {
+  rpc(
+    fn: 'approve_admin_invite' | 'decline_admin_invite',
+    args: { invite_id: string }
+  ): PromiseLike<{ data: string | null; error: { code: string; message: string } | null }>
+}
+
+/**
+ * Grants admin access to somebody who was invited and has since confirmed an account.
+ *
+ * THIS IS THE ONLY PATH IN THE PRODUCT THAT GRANTS A ROLE FROM AN INVITATION, and it runs
+ * only when the owner presses the button. Two earlier designs completed the promotion
+ * automatically once the invited address held a confirmed account; both were rejected,
+ * and the reasoning is written out at the top of the migration. Nothing here may be turned
+ * into a callback, a sign-in hook or a redirect side effect.
+ *
+ * The form posts one field and it is the INVITATION's id, never an account id. The
+ * database re-reads the invitation under a row lock, re-checks that it is still pending
+ * and unexpired, and resolves the account from the invitation's own address inside the
+ * function — so a stale queue, a doctored form or a replayed POST cannot aim this at a
+ * person the owner never saw. This action is not the security boundary either:
+ * `approve_admin_invite` asks `is_super_admin()` itself and raises 42501 if the answer is
+ * no, and `role` is not in any grant an API caller holds.
+ *
+ * Everything that is not a grant comes back as a STATUS, not an exception — expired,
+ * already dealt with, no confirmed account, already an owner — because each of those is a
+ * different sentence the owner can act on, and none of them is a fault.
+ */
+export async function approveAdminInvite(
+  _previous: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const user = await getSuperAdmin()
+  if (!user) return denied()
+
+  const parsed = InviteDecisionSchema.safeParse({ inviteId: formData.get('inviteId') })
+  if (!parsed.success) return invalid(parsed.error)
+
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as unknown as InviteDecisionRpcClient).rpc(
+    'approve_admin_invite',
+    { invite_id: parsed.data.inviteId }
+  )
+
+  if (error) {
+    if (classifyDecisionError(error.code) === 'denied') return denied()
+    // A fault, not something the person at the keyboard can fix. The global handler logs
+    // it; nothing about the invitation is put on the screen.
+    throw error
+  }
+
+  revalidatePath('/admin/admins')
+
+  if (data !== 'approved') return describeApproveOutcome(data)
+
+  /**
+   * The courtesy email, AFTER the grant and outside it.
+   *
+   * The role was written inside one database transaction that has already committed. So
+   * everything from here down is allowed to fail without changing what happened: a mail
+   * provider having a bad afternoon must never be able to undo an access decision, and
+   * nothing below may return a result that says the approval did not happen.
+   *
+   * The address is re-read from the row rather than taken from the form. The browser
+   * posted an invitation id and nothing else; letting it post the address instead would
+   * turn this screen into a way to make the site send mail to any address at all. The
+   * read is authorised by the same super-admin SELECT policy the queue uses, and the
+   * column-scoped grant on `admin_invites` covers `email`.
+   *
+   * `await`ed rather than handed to `after()`: unlike the match alerts, this one has a
+   * consequence the owner has to see. If it did not go out, the only person who can tell
+   * the new admin is the owner, and they have to be told so while they are still looking
+   * at the screen.
+   */
+  const { data: invite } = await supabase
+    .from('admin_invites')
+    .select('email')
+    .eq('id', parsed.data.inviteId)
+    .maybeSingle()
+
+  const delivered = invite?.email
+    ? await sendEmail({
+        to: invite.email,
+        subject: APPROVAL_SUBJECT,
+        text: approvalEmailBody(),
+      })
+    : false
+
+  return describeApproveOutcome(data, delivered)
+}
+
+/**
+ * Cancels a pending invitation — the recall this product has never had.
+ *
+ * It works on ANY pending invitation, not only the ones waiting in the queue: an
+ * invitation sent to a mistyped address, or one that was never delivered, is exactly the
+ * one that most needs recalling, and until now the only remedy was hand-written SQL or
+ * waiting seven days for it to expire.
+ *
+ * Nobody's role changes, so nothing is written to the access record — the cancellation
+ * lives on the invitation itself, with who did it and when.
+ */
+export async function declineAdminInvite(
+  _previous: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const user = await getSuperAdmin()
+  if (!user) return denied()
+
+  const parsed = InviteDecisionSchema.safeParse({ inviteId: formData.get('inviteId') })
+  if (!parsed.success) return invalid(parsed.error)
+
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as unknown as InviteDecisionRpcClient).rpc(
+    'decline_admin_invite',
+    { invite_id: parsed.data.inviteId }
+  )
+
+  if (error) {
+    if (classifyDecisionError(error.code) === 'denied') return denied()
+    throw error
+  }
+
+  revalidatePath('/admin/admins')
+
+  return describeDeclineOutcome(data)
 }
 
 /** The slug and status a revalidation needs, read after a write that did not return them. */

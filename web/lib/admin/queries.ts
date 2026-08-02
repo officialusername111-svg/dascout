@@ -1,5 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireStaff, requireSuperAdmin } from '@/lib/admin/auth'
+import {
+  CANDIDATE_STATE_LABELS,
+  candidateDisplayName,
+  candidateMetaLine,
+  candidateState,
+  type CandidateState,
+} from '@/lib/admin/invites'
 import { bucketForStatus, displayUrls, type PhotoBucket } from '@/lib/admin/photos'
 import { labelFromDb, type DbCategory } from '@/lib/categories'
 import { describeBudget } from '@/lib/budget'
@@ -878,11 +885,161 @@ export async function listAdminAccounts(): Promise<AdminAccountRow[]> {
 }
 
 // ---------------------------------------------------------------------------
+// The approval queue
+// ---------------------------------------------------------------------------
+
+export type AdminCandidateRow = {
+  /** What the approve and decline forms post. An INVITATION id, never an account id. */
+  inviteId: string
+  email: string
+  /** `ready` — a confirmed account exists. `not_signed_up` — nobody has created one. */
+  state: CandidateState
+  stateLabel: string
+  /** The account's own name, falling back to the invited address. See the helper. */
+  displayName: string
+  /** The whole second line, already composed, so the page cannot compose it wrongly. */
+  metaLine: string
+  /** True only for a row the owner may approve. Display only — the RPC re-derives it. */
+  canApprove: boolean
+}
+
+/**
+ * Two outcomes, not one list. `installed: false` means the approval-queue migration has
+ * not been applied to this database yet — which is a state the screen must SAY, because
+ * an empty list would read as "nobody is waiting".
+ */
+export type AdminCandidateQueue =
+  | { installed: true; rows: AdminCandidateRow[] }
+  | { installed: false }
+
+/**
+ * The RPC this reads, typed narrowly through a cast.
+ *
+ * Same reason as `InviteDecisionRpcClient` in `app/admin/actions.ts`:
+ * `lib/database.types.ts` is generated from the live schema and
+ * `supabase/migrations/20260802204500_admin_invite_approval_queue.sql` is written but NOT
+ * applied, so the generator has never seen this function. Until it is applied this call
+ * comes back PGRST202 and the page throws — which is the honest outcome for a screen whose
+ * data source does not exist yet.
+ */
+type CandidatesRpcClient = {
+  rpc(fn: 'list_admin_candidates'): PromiseLike<{
+    data:
+      | {
+          invite_id: string
+          email: string
+          /** Null when nobody has signed up, and null when the account carries no name. */
+          full_name: string | null
+          account_created_at: string | null
+          invited_at: string
+          invite_expires_at: string
+          has_confirmed_account: boolean
+        }[]
+      | null
+    error: { code: string; message: string } | null
+  }>
+}
+
+/**
+ * Every live invitation, in the two states the queue shows: ready to approve, and invited
+ * but not signed up.
+ *
+ * "Ready" is DERIVED, never stored: the invitation is still pending, has not expired, and
+ * its address matches an account whose email is confirmed. There is no fourth status value
+ * and nothing to keep in step — see §2 of the migration. An invitation appearing here has
+ * been granted NOTHING, in either state; the only thing that grants a role is the owner
+ * pressing approve, which is `approveAdminInvite` and nothing else.
+ *
+ * The not-signed-up rows are here on purpose. They are the ones the owner most often needs
+ * to CANCEL — an invitation typed to a wrong address never reaches a confirmed account —
+ * and before this run they were invisible for seven days with no way to recall them.
+ *
+ * It goes through `list_admin_candidates()` rather than an `admin_invites` select for the
+ * same reason `listAdminAccounts` goes through its own function: the confirmed-account
+ * half of the predicate lives in `auth.users`, which no API caller may read. Doing it as
+ * two reads — the invitations over PostgREST, the confirmed accounts from somewhere else —
+ * would mean computing the state in TypeScript from a set difference, and the state would
+ * be wrong the moment either read was stale. One function, one snapshot, one predicate.
+ *
+ * `requireSuperAdmin()` here is not belt-and-braces over the page — it is the rule every
+ * function in this file follows, and it is the guard that still holds when a future route
+ * or action calls this instead of the page.
+ */
+export async function listAdminCandidates(): Promise<AdminCandidateQueue> {
+  await requireSuperAdmin()
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as unknown as CandidatesRpcClient).rpc(
+    'list_admin_candidates'
+  )
+
+  /**
+   * ONE error is not a fault, and it is this one.
+   *
+   * PGRST202 is PostgREST saying "there is no such function": the migration has not been
+   * applied yet. That is a real state of this project — the migration ships in the same
+   * commit as this code and is applied deliberately, by a person, afterwards — and it must
+   * not take the whole Admins page down with it, because that page is also where the owner
+   * invites and removes admins and where they would go to fix anything.
+   *
+   * It is reported as `installed: false`, NEVER as an empty list. An empty list on this
+   * screen reads as "nobody is waiting", which is a different and much worse lie than "the
+   * queue is not installed yet" — the same silent-failure trap the migration's header
+   * warns about for `list_admin_accounts`.
+   *
+   * Every other error still throws. A database that is not answering is a fault.
+   */
+  if (error?.code === 'PGRST202') {
+    console.warn('[admin] list_admin_candidates is missing — apply the approval-queue migration')
+    return { installed: false }
+  }
+
+  if (error) throw error
+
+  // Re-sorted here rather than trusted from the wire, exactly as `listAdminAccounts` does
+  // it: ready rows first (they are the ones that can be acted on), then oldest invitation
+  // first inside each group, so the person who has waited longest is at the top.
+  const rows = [...(data ?? [])]
+    .sort((a, b) => {
+      if (a.has_confirmed_account !== b.has_confirmed_account) {
+        return a.has_confirmed_account ? -1 : 1
+      }
+      return a.invited_at.localeCompare(b.invited_at)
+    })
+    .map((row) => {
+      const state = candidateState(row.has_confirmed_account)
+      return {
+        inviteId: row.invite_id,
+        email: row.email,
+        state,
+        stateLabel: CANDIDATE_STATE_LABELS[state],
+        displayName: candidateDisplayName(row.full_name, row.email),
+        metaLine: candidateMetaLine(state, {
+          accountCreatedLabel: stampLabel(row.account_created_at),
+          invitedLabel: stampLabel(row.invited_at),
+          expiresLabel: stampLabel(row.invite_expires_at),
+        }),
+        canApprove: state === 'ready',
+      }
+    })
+
+  return { installed: true, rows }
+}
+
+// ---------------------------------------------------------------------------
 // The role-change audit trail
 // ---------------------------------------------------------------------------
 
 type UserRole = Database['public']['Enums']['user_role']
-type RoleChangeVia = 'invite_redeemed' | 'revoked_by_super_admin'
+/**
+ * The three values `admin_role_changes.via` may carry. The third arrives with
+ * `20260802204500_admin_invite_approval_queue.sql`, which widens the CHECK additively.
+ *
+ * An approval is deliberately NOT recorded as `invite_redeemed`: that value means the
+ * invitee presented their own secret and promoted themselves, and reusing it for an
+ * approval would name the wrong actor and claim a consent that never happened.
+ */
+type RoleChangeVia = 'invite_redeemed' | 'revoked_by_super_admin' | 'approved_by_super_admin'
 
 export type AdminRoleChangeRow = {
   id: string
@@ -910,6 +1067,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const VIA_LABELS: Record<RoleChangeVia, string> = {
   invite_redeemed: 'Invitation accepted',
   revoked_by_super_admin: 'Removed by the owner',
+  approved_by_super_admin: 'Approved by the owner',
 }
 
 type RawRoleChangeRow = {
@@ -986,8 +1144,8 @@ export async function listAdminRoleChanges(): Promise<AdminRoleChangeRow[]> {
     targetName: nameOf(row.target_id),
     fromRoleLabel: ROLE_LABELS[row.from_role],
     toRoleLabel: ROLE_LABELS[row.to_role],
-    // The check constraint allows exactly the two values above. The fallback is there so
-    // a third one added later reads as a change rather than as a blank.
+    // The check constraint allows exactly the three values above. The fallback is there
+    // so a fourth one added later reads as a change rather than as a blank.
     viaLabel: VIA_LABELS[row.via as RoleChangeVia] ?? 'Access changed',
     granted: row.to_role === 'staff' || row.to_role === 'admin',
   }))

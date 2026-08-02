@@ -227,6 +227,25 @@ export function RegisterPanel() {
       </button>
 
       {/*
+        The way to the code page. A sign-up that came back WITHOUT a session is the
+        confirmation case, and the sentence above tells them a code is on its way — but a
+        sentence is not a route, and the flow dead-ends here without this link.
+
+        `state.data` is what tells the two apart: it is present only when a session came
+        back (email confirmation switched off), and that case has already closed the
+        dialog in the effect above.
+
+        A plain `<a>` rather than `Link`, on purpose: this has to leave the dialog behind,
+        and a client-side navigation would keep the open `<dialog>` mounted on top of the
+        page it navigated to.
+      */}
+      {state?.ok && !state.data && (
+        <a className="btn btn-ghost" href="/confirm" style={{ marginTop: 12, width: '100%' }}>
+          Enter my code
+        </a>
+      )}
+
+      {/*
         Said plainly, on the form, before anyone signs up rather than in a policy page
         nobody opens: once there is an account, what you look at is kept against it and
         DaScout staff can see it.

@@ -1,14 +1,13 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   DemoteAdminSchema,
-  INVITE_COOKIE,
-  INVITE_COOKIE_MAX_AGE,
-  INVITE_COOKIE_PATH,
   INVITE_DUPLICATE,
+  INVITE_LANDING_PATH,
   INVITE_NOT_EMAILED,
   INVITE_REFUSED,
   INVITE_SUBJECT,
-  INVITE_TOKEN_PATTERN,
   InviteAdminSchema,
   REVOKE_DONE,
   REVOKE_NO_CHANGE,
@@ -16,26 +15,26 @@ import {
   classifyRevokeError,
   describeInviteSend,
   describeRevokeOutcome,
-  inviteCookieOptions,
   inviteEmailBody,
-  inviteLinkFor,
-  isInviteTokenShape,
-  normaliseInviteToken,
+  inviteLandingLink,
 } from '@/lib/admin/invites'
 import { isStaffRole, isSuperAdminRole } from '@/lib/admin/auth'
 import { SITE_URL } from '@/lib/site'
 import { inviteAdmin } from '@/app/admin/actions'
-import { acceptAdminInvite } from '@/app/admin/invite/actions'
+import { GET as inviteLandingGET } from '@/app/admin/invite/route'
 
 /**
- * The four seams the two ACTION tests below need stubbed, and nothing else.
+ * The three seams the ACTION tests below need stubbed, and nothing else.
  *
  * The point of these tests is the one property that cannot be checked by reading the
  * code once: that a real invitation token, present in the flow, never comes back out
- * through the value Next.js serialises into the RSC payload or through a log line. That
- * demands the real `inviteAdmin` and the real `acceptAdminInvite`, which means standing
- * in for the request-scoped APIs they reach for — cookies, the Supabase client, the mail
- * door, and the cache/redirect primitives. Everything under test stays real.
+ * through the value Next.js serialises into the RSC payload, through an email, or
+ * through a log line. That demands the real `inviteAdmin`, which means standing in for
+ * the request-scoped APIs it reaches for — the Supabase client, the mail door, and the
+ * cache primitive. Everything under test stays real.
+ *
+ * The `next/headers` cookie stub went with the retired door (run-p9): nothing in this
+ * flow reads or writes a cookie any more, so there is nothing left to stand in for.
  *
  * `@/lib/admin/auth` is mocked by SPREADING the real module and overriding one export, so
  * the `isStaffRole` / `isSuperAdminRole` tests further down still exercise the genuine
@@ -46,8 +45,6 @@ const mocked = vi.hoisted(() => ({
   rpc: vi.fn(),
   sendEmail: vi.fn(),
   getSuperAdmin: vi.fn(),
-  /** Reassigned per test by `useJar`, so the cookies() mock always sees the live jar. */
-  jar: null as unknown,
 }))
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -55,8 +52,6 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 
 vi.mock('@/lib/email', () => ({ sendEmail: mocked.sendEmail }))
-
-vi.mock('next/headers', () => ({ cookies: async () => mocked.jar }))
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
 
@@ -90,117 +85,243 @@ vi.mock('@/lib/admin/auth', async (importOriginal) => {
  * are integration work that runs after the apply.
  */
 
-/** Shaped like the real thing: 32 bytes hex-encoded by `gen_random_bytes`. */
+/**
+ * Shaped like the real thing: 32 bytes hex-encoded by `gen_random_bytes`. It is still
+ * here because the landing-route tests below build an OLD invitation link out of it —
+ * the kind already sitting in two mailboxes — to prove the handler drops it.
+ *
+ * `MIXED_HEX_TOKEN` went with the token-shape tests (see the block below): its only job
+ * was to prove the validator accepted every hex digit, not just repeated 'a's.
+ */
 const REAL_SHAPE_TOKEN = 'a'.repeat(64)
-const MIXED_HEX_TOKEN = '0123456789abcdef'.repeat(4)
 
-describe('isInviteTokenShape — the token is 64 lowercase hex characters (SR-3)', () => {
-  it('accepts a 64-character lowercase hex string', () => {
-    expect(isInviteTokenShape(REAL_SHAPE_TOKEN)).toBe(true)
-    expect(isInviteTokenShape(MIXED_HEX_TOKEN)).toBe(true)
-    expect(MIXED_HEX_TOKEN).toHaveLength(64)
+/**
+ * ===========================================================================
+ * THE RETIRED SELF-SERVICE DOOR — what these tests replaced, and why.
+ *
+ * On 2026-08-02 the owner retired `redeem_admin_invite`: approval by the super
+ * admin is now the ONLY way any account gets admin access. The token is no
+ * longer emailed, the one-hop cookie that carried it is gone, and the page that
+ * spent it no longer exists.
+ *
+ * THREE describe blocks used to stand here and they were deleted, not weakened,
+ * because every function they exercised was deleted with the door:
+ *
+ *   * `isInviteTokenShape` (7 tests) — proved a malformed token never became a
+ *     database round trip. There is no longer any code path that receives a
+ *     token from outside, so there is nothing left to validate.
+ *   * `normaliseInviteToken` (5 tests) — proved a mail client's padding or case
+ *     shift was rescued rather than refused. Same reason.
+ *   * `inviteCookieOptions` (7 tests) — proved the `ds-ai` cookie was httpOnly,
+ *     lax, path-scoped, 15 minutes, and secure in production. There is no
+ *     cookie: nothing sets one and nothing reads one.
+ *
+ * What replaces them is not a like-for-like swap and is not claimed to be one.
+ * It is the set of invariants that the retirement CREATED, which are strictly
+ * stronger than the ones it removed: those helpers made a token safe to handle,
+ * whereas these prove no token is handled at all, by anything, anywhere.
+ * ===========================================================================
+ */
+
+/**
+ * Every `.ts`/`.tsx` file the application ships, so a claim about "nothing" can be checked.
+ *
+ * `proxy.ts` — Next 16's middleware — is included by the ROOT-LEVEL sweep and not by the
+ * directory walk, and it is the reason that sweep exists. It runs on every single request
+ * and already builds a Supabase server client, so it is the one module outside `app/`,
+ * `lib/` and `components/` that could reach an RPC. An earlier version of this helper
+ * walked only the three directories while the assertion below said "NO application
+ * module", which was a claim wider than the evidence.
+ */
+function appSourceFiles(): string[] {
+  const roots = ['app', 'lib', 'components']
+  const found: string[] = []
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry)
+      if (statSync(path).isDirectory()) walk(path)
+      else if (/\.tsx?$/.test(entry)) found.push(path)
+    }
+  }
+
+  for (const root of roots) walk(root)
+
+  // Root-level modules: proxy.ts and the config files. Non-recursive, and `node_modules`
+  // and `.next` are never reached because nothing walks into them from here.
+  for (const entry of readdirSync('.')) {
+    if (/\.tsx?$/.test(entry) && statSync(entry).isFile()) found.push(entry)
+  }
+
+  return found
+}
+
+describe('the retired self-service door — nothing can reach it any more (run-p9)', () => {
+  const sources = appSourceFiles()
+
+  it('finds the application source, so the three negative claims below mean something', () => {
+    // The canary for this whole block: a broken walk would make every "no file
+    // contains X" assertion pass by looking at nothing at all.
+    expect(sources.length).toBeGreaterThan(40)
+    expect(sources.some((path) => path.endsWith(join('lib', 'admin', 'invites.ts')))).toBe(true)
+    expect(sources.some((path) => path.endsWith(join('app', 'admin', 'actions.ts')))).toBe(true)
+    // Named on its own: it is the module that runs on every request, it builds a Supabase
+    // client, and it lives outside all three walked directories.
+    expect(sources).toContain('proxy.ts')
   })
 
-  it('rejects 63 and 65 characters — the boundaries either side', () => {
-    expect(isInviteTokenShape('a'.repeat(63))).toBe(false)
-    expect(isInviteTokenShape('a'.repeat(65))).toBe(false)
+  /**
+   * The name is matched as a string literal in ANY of the three quote characters
+   * TypeScript has — including backticks, which are idiomatic in this codebase and which
+   * defeated the first version of this pattern — or as the PostgREST path a hand-rolled
+   * `fetch` would use (`/rest/v1/rpc/name`).
+   *
+   * Matching backticks is only safe because the source is read through `codeOnly()`
+   * first. Several files now explain the retirement in prose, and a markdown-style
+   * `\`redeem_admin_invite\`` in a comment is character-for-character a template literal.
+   * Stripping comments is what lets the pattern be wide without flagging documentation
+   * the next reader needs — and it is deliberately conservative about which lines it
+   * removes, so it cannot swallow a real call. `database.types.ts` still declares the
+   * function as a bare object key, correctly: it exists in the database, it simply has no
+   * EXECUTE grant, and a bare key is not a string literal.
+   *
+   * WHAT IT STILL CANNOT CATCH, stated rather than implied: a name assembled at runtime —
+   * `'redeem_' + 'admin_invite'`, or a template with an interpolation in the middle. No
+   * regex over source text can, and pretending otherwise would make this test read
+   * stronger than it is. Those two cases are asserted below as known misses, so the limit
+   * is a fact in the suite rather than a claim in a comment.
+   *
+   * **This is a guard, not the control.** The control is the database: §5 of the
+   * migration revokes EXECUTE from `authenticated`, so a call assembled however cleverly
+   * is refused anyway — and that revoke has its own test below.
+   */
+  const RPC_CALL = /(['"`])redeem_admin_invite\1|\/rpc\/redeem_admin_invite/
+  const COOKIE_USE = /(['"`])ds-ai\1/
+
+  /**
+   * Source with COMMENTS removed: block comments in full, and whole lines that are a
+   * `//` comment or a JSDoc `*` continuation.
+   *
+   * It deliberately does NOT strip a trailing `//` from the end of a code line. A naive
+   * line-comment stripper cuts at the first `//`, which would silently eat the rest of
+   * `fetch("https://…/rest/v1/rpc/redeem_admin_invite")` — turning the exact call shape
+   * this test hunts for into a false negative. Erring toward keeping too much is the only
+   * safe direction for a detector.
+   */
+  function codeOnly(text: string): string {
+    return text
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .split('\n')
+      .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+      .join('\n')
+  }
+
+  it('the detectors and the comment stripper both do what the claims below need', () => {
+    // Negatives are worth what their detector is worth. These are the shapes a real call
+    // takes, including the two that defeated the first version of this pattern.
+    expect(RPC_CALL.test("await supabase.rpc('redeem_admin_invite', { raw_token: t })")).toBe(true)
+    expect(RPC_CALL.test('rpc("redeem_admin_invite")')).toBe(true)
+    expect(RPC_CALL.test('supabase.rpc(`redeem_admin_invite`, { raw_token: t })')).toBe(true)
+    expect(RPC_CALL.test('fetch(url + "/rest/v1/rpc/redeem_admin_invite", init)')).toBe(true)
+    expect(RPC_CALL.test("const FN = 'redeem_admin_invite'")).toBe(true)
+    expect(COOKIE_USE.test("export const INVITE_COOKIE = 'ds-ai'")).toBe(true)
+    expect(COOKIE_USE.test('jar.get(`ds-ai`)')).toBe(true)
+
+    // A bare object key is a declaration, not a call.
+    expect(RPC_CALL.test('redeem_admin_invite: { Args: { raw_token: string } }')).toBe(false)
+
+    // The stripper removes prose in both comment shapes…
+    const prose = [
+      '/** `redeem_admin_invite` is retired — see §5. The `ds-ai` cookie went with it. */',
+      '// `redeem_admin_invite` is retired',
+      ' * and the `ds-ai` cookie with it',
+      'const KEEP = 1',
+    ].join('\n')
+    expect(RPC_CALL.test(codeOnly(prose))).toBe(false)
+    expect(COOKIE_USE.test(codeOnly(prose))).toBe(false)
+    expect(codeOnly(prose)).toContain('const KEEP = 1')
+
+    // …and does NOT eat a code line that merely contains a URL.
+    const urlCall = 'await fetch("https://x.supabase.co/rest/v1/rpc/redeem_admin_invite")'
+    expect(RPC_CALL.test(codeOnly(urlCall))).toBe(true)
+
+    // Known misses, asserted so the limit cannot quietly become a false claim.
+    expect(RPC_CALL.test("supabase.rpc('redeem_' + 'admin_invite')")).toBe(false)
+    expect(RPC_CALL.test('supabase.rpc(`redeem_${x}admin_invite`)')).toBe(false)
   })
 
-  it('rejects uppercase hex, because the database hex-encodes in lowercase', () => {
-    expect(isInviteTokenShape('A'.repeat(64))).toBe(false)
+  it('NO application module calls redeem_admin_invite', () => {
+    const callers = sources.filter((path) => RPC_CALL.test(codeOnly(readFileSync(path, 'utf8'))))
+    expect(callers, `these files still call the retired RPC: ${callers.join(', ')}`).toEqual([])
   })
 
-  it('rejects non-hex characters of the right length', () => {
-    expect(isInviteTokenShape('g'.repeat(64))).toBe(false)
-    expect(isInviteTokenShape(`${'a'.repeat(63)}-`)).toBe(false)
+  it('NO application module still uses the ds-ai invite cookie', () => {
+    const users = sources.filter((path) => COOKIE_USE.test(codeOnly(readFileSync(path, 'utf8'))))
+    expect(users, `these files still use the retired cookie: ${users.join(', ')}`).toEqual([])
   })
 
-  it('rejects surrounding whitespace rather than trimming it', () => {
-    expect(isInviteTokenShape(` ${REAL_SHAPE_TOKEN}`)).toBe(false)
-    expect(isInviteTokenShape(`${REAL_SHAPE_TOKEN}\n`)).toBe(false)
-  })
-
-  it('rejects everything that is not a string', () => {
-    expect(isInviteTokenShape(null)).toBe(false)
-    expect(isInviteTokenShape(undefined)).toBe(false)
-    expect(isInviteTokenShape('')).toBe(false)
-    expect(isInviteTokenShape(12345)).toBe(false)
-    expect(isInviteTokenShape({ token: REAL_SHAPE_TOKEN })).toBe(false)
-    expect(isInviteTokenShape([REAL_SHAPE_TOKEN])).toBe(false)
-  })
-
-  it('the pattern is anchored, so a valid token embedded in junk is still refused', () => {
-    expect(INVITE_TOKEN_PATTERN.test(`x${REAL_SHAPE_TOKEN}`)).toBe(false)
-    expect(INVITE_TOKEN_PATTERN.test(`${REAL_SHAPE_TOKEN}x`)).toBe(false)
+  /**
+   * The database layer is the one that actually holds. Everything above is "we
+   * stopped calling it"; this is "nobody may call it", which is the statement a
+   * hand-written PostgREST request runs into.
+   */
+  it('the migration revokes EXECUTE on redeem_admin_invite from authenticated', () => {
+    const migration = readFileSync(
+      join('..', 'supabase', 'migrations', '20260802204500_admin_invite_approval_queue.sql'),
+      'utf8'
+    )
+    expect(migration).toMatch(
+      /revoke\s+execute\s+on\s+function\s+public\.redeem_admin_invite\(text\)\s+from\s+authenticated;/i
+    )
+    // And the restoring grant is present only inside the commented rollback block,
+    // so applying this file can never re-grant what it just took away.
+    for (const line of migration.split('\n')) {
+      if (/grant\s+execute\s+on\s+function\s+public\.redeem_admin_invite/i.test(line)) {
+        expect(line.trimStart().startsWith('--')).toBe(true)
+      }
+    }
   })
 })
 
-describe('normaliseInviteToken — the same rescue the database performs (SR-3)', () => {
-  it('passes a already-clean token straight through', () => {
-    expect(normaliseInviteToken(MIXED_HEX_TOKEN)).toBe(MIXED_HEX_TOKEN)
+describe('the invitation landing route — a redirect that carries nothing (run-p9)', () => {
+  /**
+   * This replaces what the old route-handler design needed the cookie for. The
+   * handler survives only so that invitations already in a mailbox — some with
+   * `?token=…` still on them — land somewhere useful instead of on a 404, and
+   * the assertions below are that it forwards NONE of it.
+   */
+  async function landing(url: string) {
+    return inviteLandingGET({ nextUrl: new URL(url) } as never)
+  }
+
+  it('redirects an old token-bearing link to the welcome page, with no query string', async () => {
+    const response = await landing(`https://dascoutprime.com/admin/invite?token=${REAL_SHAPE_TOKEN}`)
+
+    expect(response.status).toBe(303)
+    const location = response.headers.get('location') ?? ''
+    expect(location).toBe('https://dascoutprime.com/admin/invite/welcome')
+    expect(location).not.toMatch(/[0-9a-f]{64}/)
+    expect(new URL(location).search).toBe('')
   })
 
-  it('trims padding a mail client added around the link', () => {
-    expect(normaliseInviteToken(`  ${MIXED_HEX_TOKEN}  `)).toBe(MIXED_HEX_TOKEN)
-    expect(normaliseInviteToken(`\n${MIXED_HEX_TOKEN}\t`)).toBe(MIXED_HEX_TOKEN)
+  it('sets no cookie at all — the token is not stored, it is dropped', async () => {
+    const response = await landing(`https://dascoutprime.com/admin/invite?token=${REAL_SHAPE_TOKEN}`)
+
+    expect(response.headers.get('set-cookie')).toBeNull()
+    expect(response.cookies.getAll()).toEqual([])
   })
 
-  it('lower-cases a case-shifted token, which removes no entropy from lower-case hex', () => {
-    expect(normaliseInviteToken(MIXED_HEX_TOKEN.toUpperCase())).toBe(MIXED_HEX_TOKEN)
+  it('still refuses to leak the old URL through a referrer or a shared cache', async () => {
+    const response = await landing(`https://dascoutprime.com/admin/invite?token=${REAL_SHAPE_TOKEN}`)
+
+    expect(response.headers.get('referrer-policy')).toBe('no-referrer')
+    expect(response.headers.get('cache-control')).toBe('no-store')
   })
 
-  it('refuses whitespace INSIDE the token — a token broken across a line is broken', () => {
-    const split = `${MIXED_HEX_TOKEN.slice(0, 32)} ${MIXED_HEX_TOKEN.slice(32)}`
-    expect(normaliseInviteToken(split)).toBeNull()
-  })
+  it('sends a bare link to exactly the same place', async () => {
+    const response = await landing('https://dascoutprime.com/admin/invite')
 
-  it('refuses anything that is not 64 hex characters after cleaning', () => {
-    expect(normaliseInviteToken('a'.repeat(63))).toBeNull()
-    expect(normaliseInviteToken('g'.repeat(64))).toBeNull()
-    expect(normaliseInviteToken('')).toBeNull()
-    expect(normaliseInviteToken(null)).toBeNull()
-    expect(normaliseInviteToken(undefined)).toBeNull()
-    expect(normaliseInviteToken(12345)).toBeNull()
-  })
-})
-
-describe('inviteCookieOptions — the one-hop cookie (SR-3)', () => {
-  const options = inviteCookieOptions()
-
-  it('is httpOnly, so no script on the page can read the token out of it', () => {
-    expect(options.httpOnly).toBe(true)
-  })
-
-  it('is lax, so it survives the arrival from a mail client but not a cross-site POST', () => {
-    expect(options.sameSite).toBe('lax')
-  })
-
-  it('is scoped to the invite flow, not to the whole site', () => {
-    expect(options.path).toBe(INVITE_COOKIE_PATH)
-    expect(INVITE_COOKIE_PATH).toBe('/admin/invite')
-    // The accept page sits underneath it, so the cookie reaches the page and the POST.
-    expect('/admin/invite/accept'.startsWith(`${INVITE_COOKIE_PATH}/`)).toBe(true)
-  })
-
-  it('lives for fifteen minutes — long enough to read a page, short enough to be a window', () => {
-    expect(options.maxAge).toBe(INVITE_COOKIE_MAX_AGE)
-    expect(INVITE_COOKIE_MAX_AGE).toBe(900)
-  })
-
-  it('is named in the house style', () => {
-    expect(INVITE_COOKIE).toMatch(/^ds-/)
-  })
-
-  it('is secure in production, so a 256-bit admin-granting secret never crosses plain HTTP', () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    expect(inviteCookieOptions().secure).toBe(true)
-    vi.unstubAllEnvs()
-  })
-
-  it('drops secure outside production, matching rotateViewSession, so local http still works', () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    expect(inviteCookieOptions().secure).toBe(false)
-    vi.unstubAllEnvs()
+    expect(response.headers.get('location')).toBe('https://dascoutprime.com/admin/invite/welcome')
   })
 })
 
@@ -338,12 +459,41 @@ describe('describeRevokeOutcome — revoked and no_change are different answers 
 })
 
 describe('the invitation email (SR-8)', () => {
-  const link = inviteLinkFor(REAL_SHAPE_TOKEN)
+  const link = inviteLandingLink()
   const body = inviteEmailBody({ link, expiresLabel: 'Aug 9, 2026, 5:17 PM' })
 
-  it('the link points at this site and carries the token exactly once', () => {
-    expect(link.startsWith(`${SITE_URL}/admin/invite?token=`)).toBe(true)
-    expect(body.split(REAL_SHAPE_TOKEN)).toHaveLength(2)
+  /**
+   * REWRITTEN (run-p9). This test used to read:
+   *
+   *   it('the link points at this site and carries the token exactly once', () => {
+   *     expect(link.startsWith(`${SITE_URL}/admin/invite?token=`)).toBe(true)
+   *     expect(body.split(REAL_SHAPE_TOKEN)).toHaveLength(2)
+   *   })
+   *
+   * It asserted that the invitation link CARRIED the 256-bit redemption secret,
+   * exactly once. The owner retired self-service redemption, so the secret now grants
+   * nothing and has no business being in an email or in an access log — and the
+   * assertion asserts something we intend to be false.
+   *
+   * The replacement keeps the first half verbatim (the link still points at this site
+   * and nowhere else) and inverts the second into the stronger claim: the body carries
+   * no token, no query string, and nothing that looks like a secret at all. `not.toMatch`
+   * on the token pattern is wider than the old exact-count check — it fails on ANY
+   * 64-hex string, not only on the one the test happened to build.
+   */
+  it('the link points at this site and carries no secret and no query string', () => {
+    expect(link).toBe(`${SITE_URL}${INVITE_LANDING_PATH}`)
+    expect(new URL(link).search).toBe('')
+    expect(body).toContain(link)
+    expect(body).not.toMatch(/[0-9a-f]{64}/)
+    // Case-insensitive: `{{ .Token }}` and "Token" would both slip past `toContain`.
+    expect(body).not.toMatch(/token/i)
+  })
+
+  /** The address is personal data and belongs in the envelope, never in the URL. */
+  it('the link carries no email address either', () => {
+    expect(link).not.toContain('@')
+    expect(link).not.toMatch(/email=/i)
   })
 
   it('names the SECOND email before it arrives, and says to open it first', () => {
@@ -440,28 +590,6 @@ function formOf(fields: Record<string, string>): FormData {
   return fd
 }
 
-/** A cookie jar with the three methods the invite flow uses, and a record of every write. */
-function makeJar(initial: Record<string, string> = {}) {
-  const store = new Map<string, string>(Object.entries(initial))
-  const writes: { name: string; value: string; options?: Record<string, unknown> }[] = []
-
-  return {
-    writes,
-    get: (name: string) => (store.has(name) ? { name, value: store.get(name)! } : undefined),
-    has: (name: string) => store.has(name),
-    set: (name: string, value: string, options?: Record<string, unknown>) => {
-      writes.push({ name, value, options })
-      if (options?.maxAge === 0) store.delete(name)
-      else store.set(name, value)
-    },
-    delete: (name: string) => {
-      writes.push({ name, value: '' })
-      store.delete(name)
-    },
-    peek: (name: string) => store.get(name) ?? null,
-  }
-}
-
 /**
  * Everything written to the console during one test, flattened into one string.
  *
@@ -496,19 +624,7 @@ function captureConsole() {
   }
 }
 
-/** Runs something that is expected to `redirect()`, and returns where it went. */
-async function captureRedirect(run: () => Promise<unknown>): Promise<string> {
-  try {
-    await run()
-  } catch (error) {
-    const target = (error as { redirectTo?: string }).redirectTo
-    if (typeof target === 'string') return target
-    throw error
-  }
-  throw new Error('expected a redirect, and none happened')
-}
-
-describe('inviteAdmin — a live token reaches the email and nothing else (SR-1, SR-2)', () => {
+describe('inviteAdmin — a live token reaches NOTHING (SR-1, SR-2; run-p9)', () => {
   let logs: ReturnType<typeof captureConsole>
 
   beforeEach(() => {
@@ -531,14 +647,45 @@ describe('inviteAdmin — a live token reaches the email and nothing else (SR-1,
     logs.restore()
   })
 
-  it('puts the token in the email body — without this the rest of these tests prove nothing', async () => {
+  /**
+   * REWRITTEN (run-p9). This test used to read:
+   *
+   *   it('puts the token in the email body — without this the rest of these tests
+   *       prove nothing', async () => {
+   *     await inviteAdmin(null, formOf({ email: INVITEE }))
+   *     expect(mocked.sendEmail).toHaveBeenCalledTimes(1)
+   *     const sent = mocked.sendEmail.mock.calls[0][0] as {...}
+   *     expect(sent.to).toBe(INVITEE)
+   *     expect(sent.text).toContain(LIVE_TOKEN)
+   *   })
+   *
+   * Its job was twofold: prove the email carried the secret (the old flow's whole
+   * mechanism), and act as the CANARY that made every negative assertion below it
+   * meaningful — if no token were in the flow at all, "the result carries no token"
+   * would pass trivially.
+   *
+   * The owner retired self-service redemption, so the first half is now something we
+   * intend to be false. The canary half is not dropped, it is MOVED UP a level: the
+   * stub still hands `inviteAdmin` a live token in the RPC response, and this test
+   * asserts that it did — so the token is still provably in the flow — and then asserts
+   * the email does not contain it. The negatives below therefore still mean what they
+   * always meant, and the surface they cover grew from "everything except the email" to
+   * "everything".
+   */
+  it('is handed a live token by the database and puts it in NOTHING — starting with the email', async () => {
     await inviteAdmin(null, formOf({ email: INVITEE }))
+
+    // The canary: the token really was in this flow, on its way through the action.
+    const rpcAnswer = await mocked.rpc.mock.results[0].value
+    expect(rpcAnswer.data[0].invite_token).toBe(LIVE_TOKEN)
 
     expect(mocked.sendEmail).toHaveBeenCalledTimes(1)
     const sent = mocked.sendEmail.mock.calls[0][0] as { to: string; subject: string; text: string }
     expect(sent.to).toBe(INVITEE)
-    expect(sent.text).toContain(LIVE_TOKEN)
-    // The token is in the flow. Every assertion below is therefore a real one.
+    expect(sent.text).not.toContain(LIVE_TOKEN)
+    expect(sent.text).not.toMatch(/[0-9a-f]{64}/)
+    // And what it sends instead is the landing page, with nothing on the URL.
+    expect(sent.text).toContain(inviteLandingLink())
   })
 
   it('the leak detector fires on a result that DOES carry a token — the canary', () => {
@@ -647,99 +794,33 @@ describe('inviteAdmin — a live token reaches the email and nothing else (SR-1,
   })
 })
 
-describe('acceptAdminInvite — the token is spent once and never written down (SR-2, SR-3)', () => {
-  let logs: ReturnType<typeof captureConsole>
-  let jar: ReturnType<typeof makeJar>
-
-  function useJar(cookies: Record<string, string> = {}) {
-    jar = makeJar(cookies)
-    mocked.jar = jar
-    return jar
-  }
-
-  beforeEach(() => {
-    logs = captureConsole()
-    mocked.rpc.mockReset().mockResolvedValue({ data: 'accepted', error: null })
-    useJar({ [INVITE_COOKIE]: LIVE_TOKEN })
-  })
-
-  afterEach(() => {
-    logs.restore()
-  })
-
-  it('an accepted redemption clears the cookie, lands on ?done=1, and logs nothing', async () => {
-    const target = await captureRedirect(() => acceptAdminInvite())
-
-    expect(target).toBe('/admin/invite/accept?done=1')
-    expect(jar.peek(INVITE_COOKIE)).toBeNull()
-    expect(target).not.toMatch(/[0-9a-f]{64}/)
-    expect(logs.text()).not.toContain(LIVE_TOKEN)
-  })
-
-  it('the token is passed to the database exactly as the cookie held it', async () => {
-    await captureRedirect(() => acceptAdminInvite())
-
-    expect(mocked.rpc).toHaveBeenCalledWith('redeem_admin_invite', { raw_token: LIVE_TOKEN })
-    // Same guard as the invite tests: the token really was in this flow.
-  })
-
-  it("an 'invalid' answer lands on ?failed=1 with no token in the URL and none in the log", async () => {
-    mocked.rpc.mockResolvedValue({ data: 'invalid', error: null })
-
-    const target = await captureRedirect(() => acceptAdminInvite())
-
-    expect(target).toBe('/admin/invite/accept?failed=1')
-    expect(target).not.toMatch(/[0-9a-f]{64}/)
-    expect(logs.text()).not.toMatch(/[0-9a-f]{64}/)
-  })
-
-  it('an RPC error logs the CODE and nothing else — not the token, not the address', async () => {
-    mocked.rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'permission denied for function redeem_admin_invite' } })
-
-    const target = await captureRedirect(() => acceptAdminInvite())
-
-    expect(target).toBe('/admin/invite/accept?failed=1')
-    expect(logs.text()).toContain('42501')
-    expect(logs.text()).not.toContain(LIVE_TOKEN)
-    expect(logs.text()).not.toMatch(/[0-9a-f]{64}/)
-    expect(logs.text()).not.toContain(INVITEE)
-  })
-
-  it('the cookie is gone even when the call throws — single use starts before anything can fail', async () => {
-    mocked.rpc.mockRejectedValue(new Error('the database went away'))
-
-    await expect(acceptAdminInvite()).rejects.toThrow(/database went away/)
-    expect(jar.peek(INVITE_COOKIE)).toBeNull()
-    expect(jar.writes.some((write) => write.name === INVITE_COOKIE && write.options?.maxAge === 0)).toBe(true)
-    expect(logs.text()).not.toMatch(/[0-9a-f]{64}/)
-  })
-
-  it('the clearing write is path-scoped, or it would clear a different cookie and leave the real one', async () => {
-    await captureRedirect(() => acceptAdminInvite())
-
-    const clear = jar.writes.find((write) => write.options?.maxAge === 0)
-    expect(clear).toBeDefined()
-    expect(clear?.name).toBe(INVITE_COOKIE)
-    expect(clear?.value).toBe('')
-    expect(clear?.options?.path).toBe(INVITE_COOKIE_PATH)
-    expect(clear?.options?.httpOnly).toBe(true)
-  })
-
-  it('no cookie at all means no database call, and the same ?failed=1 page', async () => {
-    useJar()
-
-    const target = await captureRedirect(() => acceptAdminInvite())
-
-    expect(target).toBe('/admin/invite/accept?failed=1')
-    expect(mocked.rpc).not.toHaveBeenCalled()
-  })
-
-  it('a malformed cookie value is refused before it becomes a database round trip', async () => {
-    useJar({ [INVITE_COOKIE]: 'not-a-token' })
-
-    const target = await captureRedirect(() => acceptAdminInvite())
-
-    expect(target).toBe('/admin/invite/accept?failed=1')
-    expect(mocked.rpc).not.toHaveBeenCalled()
-  })
-})
+/**
+ * ===========================================================================
+ * DELETED WITH THE DOOR (run-p9): `describe('acceptAdminInvite — the token is
+ * spent once and never written down (SR-2, SR-3)')`, eight tests.
+ *
+ * `web/app/admin/invite/actions.ts` no longer exists. The server action it
+ * exported was the only caller of `redeem_admin_invite`, and the owner retired
+ * that door: approval by the super admin is now the only way any account gets
+ * admin access. There is nothing left to import, so these tests could not be
+ * rewritten in place — they are listed here so the deletion is a record rather
+ * than a gap. What each one proved, and where that property now lives:
+ *
+ *   1. accepted → cookie cleared, ?done=1, nothing logged ....... flow deleted
+ *   2. the token is passed to the database as the cookie held it  flow deleted
+ *   3. 'invalid' → ?failed=1, no token in URL or log ............ flow deleted
+ *   4. an RPC error logs the CODE and nothing else .............. flow deleted
+ *   5. the cookie is cleared even when the call throws .......... no cookie exists
+ *   6. the clearing write is path-scoped ....................... no cookie exists
+ *   7. no cookie → no database call ............................ no cookie exists
+ *   8. a malformed cookie → no database call ................... no cookie exists
+ *
+ * Tests 1-4 were about handling a token safely on its way to a door that is now
+ * shut; that door is proved shut, at the database, by 'the migration revokes
+ * EXECUTE' above — which is the layer these eight never covered, because an
+ * application test cannot. Tests 5-8 were about a cookie whose absence is now
+ * asserted directly ('NO application module still uses the ds-ai invite cookie'
+ * and 'sets no cookie at all'). Neither replacement is a like-for-like swap and
+ * neither is offered as one.
+ * ===========================================================================
+ */

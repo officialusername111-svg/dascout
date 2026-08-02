@@ -329,18 +329,151 @@ describe('AC3: a staff admin is refused every route to the admin role (database-
     expect(data ?? null).toBeNull()
   })
 
-  it('a STAFF caller presenting a token nobody issued is told only "invalid"', async () => {
-    // Six different failure reasons collapse to one word so the endpoint cannot be used to
-    // find out which tokens exist. Reaching the function is fine — being told anything
-    // more than 'invalid' is not.
+  /**
+   * REWRITTEN (run-p9, 2026-08-02). This test used to read:
+   *
+   *   it('a STAFF caller presenting a token nobody issued is told only "invalid"', ...)
+   *     const { data, error } = await staff.rpc('redeem_admin_invite', { raw_token: … })
+   *     expect(error).toBeNull()
+   *     expect(data).toBe('invalid')
+   *     // and the role did not move
+   *
+   * It asserted that a signed-in caller REACHES the redemption function and receives one
+   * uniform word, so the endpoint could not be used to find out which tokens exist. That
+   * was the correct assertion while self-service redemption existed.
+   *
+   * The owner retired that door: `20260802204500_admin_invite_approval_queue.sql` §5
+   * revokes EXECUTE from `authenticated`, so approval by the super admin is the only way
+   * any account gets admin access. `error` is no longer null and `data` is no longer
+   * 'invalid' — the old assertion now asserts something we intend to be false.
+   *
+   * The replacement is STRICTLY STRONGER on the property that survives, and I am not
+   * claiming more than that: before, a staff caller ran the function body and was refused
+   * by its own logic; now the call is refused by the EXECUTE grant before the body runs at
+   * all. Enumeration is not merely uniform, it is unreachable. The role re-read is kept
+   * verbatim, because "and it changed nothing" is the assertion that actually protects the
+   * fixture account.
+   *
+   * PENDING APPLY: until the migration is applied this test FAILS, and the guard below
+   * says so in words rather than as a confusing assertion diff. That is the same posture
+   * as `admin-approval-queue-denial.integration.test.ts` and the same reason the suite
+   * refuses to go green on something that is not installed.
+   */
+  it('a STAFF caller cannot reach redeem_admin_invite at all — the door is retired', async () => {
     const { data, error } = await staff.rpc('redeem_admin_invite', {
       raw_token: 'f'.repeat(64),
     })
 
-    expect(error).toBeNull()
-    expect(data, 'a junk token got an answer other than the uniform refusal').toBe('invalid')
+    if (error === null && data === 'invalid') {
+      throw new Error(
+        [
+          'THE RETIREMENT IS NOT IN FORCE. This means ONE of two things, and they are',
+          'very different — check which before recording either:',
+          '',
+          '  (a) PENDING APPLY, not a defect. 20260802204500_admin_invite_approval_queue',
+          '      .sql has not been applied yet, so nothing has revoked anything. Expected',
+          '      before the ASK gate. Apply the migration and re-run this file.',
+          '',
+          '  (b) A DEFECT, if the migration HAS been applied. §5 revokes EXECUTE on',
+          '      public.redeem_admin_invite(text) from `authenticated` — a staff session',
+          '      reaching the function means that revoke did not take, or something',
+          '      re-granted it. The self-service door is open. Report it.',
+          '',
+          'Tell them apart with:',
+          "  select has_function_privilege('authenticated',",
+          "    'public.redeem_admin_invite(text)', 'execute');",
+          '  -- false = retired correctly; true = the grant is back.',
+        ].join('\n')
+      )
+    }
 
-    // And it changed nothing.
+    expect(error, 'a staff session reached the retired redemption door').not.toBeNull()
+    expect(error?.code, 'expected the EXECUTE grant to refuse before the body runs').toBe(
+      INSUFFICIENT_PRIVILEGE
+    )
+    expect(data ?? null).toBeNull()
+
+    // And it changed nothing. Kept verbatim from the original.
+    const { data: after } = await staff.from('profiles').select('role').eq('id', staffId).single()
+    expect(after?.role).toBe('staff')
+  })
+
+  /**
+   * THE NON-ENUMERATION PROPERTY, KEPT ALIVE ACROSS BOTH STATES OF THE DOOR.
+   *
+   * The test above asserts the door is shut. That is the stronger statement — but it is
+   * stronger ONLY while the door stays shut, and §6 of the migration documents
+   * un-retiring it as a single `grant execute` that is explicitly meant to be usable on
+   * its own "if a live invitation ever has to be honoured the old way". Two live
+   * invitations expire 2026-08-09, so that is a real sequence and not a hypothetical: the
+   * grant comes back, the endpoint is public again, and the property that made it safe to
+   * be public — every failure answers with the same word, so it cannot be used to find
+   * out which tokens exist — would have had no test at all.
+   *
+   * So this one asserts whichever property is the live one, and neither branch can pass
+   * vacuously:
+   *
+   *   * grant present  → every distinct failure path must answer BYTE-IDENTICALLY.
+   *   * grant revoked  → the call must be refused at the grant layer, with no answer.
+   *
+   * WHAT IT DOES AND DOES NOT COVER, precisely. `redeem_admin_invite` has six semantic
+   * failure reasons (no such token, expired, already accepted, revoked, wrong mailbox,
+   * unconfirmed mailbox). Five of them need real invitation rows, and creating those in
+   * production is not something a test may do — so they were never covered by the
+   * original test either, which presented ONE junk token. What is covered here is every
+   * failure path reachable without writing anything: the early length-bound return (empty,
+   * short, over-long), the normalisation path (padded, upper-cased), and the hash-and-miss
+   * path (well-formed but unissued, non-hex). Six inputs across three distinct branches of
+   * the function, where the original had one. That is a wider sample of the same property,
+   * not proof of all six reasons.
+   *
+   * It writes nothing in either state: every input is junk, and a junk token matches no
+   * row, so the UPDATE inside the function touches zero rows.
+   */
+  it('redemption is either unreachable or uniformly refusing — never enumerable', async () => {
+    const probes: { label: string; token: string }[] = [
+      { label: 'well-formed but never issued', token: 'f'.repeat(64) },
+      { label: 'at the 32-character lower bound', token: 'a'.repeat(32) },
+      { label: 'empty — refused before any lookup', token: '' },
+      { label: 'over the 256-character ceiling', token: 'b'.repeat(300) },
+      { label: 'padded and upper-cased — the normalisation path', token: `  ${'C'.repeat(64)}  ` },
+      { label: 'not hex at all', token: 'z'.repeat(64) },
+    ]
+
+    const answers: { label: string; data: unknown; code: string | null | undefined }[] = []
+
+    for (const probe of probes) {
+      const { data, error } = await staff.rpc('redeem_admin_invite', { raw_token: probe.token })
+      answers.push({ label: probe.label, data, code: error?.code })
+    }
+
+    const reachable = answers.every((answer) => answer.code === undefined)
+
+    if (reachable) {
+      // The door is open (pre-apply, or re-granted). Uniformity is the property that
+      // makes that safe, and it has to hold across every one of these paths.
+      for (const answer of answers) {
+        expect(
+          answer.data,
+          `${answer.label}: answered something other than the uniform refusal — this endpoint would tell an outsider which tokens exist`
+        ).toBe('invalid')
+      }
+
+      // Not merely equal to the same expected value: literally one distinct answer between
+      // them, so no future edit can let one path drift a word the others keep.
+      expect(new Set(answers.map((answer) => JSON.stringify(answer.data))).size).toBe(1)
+    } else {
+      // The door is shut. Then it must be shut for ALL of them — a mixture would mean the
+      // refusal depends on the input, which is an oracle of a different kind.
+      for (const answer of answers) {
+        expect(answer.code, `${answer.label}: expected the EXECUTE grant to refuse`).toBe(
+          INSUFFICIENT_PRIVILEGE
+        )
+        expect(answer.data ?? null).toBeNull()
+      }
+    }
+
+    // Either way, nothing moved.
     const { data: after } = await staff.from('profiles').select('role').eq('id', staffId).single()
     expect(after?.role).toBe('staff')
   })

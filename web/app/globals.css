@@ -427,12 +427,28 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 .apanel .pill,.alist .pill,.aphoto .pill,.atable .pill,.aabar .pill{position:static;display:inline-block}
 .pill.muted{background:var(--bg-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
 .pill.ok{background:var(--ok);color:#fff}
+/* The third variant, for a count that is waiting on somebody rather than reporting a
+   state. Built from the --warn tokens that already back `.aattention` and `.ablockers`,
+   so it is the same yellow the admin already uses for "this needs a person", not a new
+   colour. It is covered by the `position:static` list above wherever it is used — inside
+   `.apanel` for the heading count, inside `.alist` for a row. */
+.pill.warn{background:var(--warn-bg);color:var(--warn-ink);box-shadow:inset 0 0 0 1px var(--warn-line)}
+/* A count sitting beside a panel heading. `.apanel > h2` is deliberately NOT turned into
+   a flex container: every other admin heading is text-only and would gain a layout mode
+   it does not need. */
+.apanel > h2 .pill{margin-left:9px;vertical-align:middle}
 
 .agrid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
 .agrid .wide{grid-column:1 / -1}
 .aactions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .amuted{color:var(--ink-3);font-size:12.5px}
 .abtn-sm{min-height:40px;padding:0 16px;font-size:11.5px}
+/* The quietest button in the admin: a hairline outline in the line colour rather than in
+   the ink. It exists for "Cancel invitation" on a row that has nothing to approve — a
+   real action, but not one the eye should land on before the ones that matter. It borrows
+   nothing from `.btn-ghost`, which is the second-loudest button on the page. */
+.btn-quiet{border:1.5px solid var(--line);color:var(--ink-2)}
+.btn-quiet:hover{border-color:var(--ink-900);color:var(--ink-900)}
 .afilters{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:16px 0 18px}
 .afilters .field{margin-bottom:0;min-width:190px}
 
@@ -472,6 +488,13 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 
 .asignin{max-width:440px;margin:64px auto 40px;padding:0 24px}
 .asignin h1{font-size:26px;margin-bottom:4px}
+/* The one-time code box. Written as `.field input.otp` rather than `.otp` so it outranks
+   `.field input` without an `!important`: six digits spaced out and centred, which is how
+   a code is printed in the email and therefore how somebody reads it back. The left
+   padding cancels the trailing letter-space so the digits sit centred and not one gap to
+   the left. `font-variant-numeric` keeps the digits from jumping width as they are typed. */
+.field input.otp{font-size:26px;font-weight:700;letter-spacing:.55em;text-align:center;
+  padding-left:calc(12px + .55em);font-variant-numeric:tabular-nums}
 
 @media (max-width:880px){
   .agrid,.achecks{grid-template-columns:1fr}

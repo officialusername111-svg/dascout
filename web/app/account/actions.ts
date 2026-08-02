@@ -16,6 +16,7 @@ import {
   SIGNIN_FAILED,
   SIGNUP_SENT,
 } from '@/lib/account/messages'
+import { OTP_CONFIRMED, VerifyEmailCodeSchema, describeOtpOutcome } from '@/lib/account/otp'
 import type { ActionResult } from '@/app/admin/actions'
 import type { Database } from '@/lib/database.types'
 
@@ -552,6 +553,88 @@ export async function signUpBuyer(
   if (outcome.ok) return outcome
 
   return { ...outcome, values: submittedValues({ email: raw.email, fullName: raw.fullName }) }
+}
+
+// ---------------------------------------------------------------------------
+// A2b — confirm the email address with a code
+// ---------------------------------------------------------------------------
+
+/**
+ * Confirms a new account from the six-digit code in the "Confirm signup" email.
+ *
+ * WHAT IT REPLACES. Supabase sends ONE confirmation message per signup, and a dashboard
+ * template decides whether that message carries a link (`{{ .ConfirmationURL }}`) or a
+ * code (`{{ .Token }}`). The owner has chosen the code, so an invited person receives two
+ * emails in total — the invitation and the code — instead of three, and confirms on the
+ * page they are already looking at. The link path through `/auth/callback` is untouched
+ * and still serves password recovery, so nothing breaks while the template still sends a
+ * link: this action simply has no code to be given until the template changes.
+ *
+ * WHAT IT DOES NOT DO. It grants no role, on any path, to anybody. A confirmed address
+ * proves control of a mailbox and buys exactly one thing: a place in a queue the super
+ * admin reads. The only thing in this product that turns an invitation into admin access
+ * is `approveAdminInvite`, pressed by the owner. Two earlier designs made this step
+ * promote people automatically and were rejected on review; this action must never grow a
+ * branch that looks at `admin_invites`.
+ *
+ * The session it creates is an ordinary signed-in buyer session, identical to the one
+ * `signInBuyer` produces — hence the view-session rotation, which every authentication
+ * boundary in this module performs so post-sign-in views are attributed to the account
+ * rather than colliding with the same browser's anonymous rows.
+ *
+ * The code is never logged, and neither is the address: failures log a GoTrue error code
+ * and nothing else.
+ */
+export async function verifyAccountEmailCode(
+  _previous: ActionResult<AccountBootstrap> | null,
+  formData: FormData
+): Promise<ActionResult<AccountBootstrap>> {
+  const raw = { email: formData.get('email'), code: formData.get('code') }
+  const parsed = VerifyEmailCodeSchema.safeParse(raw)
+  if (!parsed.success) return invalid(parsed.error, submittedValues({ email: raw.email }))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: parsed.data.email,
+    token: parsed.data.code,
+    type: 'signup',
+  })
+
+  const outcome = describeOtpOutcome(Boolean(data?.session), error)
+
+  if ('confirmed' in outcome) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return { ok: false, code: 'unexpected', message: 'Confirmation did not complete. Try again.' }
+    }
+
+    // Read rather than assumed. It is 'buyer' for every account this action can confirm,
+    // but a bootstrap that states a role it did not check is a value nothing can trust.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    await rotateViewSession()
+
+    return {
+      ok: true,
+      message: OTP_CONFIRMED,
+      data: {
+        userId: user.id,
+        role: profile?.role ?? 'buyer',
+        favoriteSlugs: await readFavoriteSlugs(supabase, user.id),
+        unresolvedSlugs: [],
+      },
+    }
+  }
+
+  if (outcome.ok) return outcome
+
+  return { ...outcome, values: submittedValues({ email: raw.email }) }
 }
 
 // ---------------------------------------------------------------------------
