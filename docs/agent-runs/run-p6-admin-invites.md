@@ -5,8 +5,9 @@
 - **Pre-run HEAD:** `8b78512` on `main`
 - **Tier:** Large, security-sensitive (privilege escalation)
 - **Route:** `do-me` → `build-me` (backend-led, forms-only admin UI)
-- **Terminal state:** `done-parked` — the code is complete and independently verified, but the
-  migration is unapplied (ASK gate) and one security fact needs the owner (see Parked).
+- **Terminal state:** `done-green` — migration applied to production 2026-08-02 with the owner's
+  explicit approval, verified post-apply, and the escalation-denial proof **executed and passing**.
+  Merged to `main` as `50f3198`. Push parked. One security precondition still unconfirmed (see Parked).
 
 ---
 
@@ -135,7 +136,41 @@ the RPC throws**, and the clearing write carries the same `path: '/admin/invite'
 `delete(name)` would default to path `/`, clear a cookie that does not exist, and leave the real one
 alive for replay. It was already correct; it is now pinned by a test.
 
-## The headline criterion is NOT proven — and why
+## Applied to production — 2026-08-02
+
+Owner approved the execution explicitly. Pre-apply snapshot captured first, because the rollback's
+`grant` line depends on knowing the original state. That snapshot confirmed the hole was live and
+slightly worse than documented: **both `anon` and `authenticated` held `UPDATE` on the `role` column**,
+`profiles_staff_all` was present as an `ALL` policy, and `guard_profile_role` was `prosecdef = true` —
+the SECURITY DEFINER bug that made the guard blind to its caller.
+
+Post-apply verification, every claim checked rather than assumed:
+
+| Check | Want | Got |
+|---|---|---|
+| `guard_profile_role` is SECURITY INVOKER | true | ✓ true |
+| trigger fires on | INSERT+UPDATE | ✓ INSERT+UPDATE |
+| `profiles_staff_all` dropped | gone | ✓ gone |
+| `authenticated` table grants on `profiles` | no write | ✓ SELECT/TRUNCATE/REFERENCES/TRIGGER only |
+| `authenticated` column grants | `update(full_name)` only | ✓ `UPDATE:full_name` |
+| `anon` write grants on `profiles` | none | ✓ none |
+| super admins | still 1 | ✓ 1 |
+| `is_staff()` unchanged (rule 1) | true | ✓ true |
+| `admin_invites` non-SELECT policies | 0 | ✓ 0 |
+| `auth.users` readable by definer | true | ✓ true |
+| pgcrypto schema | `extensions` | ✓ `extensions` |
+
+**The headline criterion is now PROVEN.** `npx vitest run tests/vitest/admin-escalation-denial.integration.test.ts`
+→ **13 passed**. A staff session cannot promote itself, cannot promote anyone else, cannot write any
+role, cannot insert or delete a profile row, cannot create an invite, cannot demote, and cannot read
+the invite table — each refused at the database. It retains `update(full_name)`, which proves the
+revocation was not over-broad. Full suite: **216 passing across 15 files.**
+
+Only the executable DDL was submitted; the commented source in `supabase/migrations/` remains
+canonical. Comments do not execute, and a payload short enough to verify by eye was the safer choice
+on a security migration.
+
+## What the pre-apply state proved about the original risk
 
 **AC3 — a staff admin cannot promote anyone, denied at the database — is written but NOT executed.**
 
