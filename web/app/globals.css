@@ -12,6 +12,9 @@
   --bg:#FFFFFF; --bg-2:#F6F4EE;
   --ink:#16161A; --ink-2:#52525B; --ink-3:#7A7A83; --line:#E7E4DA;
   --ok:#1E7A46; --err:#B3261E;
+  /* "not finished yet" — an admin-only state, distinct from an error. Both pass AA on
+     --warn-bg; the darker --warn-ink is for the few places warning text carries weight. */
+  --warn:#8A5A00; --warn-ink:#6B4600; --warn-bg:#FDF6E3; --warn-line:#F0DFB4;
   /* shape & shadow */
   --r:14px; --r-s:8px;
   --shadow:0 1px 2px rgba(0,0,0,.06), 0 10px 28px rgba(0,0,0,.10);
@@ -417,7 +420,11 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 .apanel{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:22px 24px;margin-bottom:18px}
 .apanel > h2{font-size:19px;margin-bottom:2px}
 .apanel > .sub2{color:var(--ink-2);font-size:13px;margin-bottom:16px}
-.apanel .pill,.alist .pill,.aphoto .pill{position:static;display:inline-block}
+/* `.pill` is absolutely positioned by default because it started life as the badge on a
+   photo card. Every admin surface that uses it inline has to opt out, and forgetting to
+   add a new one here sends the pill to the top-left corner of the page — which is exactly
+   what the v1 redesign's first build did to the "Listings" heading. */
+.apanel .pill,.alist .pill,.aphoto .pill,.atable .pill,.aabar .pill{position:static;display:inline-block}
 .pill.muted{background:var(--bg-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
 .pill.ok{background:var(--ok);color:#fff}
 
@@ -472,4 +479,128 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 }
 @media (max-width:560px){
   .aphotos{grid-template-columns:1fr}
+}
+
+/* The public reference number. Quiet by design — it is a thing to quote, not a headline. */
+.prop-ref{margin-top:8px;font-size:13px;color:var(--ink-3);letter-spacing:.01em}
+.prop-ref b{font-family:ui-monospace,Consolas,monospace;font-weight:700;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* ==========================================================================
+   ADMIN v1 REDESIGN — docs/mockups/admin-v1-proposed.html
+   Layout, hierarchy and state only. No new visual language: every colour,
+   radius, shadow and duration below is an existing token.
+   ========================================================================== */
+
+/* --- listings index: one toolbar instead of three stacked blocks --- */
+.atoolbar{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 14px;box-shadow:var(--shadow-s)}
+.asegmented{display:flex;background:var(--bg-2);border-radius:var(--r-s);padding:3px;gap:2px;flex-wrap:wrap}
+.asegmented a{padding:7px 13px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--ink-2);
+  min-height:40px;display:inline-flex;align-items:center;
+  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease)}
+.asegmented a:hover{color:var(--ink-900)}
+.asegmented a[aria-current="true"]{background:var(--ink-900);color:var(--gold-l)}
+.asegmented .n{opacity:.6;font-size:12px;margin-left:5px;font-variant-numeric:tabular-nums}
+
+.atoolbar-form{flex:1;min-width:230px;display:flex;gap:10px;align-items:center}
+.asearch{flex:1;min-width:180px;position:relative}
+.asearch input{width:100%;height:42px;padding:0 12px 0 34px;border:1.5px solid var(--line);
+  border-radius:var(--r-s);font-size:14px;background:var(--bg);color:var(--ink)}
+.asearch input::placeholder{color:var(--ink-3)}
+.asearch svg{position:absolute;left:11px;top:13px;width:16px;height:16px;stroke:var(--ink-3);
+  fill:none;stroke-width:2;pointer-events:none}
+.atoolbar-form select{height:42px;border:1.5px solid var(--line);border-radius:var(--r-s);
+  padding:0 10px;font-size:13.5px;background:var(--bg);color:var(--ink)}
+
+/* --- the attention strip: blockers promoted out of grey meta text --- */
+.aattention{display:flex;align-items:center;gap:12px;background:var(--warn-bg);
+  border:1px solid var(--warn-line);border-radius:var(--r-s);padding:11px 15px;margin-bottom:14px;
+  font-size:13.5px;color:var(--warn);flex-wrap:wrap}
+.aattention b{color:var(--warn-ink)}
+.aattention a{margin-left:auto;font-weight:700;text-decoration:underline;white-space:nowrap;
+  min-height:40px;display:inline-flex;align-items:center}
+
+/* --- aligned rows, so the eye scans a column instead of re-reading a sentence --- */
+.atablehead,.atable .arow{display:grid;
+  grid-template-columns:96px 96px minmax(0,1fr) 130px 150px auto;gap:12px;align-items:center}
+.atablehead{padding:0 15px 8px;font-size:11.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3)}
+.atable .arow{background:#fff;border:1px solid var(--line);border-radius:var(--r-s);
+  padding:12px 15px;margin-bottom:7px;min-height:70px;
+  transition:border-color var(--dur-1) var(--ease),box-shadow var(--dur-1) var(--ease)}
+.atable .arow:hover{border-color:var(--gold-d);box-shadow:var(--shadow-s)}
+.atable .arow .t{min-width:0}
+.atable .arow b{display:block;font-size:14.5px;font-weight:700;line-height:1.35;color:var(--ink-900)}
+.atable .arow .meta{display:block;color:var(--ink-3);font-size:12.5px;margin-top:1px}
+.atable .ref{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace;
+  font-size:12.5px;font-weight:700;color:var(--ink-2);letter-spacing:-.01em}
+.atable .ref.unset{color:var(--warn);font-weight:600;font-family:inherit;font-size:12px;font-style:italic}
+.atable .amt{font-variant-numeric:tabular-nums;font-size:14px;font-weight:600}
+.atable .when{color:var(--ink-3);font-size:12.5px;font-variant-numeric:tabular-nums}
+.atable .acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.achip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+  padding:3px 8px;border-radius:99px;background:var(--warn-bg);color:var(--warn);margin:4px 4px 0 0}
+
+/* --- truncated pagination, not one button per page --- */
+.apager{display:flex;gap:5px;align-items:center;justify-content:center;margin-top:20px;
+  font-size:13.5px;flex-wrap:wrap}
+.apager a,.apager .gap{min-width:44px;min-height:44px;display:inline-flex;align-items:center;
+  justify-content:center;border-radius:6px;border:1px solid var(--line);background:#fff;
+  font-weight:700;color:var(--ink-2)}
+.apager a:hover{border-color:var(--gold-d);color:var(--ink-900)}
+.apager a[aria-current="page"]{background:var(--ink-900);color:var(--gold-l);border-color:var(--ink-900)}
+.apager .gap{border:none;background:none;color:var(--ink-3);min-width:24px}
+.apager .count{margin-left:10px;color:var(--ink-3)}
+
+/* --- listing detail: the sticky action bar --- */
+.aabar{position:sticky;top:0;z-index:40;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r);padding:13px 16px;margin:22px 0 16px;box-shadow:var(--shadow-s);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.aabar-id{min-width:0}
+.aabar .ttl{font-family:var(--font-head),system-ui,sans-serif;font-weight:800;font-size:17px;
+  letter-spacing:-.01em;line-height:1.25}
+.aabar .meta{color:var(--ink-3);font-size:12.5px;margin-top:1px}
+.aabar-acts{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.aabar-acts form{display:inline-flex}
+.aabar-confirm{display:inline-flex;gap:8px}
+.aabar-err{color:var(--err);font-size:12.5px;font-weight:600;max-width:300px}
+
+/* --- detail: section nav beside the panels --- */
+.adwrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:24px;align-items:start}
+.adnav{position:sticky;top:92px;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r);padding:8px}
+.adnav a{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:6px;font-size:14px;
+  font-weight:600;color:var(--ink-2);min-height:44px;transition:background var(--dur-1) var(--ease)}
+.adnav a:hover{background:var(--bg-2);color:var(--ink-900)}
+.adnav .warn{margin-left:auto;width:8px;height:8px;border-radius:99px;background:var(--gold-d);flex-shrink:0}
+.adbody{min-width:0}
+/* The sticky bar would otherwise cover the heading of whichever panel you jumped to. */
+.adbody > div[id]{scroll-margin-top:96px}
+
+/* --- detail: what is blocking publish, itemised and actionable --- */
+.ablockers{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:var(--r);
+  padding:16px 18px;margin-bottom:16px}
+.ablockers h2{font-family:var(--font-head),system-ui,sans-serif;font-size:14.5px;font-weight:800;
+  color:var(--warn-ink);margin-bottom:10px}
+.ablockers ul{list-style:none;display:grid;gap:7px;margin:0;padding:0}
+.ablockers li{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--warn);flex-wrap:wrap}
+.ablockers li em{font-style:normal;color:var(--ink-3);font-size:12.5px}
+.ablockers .box{width:16px;height:16px;border-radius:4px;border:1.5px solid currentColor;flex-shrink:0}
+.ablockers .box.done{background:var(--ok);border-color:var(--ok);position:relative}
+.ablockers .box.done::after{content:"";position:absolute;left:5px;top:1.5px;width:4px;height:9px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.ablockers li.done{color:var(--ok);opacity:.75}
+.ablockers li.done span{text-decoration:line-through}
+.ablockers a{margin-left:auto;font-weight:700;text-decoration:underline;font-size:12.5px;
+  min-height:40px;display:inline-flex;align-items:center;white-space:nowrap}
+
+@media (max-width:900px){
+  .atablehead{display:none}
+  .atable .arow{grid-template-columns:minmax(0,1fr);gap:6px}
+  .atable .acts{justify-content:flex-start;margin-top:4px}
+  .adwrap{grid-template-columns:1fr}
+  /* A sticky side rail becomes a scrolling strip once it is full width. */
+  .adnav{position:static;display:flex;overflow-x:auto;gap:4px}
+  .aabar{position:static}
 }

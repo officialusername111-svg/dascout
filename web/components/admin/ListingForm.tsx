@@ -138,7 +138,8 @@ export function ListingForm(props: Props) {
           />
           <div className="hint">
             Your own reference for this property. It has to be different from every other
-            listing&rsquo;s, and it is never shown to buyers.
+            listing&rsquo;s. Once the listing is live this is shown on its public page and
+            put in the subject line of enquiries, so buyers can quote it back to you.
           </div>
           <div className="ferr">
             {errors.property_no ?? 'Up to 24 characters, and not already in use.'}

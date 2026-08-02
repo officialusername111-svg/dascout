@@ -49,9 +49,17 @@ export default async function PropertyPage({ params }: Props) {
     getPopularFeatures(),
   ])
 
-  const mailSubject = encodeURIComponent(`Inquiry: ${listing.title} (${listing.location})`)
+  // The reference goes in the subject line as well as on the page. Putting it where staff
+  // will actually read it is the whole reason the number was made public — an enquiry that
+  // names the listing by reference can be matched without anyone guessing from the title.
+  const mailRef = listing.propertyNo ? ` [${listing.propertyNo}]` : ''
+  const mailSubject = encodeURIComponent(
+    `Inquiry: ${listing.title} (${listing.location})${mailRef}`
+  )
   const mailBody = encodeURIComponent(
-    `Hi DaScout,\n\nI'd like to inquire about "${listing.title}" in ${listing.location}.\n\nMy questions:\n\n`
+    `Hi DaScout,\n\nI'd like to inquire about "${listing.title}" in ${listing.location}.` +
+      `${listing.propertyNo ? `\nReference: ${listing.propertyNo}` : ''}` +
+      `\n\nMy questions:\n\n`
   )
 
   return (
@@ -74,6 +82,13 @@ export default async function PropertyPage({ params }: Props) {
             <div className="loc">
               <Icon name="pin" /> {listing.location} · Mindanao
             </div>
+            {/* The reference a buyer quotes when they enquire. Rendered only when staff
+                have given one — an empty "Ref." label would read as a rendering fault. */}
+            {listing.propertyNo && (
+              <p className="prop-ref">
+                Reference <b>{listing.propertyNo}</b>
+              </p>
+            )}
             <div className="prop-specs">
               <Specs specs={listing.specs} />
             </div>

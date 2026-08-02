@@ -3,16 +3,20 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { FeaturesForm } from '@/components/admin/FeaturesForm'
 import { LifecyclePanel } from '@/components/admin/LifecyclePanel'
+import { ListingActionBar } from '@/components/admin/ListingActionBar'
 import { ListingForm } from '@/components/admin/ListingForm'
 import { PhotoManager } from '@/components/admin/PhotoManager'
 import { VerificationPanel } from '@/components/admin/VerificationPanel'
+import { backHrefFrom, one } from '@/lib/admin/navigation'
 import {
   getAdminListingDetail,
   getFeatureOptions,
   getTownOptions,
+  type CheckAnchor,
 } from '@/lib/admin/queries'
 
-type Props = { params: Promise<{ id: string }> }
+type Search = Record<string, string | string[] | undefined>
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<Search> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
@@ -20,17 +24,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: listing ? listing.title : 'Listing not found' }
 }
 
+/** Which panel a checklist item sends someone to. */
+const ANCHOR_LABEL: Record<CheckAnchor, string> = {
+  details: 'Go to Details',
+  photos: 'Go to Photos',
+  verification: 'Go to Verification',
+}
+
 /**
  * The one screen where a listing is actually worked on: fields, features, photos, the
- * verification record and the lifecycle controls, in the order the work happens.
+ * verification record and the lifecycle controls.
  *
- * Everything the client components need is computed here — which bucket uploads go to,
- * whether the slug may still change, which moves exist from this status, and what is
+ * The ARRANGEMENT changed in the v1 admin redesign, the work did not. What used to be five
+ * equal panels stacked in a column — with the reasons a publish was unavailable computed on
+ * the server and then rendered at the very bottom — is now: what is blocking this listing
+ * FIRST, the panels after it, and a section nav that makes the stack navigable instead of
+ * scrollable. Every panel is the same component it always was.
+ *
+ * Everything the client components need is still computed here — which bucket uploads go
+ * to, whether the slug may still change, which moves exist from this status, and what is
  * blocking a publish. None of those are decisions a browser gets to make, and each is
  * re-derived inside the action before anything is written.
  */
-export default async function EditListingPage({ params }: Props) {
+export default async function EditListingPage({ params, searchParams }: Props) {
   const { id } = await params
+  const search = await searchParams
 
   const [listing, towns, features] = await Promise.all([
     getAdminListingDetail(id),
@@ -40,73 +58,145 @@ export default async function EditListingPage({ params }: Props) {
 
   if (!listing) notFound()
 
+  const backHref = backHrefFrom(one(search.back))
+  const isPublic = listing.status === 'live' || listing.status === 'sold'
+
+  // The move this listing is working towards, promoted into the sticky bar. Selling and
+  // withdrawing are deliberately NOT here — see ListingActionBar.
+  const primary =
+    listing.allowedTransitions.find((t) => t.to === 'verifying' || t.to === 'live') ?? null
+
+  const outstanding = listing.publishChecklist.filter((item) => !item.done)
+  const requiredLeft = outstanding.filter((item) => item.required).length
+  // A sold listing has nowhere left to go, and a live one has already passed every check —
+  // showing either of them a publish checklist is telling them about work that is done.
+  const showChecklist = outstanding.length > 0 && !isPublic
+  const photosIncomplete = outstanding.some((item) => item.anchor === 'photos')
+  const verificationIncomplete = outstanding.some((item) => item.anchor === 'verification')
+
   return (
     <>
-      <Link className="crumb" href="/admin">
-        ← Back to listings
-      </Link>
-
-      <h1>{listing.title}</h1>
-      <p className="lede">
-        <span className={listing.status === 'live' ? 'pill ok' : 'pill muted'}>
-          {listing.statusLabel}
-        </span>{' '}
-        {listing.categoryLabel} · {listing.townLabel} · {listing.priceLabel}
-        {listing.updatedAtLabel ? ` · last changed ${listing.updatedAtLabel}` : ''}
-        {listing.status === 'live' || listing.status === 'sold' ? (
-          <>
-            {' · '}
-            <Link href={`/property/${listing.slug}`}>View the public page</Link>
-          </>
-        ) : null}
-      </p>
-
-      <ListingForm
-        mode="edit"
-        towns={towns}
-        slugEditable={listing.slugEditable}
-        statusLabel={listing.statusLabel}
-        listing={{
-          id: listing.id,
-          slug: listing.slug,
-          propertyNo: listing.propertyNo,
-          title: listing.title,
-          category: listing.category,
-          pricePhp: listing.pricePhp,
-          townId: listing.townId,
-          areaDetail: listing.areaDetail,
-          lotAreaSqm: listing.lotAreaSqm,
-          floorAreaSqm: listing.floorAreaSqm,
-          bedrooms: listing.bedrooms,
-          bathrooms: listing.bathrooms,
-          description: listing.description,
-          isTrending: listing.isTrending,
-        }}
-      />
-
-      <FeaturesForm
-        listingId={listing.id}
-        features={features}
-        selectedIds={listing.featureIds}
-      />
-
-      <PhotoManager
-        listingId={listing.id}
-        status={listing.status}
-        uploadBucket={listing.uploadBucket}
-        photos={listing.photos}
-      />
-
-      <VerificationPanel listingId={listing.id} events={listing.events} />
-
-      <LifecyclePanel
+      <ListingActionBar
         listingId={listing.id}
         status={listing.status}
         statusLabel={listing.statusLabel}
-        transitions={listing.allowedTransitions}
-        publishedAtLabel={listing.publishedAtLabel}
-        soldAtLabel={listing.soldAtLabel}
+        title={listing.title}
+        meta={[
+          listing.propertyNo ?? 'No property number yet',
+          listing.categoryLabel,
+          listing.townLabel,
+          listing.priceLabel,
+          listing.updatedAtLabel ? `changed ${listing.updatedAtLabel}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        backHref={backHref}
+        publicHref={isPublic ? `/property/${listing.slug}` : null}
+        primary={primary}
       />
+
+      <div className="adwrap">
+        <nav className="adnav" aria-label="Sections of this listing">
+          <a href="#details">Details</a>
+          <a href="#features">Features</a>
+          <a href="#photos">
+            Photos
+            {photosIncomplete && <i className="warn" aria-label="incomplete" />}
+          </a>
+          <a href="#verification">
+            Verification
+            {verificationIncomplete && <i className="warn" aria-label="incomplete" />}
+          </a>
+          <a href="#lifecycle">Status</a>
+        </nav>
+
+        <div className="adbody">
+          {/* Itemised, at the top, each with a way to go and fix it. This used to be a
+              paragraph of grey meta text in the last panel on the page. */}
+          {showChecklist && (
+            <section className="ablockers" aria-labelledby="blockersH">
+              <h2 id="blockersH">
+                {requiredLeft > 0
+                  ? `${requiredLeft} thing${requiredLeft === 1 ? '' : 's'} left before this can go live`
+                  : 'Ready to go live — one suggestion left'}
+              </h2>
+              <ul>
+                {listing.publishChecklist.map((item) => (
+                  <li key={item.id} className={item.done ? 'done' : undefined}>
+                    <i className={item.done ? 'box done' : 'box'} aria-hidden="true" />
+                    <span>
+                      {item.label}
+                      {!item.done && !item.required && <em> {item.note}</em>}
+                    </span>
+                    {!item.done && <a href={`#${item.anchor}`}>{ANCHOR_LABEL[item.anchor]}</a>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <div id="details">
+            <ListingForm
+              mode="edit"
+              towns={towns}
+              slugEditable={listing.slugEditable}
+              statusLabel={listing.statusLabel}
+              listing={{
+                id: listing.id,
+                slug: listing.slug,
+                propertyNo: listing.propertyNo,
+                title: listing.title,
+                category: listing.category,
+                pricePhp: listing.pricePhp,
+                townId: listing.townId,
+                areaDetail: listing.areaDetail,
+                lotAreaSqm: listing.lotAreaSqm,
+                floorAreaSqm: listing.floorAreaSqm,
+                bedrooms: listing.bedrooms,
+                bathrooms: listing.bathrooms,
+                description: listing.description,
+                isTrending: listing.isTrending,
+              }}
+            />
+          </div>
+
+          <div id="features">
+            <FeaturesForm
+              listingId={listing.id}
+              features={features}
+              selectedIds={listing.featureIds}
+            />
+          </div>
+
+          <div id="photos">
+            <PhotoManager
+              listingId={listing.id}
+              status={listing.status}
+              uploadBucket={listing.uploadBucket}
+              photos={listing.photos}
+            />
+          </div>
+
+          <div id="verification">
+            <VerificationPanel listingId={listing.id} events={listing.events} />
+          </div>
+
+          <div id="lifecycle">
+            <LifecyclePanel
+              listingId={listing.id}
+              status={listing.status}
+              statusLabel={listing.statusLabel}
+              transitions={listing.allowedTransitions}
+              publishedAtLabel={listing.publishedAtLabel}
+              soldAtLabel={listing.soldAtLabel}
+            />
+          </div>
+
+          <Link className="crumb" href={backHref}>
+            ← Back to listings
+          </Link>
+        </div>
+      </div>
     </>
   )
 }

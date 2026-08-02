@@ -124,6 +124,100 @@ export function publishBlockersFor(input: PublishCheckInput): string[] {
   return blockers
 }
 
+/** Where a checklist item sends someone who wants to fix it. */
+export type CheckAnchor = 'details' | 'photos' | 'verification'
+
+export type PublishCheckItem = {
+  id: string
+  label: string
+  done: boolean
+  /**
+   * False means ADVISORY ONLY. A soft item is shown in the checklist and counted in the
+   * "needs attention" strip, but it never appears in `publishBlockersFor`, never disables
+   * the publish button, and has no counterpart in `guard_listing_publish`.
+   */
+  required: boolean
+  anchor: CheckAnchor
+  /** The same gap said in three words, for the index row where a sentence will not fit. */
+  chip: string
+  /** Shown under the label when the item is soft, so nobody reads it as a hard gate. */
+  note?: string
+}
+
+/**
+ * The publish checklist the detail screen shows, and the source of the row chips and the
+ * attention strip on the index.
+ *
+ * This function does NOT decide what blocks a publish — `publishBlockersFor` does, and the
+ * database trigger `guard_listing_publish` decides it again underneath. This one only
+ * decides what is DISPLAYED, which is why it can carry an item the enforcement layer does
+ * not have. Keeping the two apart is deliberate: the property number is something the
+ * office wants prompted, not something that should stop a listing going live, and the two
+ * ideas stop being confusable once they live in different functions.
+ */
+export function publishChecklistFor(
+  input: PublishCheckInput & { propertyNo: string | null }
+): PublishCheckItem[] {
+  return [
+    {
+      id: 'title-check',
+      label: 'Title check recorded',
+      chip: 'No title check',
+      done: input.titleChecks >= 1,
+      required: true,
+      anchor: 'verification',
+    },
+    {
+      id: 'ground-validation',
+      label: 'Ground validation recorded',
+      chip: 'No ground validation',
+      done: input.groundValidations >= 1,
+      required: true,
+      anchor: 'verification',
+    },
+    {
+      id: 'has-photo',
+      label: 'At least one photo uploaded',
+      chip: 'No photos',
+      done: input.photoCount >= 1,
+      required: true,
+      anchor: 'photos',
+    },
+    // "Cover photo chosen" is only a question once a photo exists. Listing it against a
+    // listing with no photos gave the first build of this screen a checklist that read
+    // "☐ At least one photo uploaded / ☑ Cover photo chosen", which is nonsense — and
+    // counting both would have reported one missing photo set as two separate failures.
+    ...(input.photoCount >= 1
+      ? [
+          {
+            id: 'cover-photo',
+            label: 'Cover photo chosen',
+            chip: 'No cover photo',
+            done: input.primaryCount === 1,
+            required: true,
+            anchor: 'photos' as CheckAnchor,
+          },
+        ]
+      : []),
+    {
+      id: 'property-no',
+      label: 'Property number given',
+      // No trailing full stop: these chips are also joined into a sentence in the
+      // attention strip, where "no property no.." read as a typo.
+      chip: 'No property number',
+      done: Boolean(input.propertyNo),
+      required: false,
+      anchor: 'details',
+      note: 'Recommended, not required — this will not stop the listing going live.',
+    },
+  ]
+}
+
+/** The gaps only, in chip wording, for an index row where a sentence will not fit. */
+export function checklistChips(items: PublishCheckItem[]): string[] {
+  return items.filter((item) => !item.done).map((item) => item.chip)
+}
+
 export const ADMIN_SORTS = {
   updated: { label: 'Recently changed', column: 'updated_at', ascending: false },
   created: { label: 'Newest first', column: 'created_at', ascending: false },
@@ -150,6 +244,12 @@ export type AdminListingFilters = {
   q?: string
   sort?: string
   page?: number
+  /**
+   * Restrict to these ids. Used by the attention filter, which computes its set from the
+   * whole draft/verifying population rather than from one page. An EMPTY array means
+   * "restrict to nothing" and correctly returns no rows; `undefined` means no restriction.
+   */
+  ids?: string[]
 }
 
 export type AdminListingRow = {
@@ -166,6 +266,10 @@ export type AdminListingRow = {
   photoCount: number
   primaryCount: number
   updatedAtLabel: string | null
+  /** Unfinished checklist items, in chip wording. Empty when the listing is complete. */
+  blockers: string[]
+  /** True only where an unfinished checklist still means something — draft and verifying. */
+  needsAttention: boolean
 }
 
 export type AdminListingsPage = {
@@ -175,15 +279,87 @@ export type AdminListingsPage = {
   pageCount: number
 }
 
+export type AdminStatusCounts = { all: number } & Record<ListingStatus, number>
+
 /**
- * `property_no` is selected here and in `DETAIL_COLUMNS` and NOWHERE ELSE. It is
- * admin-only this round by the deliberate scope call recorded in §2 of
- * `20260802131500_property_number_and_role_audit.sql` — no public or anon query names it.
+ * The counts beside each status tab. One round trip that reads a single enum column for
+ * every row and tallies in memory, rather than six `head: true` count queries — at this
+ * table's size that is one request instead of six, and the shape stays honest if the
+ * table grows because the column is the narrowest one there is.
+ */
+export async function getAdminStatusCounts(): Promise<AdminStatusCounts> {
+  await requireStaff()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.from('listings').select('status')
+  if (error) throw error
+
+  const counts = { all: 0, draft: 0, verifying: 0, live: 0, sold: 0, withdrawn: 0 }
+  for (const row of (data ?? []) as { status: ListingStatus }[]) {
+    counts.all += 1
+    counts[row.status] += 1
+  }
+  return counts
+}
+
+export type AdminAttention = {
+  /** Ids of listings that could still go live but have an unfinished checklist. */
+  ids: string[]
+  /** How many listings are missing each thing, for the one-line summary. */
+  reasons: { chip: string; count: number }[]
+}
+
+/**
+ * The "N listings need attention" strip on the index.
+ *
+ * Restricted to draft and verifying — see ATTENTION_STATUSES. The ids come back so
+ * "Show only these" can filter the real list rather than re-deriving the set from a page
+ * that has already been paginated, which would have quietly reported only the gaps
+ * visible on page one.
+ */
+export async function getAdminAttention(): Promise<AdminAttention> {
+  await requireStaff()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('listings')
+    .select('id, property_no, listing_photos ( is_primary ), verification_events ( kind )')
+    .in('status', ATTENTION_STATUSES)
+  if (error) throw error
+
+  const ids: string[] = []
+  const tally = new Map<string, number>()
+
+  for (const row of (data ?? []) as unknown as {
+    id: string
+    property_no: string | null
+    listing_photos: { is_primary: boolean }[]
+    verification_events: { kind: VerificationKind }[]
+  }[]) {
+    const gaps = checklistChips(checklistForRow(row))
+    if (!gaps.length) continue
+    ids.push(row.id)
+    for (const gap of gaps) tally.set(gap, (tally.get(gap) ?? 0) + 1)
+  }
+
+  return {
+    ids,
+    reasons: [...tally.entries()]
+      .map(([chip, count]) => ({ chip, count }))
+      .sort((a, b) => b.count - a.count || a.chip.localeCompare(b.chip)),
+  }
+}
+
+/**
+ * `verification_events ( kind )` is embedded so an index row can show the SAME publish
+ * checklist the detail screen shows. Without it the index could only ever report the photo
+ * half of the story, which is how "no cover chosen" ended up as the one gap staff saw.
  */
 const INDEX_COLUMNS = `
   id, slug, property_no, title, status, category, price_php, updated_at,
   towns ( name, province ),
-  listing_photos ( id, is_primary )
+  listing_photos ( id, is_primary ),
+  verification_events ( kind )
 `
 
 type RawIndexRow = {
@@ -197,7 +373,30 @@ type RawIndexRow = {
   updated_at: string
   towns: { name: string; province: string } | null
   listing_photos: { id: string; is_primary: boolean }[]
+  verification_events: { kind: VerificationKind }[]
 }
+
+/** The checklist for one raw index row — the same function the detail screen calls. */
+function checklistForRow(row: {
+  property_no: string | null
+  listing_photos: { is_primary: boolean }[]
+  verification_events: { kind: VerificationKind }[]
+}): PublishCheckItem[] {
+  return publishChecklistFor({
+    titleChecks: row.verification_events.filter((e) => e.kind === 'title_check').length,
+    groundValidations: row.verification_events.filter((e) => e.kind === 'ground_validation').length,
+    photoCount: row.listing_photos.length,
+    primaryCount: row.listing_photos.filter((p) => p.is_primary).length,
+    propertyNo: row.property_no,
+  })
+}
+
+/**
+ * Statuses where an unfinished checklist is still actionable. A live or sold listing is
+ * already published, so reporting "no cover photo" against it is noise, not attention —
+ * and scoping the attention sweep this way keeps it to the small end of the table.
+ */
+const ATTENTION_STATUSES: ListingStatus[] = ['draft', 'verifying']
 
 /**
  * The listing index, every status included — this is the only screen in the product
@@ -214,6 +413,7 @@ export async function getAdminListings(filters: AdminListingFilters): Promise<Ad
   let query = supabase.from('listings').select(INDEX_COLUMNS, { count: 'exact' })
 
   if (status) query = query.eq('status', status)
+  if (filters.ids) query = query.in('id', filters.ids)
 
   const term = filters.q?.trim()
   if (term) {
@@ -247,20 +447,25 @@ export async function getAdminListings(filters: AdminListingFilters): Promise<Ad
 
   if (requested.error) throw requested.error
 
-  const rows = ((requested.data ?? []) as unknown as RawIndexRow[]).map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    propertyNo: row.property_no,
-    title: row.title,
-    status: row.status,
-    statusLabel: STATUS_LABELS[row.status],
-    categoryLabel: labelFromDb(row.category),
-    priceLabel: peso(Number(row.price_php)),
-    location: row.towns ? `${row.towns.name}, ${row.towns.province}` : '—',
-    photoCount: row.listing_photos.length,
-    primaryCount: row.listing_photos.filter((photo) => photo.is_primary).length,
-    updatedAtLabel: stampLabel(row.updated_at),
-  }))
+  const rows = ((requested.data ?? []) as unknown as RawIndexRow[]).map((row) => {
+    const blockers = checklistChips(checklistForRow(row))
+    return {
+      id: row.id,
+      slug: row.slug,
+      propertyNo: row.property_no,
+      title: row.title,
+      status: row.status,
+      statusLabel: STATUS_LABELS[row.status],
+      categoryLabel: labelFromDb(row.category),
+      priceLabel: peso(Number(row.price_php)),
+      location: row.towns ? `${row.towns.name}, ${row.towns.province}` : '—',
+      photoCount: row.listing_photos.length,
+      primaryCount: row.listing_photos.filter((photo) => photo.is_primary).length,
+      updatedAtLabel: stampLabel(row.updated_at),
+      blockers,
+      needsAttention: blockers.length > 0 && ATTENTION_STATUSES.includes(row.status),
+    }
+  })
 
   const total = requested.count ?? 0
   return { rows, total, page, pageCount: Math.ceil(total / ADMIN_PAGE_SIZE) }
@@ -326,6 +531,8 @@ export type AdminListingDetail = {
   slugEditable: boolean
   allowedTransitions: AdminTransition[]
   publishBlockers: string[]
+  /** Everything the publish checklist shows, done and not-done, hard and soft. */
+  publishChecklist: PublishCheckItem[]
 }
 
 const DETAIL_COLUMNS = `
@@ -438,12 +645,18 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     actorName: event.profiles?.full_name ?? (event.performed_by ? 'Staff account' : 'Not recorded'),
   }))
 
-  const publishBlockers = publishBlockersFor({
+  const checkInput = {
     titleChecks: rawEvents.filter((event) => event.kind === 'title_check').length,
     groundValidations: rawEvents.filter((event) => event.kind === 'ground_validation').length,
     photoCount: photos.length,
     primaryCount: photos.filter((photo) => photo.isPrimary).length,
-  })
+  }
+
+  // Two derivations from ONE input, kept separate on purpose: `publishBlockers` is what
+  // actually stops a publish, `publishChecklist` is what the screen shows. The checklist
+  // carries the soft property-number item the blockers must never gain.
+  const publishBlockers = publishBlockersFor(checkInput)
+  const publishChecklist = publishChecklistFor({ ...checkInput, propertyNo: row.property_no })
 
   const allowedTransitions: AdminTransition[] = TRANSITIONS[row.status].map((to) => ({
     to,
@@ -485,6 +698,7 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     slugEditable: row.status === 'draft' || row.status === 'verifying',
     allowedTransitions,
     publishBlockers,
+    publishChecklist,
   }
 }
 
