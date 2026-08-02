@@ -501,11 +501,48 @@ export type Database = {
     Functions: {
       clear_my_listing_views: { Args: never; Returns: number }
       confirm_property_request: { Args: { req_id: string }; Returns: undefined }
+      // ---------------------------------------------------------------------
+      // HAND-ADDED, run-p6-admin-invites. The five functions below come from
+      // `20260802021757_admin_invites_and_super_admin_split.sql`, which is
+      // WRITTEN BUT NOT YET APPLIED, so `supabase gen types` cannot see them
+      // and the generator would delete them if run before the apply. They are
+      // transcribed from the migration's own signatures so `tsc` and `vitest`
+      // work pre-apply. Same precedent as run-p5b-double-optin.
+      //
+      // CONFIRM BY REGENERATING once the migration has been applied, and
+      // delete this comment when the regenerated file agrees. Two known places
+      // it will differ: `full_name` below is widened to `string | null`
+      // because `profiles.full_name` is nullable and the app must handle that
+      // (the generator emits RETURNS TABLE columns as non-null); and
+      // regeneration will also add the `admin_invites` table, which is left
+      // out here on purpose because nothing in the app selects it this round.
+      // ---------------------------------------------------------------------
+      create_admin_invite: {
+        Args: { invite_email: string }
+        Returns: {
+          invite_id: string
+          invite_token: string
+          invite_expires_at: string
+        }[]
+      }
       is_staff: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      list_admin_accounts: {
+        Args: never
+        Returns: {
+          profile_id: string
+          email: string
+          full_name: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          created_at: string
+        }[]
+      }
+      redeem_admin_invite: { Args: { raw_token: string }; Returns: string }
       reorder_listing_photos: {
         Args: { p_listing_id: string; p_photo_ids: string[] }
         Returns: number
       }
+      revoke_staff_admin: { Args: { target_id: string }; Returns: string }
       top_listings: {
         Args: { period?: string; row_limit?: number }
         Returns: {

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireStaff } from '@/lib/admin/auth'
+import { isSuperAdminRole, requireStaff } from '@/lib/admin/auth'
 import { signOut } from '@/app/admin/actions'
 
 /**
@@ -23,6 +23,15 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             <Link href="/admin">Listings</Link>
             <Link href="/admin/listings/new">New listing</Link>
             <Link href="/admin/requests">Requests</Link>
+            {/* Shown to the owner tier only. This is signposting, not a control: the
+                page itself calls requireSuperAdmin() and both RPCs behind it refuse a
+                staff caller at the database. Hiding the link only saves a staff admin
+                from clicking into a redirect.
+
+                Asked through the predicate rather than `role === 'admin'` so there is one
+                definition of "super admin" in the app; a second literal here is how the
+                two drift apart the day the tier gains a third role. */}
+            {isSuperAdminRole(user.role) && <Link href="/admin/admins">Admins</Link>}
             {/* Password management is one screen for every role, on the public side. */}
             <Link href="/account/password">Password</Link>
             <Link href="/">View site</Link>

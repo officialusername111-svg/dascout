@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { requireStaff } from '@/lib/admin/auth'
+import { requireStaff, requireSuperAdmin } from '@/lib/admin/auth'
 import { bucketForStatus, displayUrls, type PhotoBucket } from '@/lib/admin/photos'
 import { labelFromDb, type DbCategory } from '@/lib/categories'
 import { describeBudget } from '@/lib/budget'
@@ -574,4 +574,74 @@ export async function getPropertyRequests(): Promise<AdminRequestRow[]> {
     isHandled: row.is_handled,
     alertsSent: sent.get(row.id) ?? 0,
   }))
+}
+
+// ---------------------------------------------------------------------------
+// Admin accounts
+// ---------------------------------------------------------------------------
+
+export type AdminAccountRow = {
+  id: string
+  email: string
+  fullName: string | null
+  role: 'staff' | 'admin'
+  roleLabel: string
+  joinedLabel: string | null
+  /** True for the row belonging to whoever is looking at the screen. */
+  isSelf: boolean
+  /** A staff row that is not the caller's own. Nothing else may be removed. */
+  canRemove: boolean
+}
+
+const ADMIN_ROLE_LABELS: Record<'staff' | 'admin', string> = {
+  admin: 'Owner',
+  staff: 'Admin',
+}
+
+/**
+ * Every account that can open the admin panel, for the one screen that manages them.
+ *
+ * It goes through `list_admin_accounts()` rather than a `profiles` select because the
+ * email address lives in `auth.users`, which no API caller may read — the function is
+ * SECURITY DEFINER and joins the two, after checking `is_super_admin()` itself. A screen
+ * that listed admins without their addresses would be useless: the address is the only
+ * thing that identifies which person a row is.
+ *
+ * `requireSuperAdmin()` here is not belt-and-braces over the page. It is the same rule
+ * every other function in this file follows — a query is the last place before rows leave
+ * the database, and it is the only guard that still holds when some future route or
+ * action calls this function instead.
+ *
+ * `canRemove` is computed here rather than in the page so the page cannot get it wrong.
+ * It is a display rule, not a control: `revoke_staff_admin` refuses an `admin` target and
+ * refuses the caller's own row regardless of what any form posts.
+ */
+export async function listAdminAccounts(): Promise<AdminAccountRow[]> {
+  const me = await requireSuperAdmin()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.rpc('list_admin_accounts')
+  if (error) throw error
+
+  // Owners first, then oldest account first, so the list reads as a history rather than
+  // as whatever order the planner happened to return it in.
+  const ordered = [...(data ?? [])].sort((a, b) => {
+    if (a.role !== b.role) return a.role === 'admin' ? -1 : 1
+    return a.created_at.localeCompare(b.created_at)
+  })
+
+  return ordered.map((row) => {
+    const role: 'staff' | 'admin' = row.role === 'admin' ? 'admin' : 'staff'
+    const isSelf = row.profile_id === me.id
+    return {
+      id: row.profile_id,
+      email: row.email,
+      fullName: row.full_name ?? null,
+      role,
+      roleLabel: ADMIN_ROLE_LABELS[role],
+      joinedLabel: stampLabel(row.created_at),
+      isSelf,
+      canRemove: role === 'staff' && !isSelf,
+    }
+  })
 }
