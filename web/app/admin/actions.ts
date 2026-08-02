@@ -28,6 +28,11 @@ import {
   inviteLinkFor,
 } from '@/lib/admin/invites'
 import {
+  PROPERTY_NO_TAKEN,
+  PropertyNoField,
+  isPropertyNoConflict,
+} from '@/lib/admin/property-no'
+import {
   bucketForStatus,
   isValidPhotoPath,
   movePhotosToDraft,
@@ -156,6 +161,13 @@ const blankToUndefined = (value: unknown) =>
  * form that could post them would be a way around the whole verification flow.
  */
 const listingFieldShape = {
+  /**
+   * First, because it is the identifier the office quotes to a seller or a buyer. It is
+   * optional and stays optional: nothing refuses a listing that has none (see §2 of
+   * `20260802131500_property_number_and_role_audit.sql`). Trimming, upper-casing and the
+   * blank → null rule all live in `lib/admin/property-no.ts`.
+   */
+  property_no: PropertyNoField,
   title: z
     .string({ error: 'Give the listing a title.' })
     .trim()
@@ -250,6 +262,7 @@ const StatusEnum = z.enum(['draft', 'verifying', 'live', 'sold', 'withdrawn'])
 
 function listingFieldsFrom(formData: FormData) {
   return {
+    property_no: formData.get('property_no'),
     title: formData.get('title'),
     category: formData.get('category'),
     price_php: formData.get('price_php'),
@@ -428,6 +441,19 @@ export async function createListing(
       }
     }
     if (error.code === RLS_DENIED) return denied()
+    // Both unique indexes an admin can trip raise 23505, and only one of them is worth
+    // retrying. A property-number clash is the clerk's to resolve — retrying it with a
+    // fresh slug would fail four more times and then report a title collision that never
+    // happened.
+    if (isPropertyNoConflict(error)) {
+      return {
+        ok: false,
+        code: 'conflict',
+        message: PROPERTY_NO_TAKEN,
+        fieldErrors: { property_no: PROPERTY_NO_TAKEN },
+        values: submittedValues(raw),
+      }
+    }
     if (error.code !== UNIQUE_VIOLATION) throw error
     slug = `${base}-${randomSlugSuffix()}`
   }
@@ -504,6 +530,17 @@ export async function updateListing(
   const { error } = await supabase.from('listings').update(patch).eq('id', listingId)
 
   if (error) {
+    // Checked before the slug branch: the two share SQLSTATE 23505, and the slug message
+    // is the fallback only because it is the one that was already here.
+    if (isPropertyNoConflict(error)) {
+      return {
+        ok: false,
+        code: 'conflict',
+        message: PROPERTY_NO_TAKEN,
+        fieldErrors: { property_no: PROPERTY_NO_TAKEN },
+        values: submittedValues(raw),
+      }
+    }
     if (error.code === UNIQUE_VIOLATION) {
       return {
         ok: false,

@@ -155,6 +155,8 @@ export type AdminListingFilters = {
 export type AdminListingRow = {
   id: string
   slug: string
+  /** The office's own reference. Null on every listing created before it existed. */
+  propertyNo: string | null
   title: string
   status: ListingStatus
   statusLabel: string
@@ -173,8 +175,13 @@ export type AdminListingsPage = {
   pageCount: number
 }
 
+/**
+ * `property_no` is selected here and in `DETAIL_COLUMNS` and NOWHERE ELSE. It is
+ * admin-only this round by the deliberate scope call recorded in §2 of
+ * `20260802131500_property_number_and_role_audit.sql` — no public or anon query names it.
+ */
 const INDEX_COLUMNS = `
-  id, slug, title, status, category, price_php, updated_at,
+  id, slug, property_no, title, status, category, price_php, updated_at,
   towns ( name, province ),
   listing_photos ( id, is_primary )
 `
@@ -182,6 +189,7 @@ const INDEX_COLUMNS = `
 type RawIndexRow = {
   id: string
   slug: string
+  property_no: string | null
   title: string
   status: ListingStatus
   category: DbCategory
@@ -213,7 +221,12 @@ export async function getAdminListings(filters: AdminListingFilters): Promise<Ad
     // PostgREST `or=` filter, so a clerk pasting "Lot 4 (Phase 2)" must not be able to
     // change what the filter means.
     const escaped = term.replace(/[%,()]/g, ' ')
-    query = query.or(`title.ilike.%${escaped}%,slug.ilike.%${escaped}%,area_detail.ilike.%${escaped}%`)
+    // `property_no` joins the same `or=` list rather than getting a mechanism of its own:
+    // staff type one thing into one box, and `ilike` is already case-insensitive, so
+    // "ds-0142" finds DS-0142 without any extra work.
+    query = query.or(
+      `title.ilike.%${escaped}%,slug.ilike.%${escaped}%,area_detail.ilike.%${escaped}%,property_no.ilike.%${escaped}%`
+    )
   }
 
   const ordered = query
@@ -237,6 +250,7 @@ export async function getAdminListings(filters: AdminListingFilters): Promise<Ad
   const rows = ((requested.data ?? []) as unknown as RawIndexRow[]).map((row) => ({
     id: row.id,
     slug: row.slug,
+    propertyNo: row.property_no,
     title: row.title,
     status: row.status,
     statusLabel: STATUS_LABELS[row.status],
@@ -283,6 +297,7 @@ export type AdminTransition = {
 export type AdminListingDetail = {
   id: string
   slug: string
+  propertyNo: string | null
   title: string
   status: ListingStatus
   statusLabel: string
@@ -314,7 +329,7 @@ export type AdminListingDetail = {
 }
 
 const DETAIL_COLUMNS = `
-  id, slug, title, status, category, price_php, town_id, area_detail,
+  id, slug, property_no, title, status, category, price_php, town_id, area_detail,
   lot_area_sqm, floor_area_sqm, bedrooms, bathrooms, description, is_trending,
   created_at, updated_at, published_at, sold_at,
   towns ( name, province ),
@@ -325,6 +340,7 @@ const DETAIL_COLUMNS = `
 type RawDetailRow = {
   id: string
   slug: string
+  property_no: string | null
   title: string
   status: ListingStatus
   category: DbCategory
@@ -439,6 +455,7 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
   return {
     id: row.id,
     slug: row.slug,
+    propertyNo: row.property_no,
     title: row.title,
     status: row.status,
     statusLabel: STATUS_LABELS[row.status],
@@ -644,4 +661,120 @@ export async function listAdminAccounts(): Promise<AdminAccountRow[]> {
       canRemove: role === 'staff' && !isSelf,
     }
   })
+}
+
+// ---------------------------------------------------------------------------
+// The role-change audit trail
+// ---------------------------------------------------------------------------
+
+type UserRole = Database['public']['Enums']['user_role']
+type RoleChangeVia = 'invite_redeemed' | 'revoked_by_super_admin'
+
+export type AdminRoleChangeRow = {
+  id: string
+  changedAtLabel: string | null
+  /** A name, a short id, or a plain marker when the account itself is gone. */
+  actorName: string
+  targetName: string
+  fromRoleLabel: string
+  toRoleLabel: string
+  viaLabel: string
+  /** True when access was granted, false when it was taken away. Drives the pill only. */
+  granted: boolean
+}
+
+/** One screen's worth of history. The table itself keeps everything; this reads the top. */
+export const ROLE_CHANGE_LIMIT = 20
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  buyer: 'Buyer',
+  broker: 'Broker',
+  staff: 'Admin',
+  admin: 'Owner',
+}
+
+const VIA_LABELS: Record<RoleChangeVia, string> = {
+  invite_redeemed: 'Invitation accepted',
+  revoked_by_super_admin: 'Removed by the owner',
+}
+
+type RawRoleChangeRow = {
+  id: string
+  actor_id: string | null
+  target_id: string
+  from_role: UserRole
+  to_role: UserRole
+  via: string
+  changed_at: string
+}
+
+/**
+ * The first eight characters of a uuid, for a person whose profile has no name on it.
+ *
+ * Enough to tell two rows apart and to match against a row in the accounts list above; it
+ * is not an identity and is not offered as one. The alternative would be the email
+ * address, which lives in `auth.users` and which no API caller may read — reaching it
+ * would mean another SECURITY DEFINER function, and a new privileged door is a poor trade
+ * for a nicer label on an audit line.
+ */
+function shortId(id: string): string {
+  return id.slice(0, 8)
+}
+
+/**
+ * The most recent admin role changes, newest first.
+ *
+ * The names come from a SECOND read rather than an embed. `admin_role_changes` has two
+ * foreign keys into `profiles` — the actor and the target — so an embed would need a
+ * disambiguating hint and would still hand back a shape that has to be flattened. One
+ * `in` on the ids involved is smaller, and it is the pattern `getPropertyRequests` above
+ * already uses for the same reason.
+ *
+ * A missing profile is not an error. `actor_id` is `on delete set null` on purpose: the
+ * record of what was done outlives the account that did it, so a null actor renders as a
+ * plain marker rather than dropping the row from the trail.
+ */
+export async function listAdminRoleChanges(): Promise<AdminRoleChangeRow[]> {
+  await requireSuperAdmin()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('admin_role_changes')
+    .select('id, actor_id, target_id, from_role, to_role, via, changed_at')
+    .order('changed_at', { ascending: false })
+    .limit(ROLE_CHANGE_LIMIT)
+
+  if (error) throw error
+
+  const rows = (data ?? []) as unknown as RawRoleChangeRow[]
+  if (!rows.length) return []
+
+  const ids = [
+    ...new Set(rows.flatMap((row) => (row.actor_id ? [row.actor_id, row.target_id] : [row.target_id]))),
+  ]
+
+  const { data: people, error: peopleError } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', ids)
+
+  if (peopleError) throw peopleError
+
+  const names = new Map((people ?? []).map((person) => [person.id, person.full_name]))
+
+  /** A name if the profile carries one, otherwise the id fragment. */
+  const nameOf = (id: string): string => names.get(id)?.trim() || `Account ${shortId(id)}`
+
+  return rows.map((row) => ({
+    id: row.id,
+    changedAtLabel: stampLabel(row.changed_at),
+    actorName: row.actor_id ? nameOf(row.actor_id) : 'Account since removed',
+    targetName: nameOf(row.target_id),
+    fromRoleLabel: ROLE_LABELS[row.from_role],
+    toRoleLabel: ROLE_LABELS[row.to_role],
+    // The check constraint allows exactly the two values above. The fallback is there so
+    // a third one added later reads as a change rather than as a blank.
+    viaLabel: VIA_LABELS[row.via as RoleChangeVia] ?? 'Access changed',
+    granted: row.to_role === 'staff' || row.to_role === 'admin',
+  }))
 }

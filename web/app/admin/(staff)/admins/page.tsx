@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { requireSuperAdmin } from '@/lib/admin/auth'
-import { listAdminAccounts } from '@/lib/admin/queries'
+import { ROLE_CHANGE_LIMIT, listAdminAccounts, listAdminRoleChanges } from '@/lib/admin/queries'
 import { InviteAdminForm } from '@/components/admin/InviteAdminForm'
 import { RemoveAdminButton } from '@/components/admin/RemoveAdminButton'
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = { title: 'Admins' }
  */
 export default async function AdminAccountsPage() {
   await requireSuperAdmin()
-  const accounts = await listAdminAccounts()
+  const [accounts, roleChanges] = await Promise.all([listAdminAccounts(), listAdminRoleChanges()])
 
   const staffCount = accounts.filter((account) => account.role === 'staff').length
 
@@ -77,6 +77,55 @@ export default async function AdminAccountsPage() {
             <b>No admin accounts yet</b>
             Invite one with the form above. They will get an email with a link that works
             once.
+          </div>
+        )}
+      </section>
+
+      {/*
+        The visible half of the audit trail.
+
+        Every grant and every removal is written by the two SECURITY DEFINER functions, in
+        the same transaction as the role change itself, into a table with no INSERT policy
+        and no UPDATE or DELETE grant for anybody. So this list cannot be edited from the
+        product and cannot silently miss a change — it is the record, not a summary of one.
+
+        Names come from `profiles.full_name`, with a short id where there is none. The
+        email address lives in `auth.users`, which no API caller may read, and adding a
+        privileged function to fetch it is a bigger surface than an audit line is worth.
+      */}
+      <section className="apanel" aria-labelledby="changesH">
+        <h2 id="changesH">Recent access changes</h2>
+        <p className="sub2">
+          Who was given admin access and who had it taken away, newest first. The last{' '}
+          {ROLE_CHANGE_LIMIT} are shown; the record itself keeps everything and cannot be
+          edited or deleted from this panel.
+        </p>
+
+        {roleChanges.length ? (
+          <div className="alist">
+            {roleChanges.map((change) => (
+              <div className="arow" key={change.id}>
+                <span className={change.granted ? 'pill ok' : 'pill muted'}>
+                  {change.granted ? 'Granted' : 'Removed'}
+                </span>
+                <div className="t">
+                  <b>{change.targetName}</b>
+                  <span className="meta">
+                    {change.fromRoleLabel} → {change.toRoleLabel} · {change.viaLabel}
+                  </span>
+                  <span className="meta">
+                    By {change.actorName}
+                    {change.changedAtLabel ? ` · ${change.changedAtLabel}` : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty">
+            <b>No access changes recorded yet</b>
+            Nothing has been granted or removed since this record started. Inviting an
+            admin, or removing one, writes the first line here.
           </div>
         )}
       </section>

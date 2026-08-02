@@ -18,6 +18,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      // -----------------------------------------------------------------
+      // HAND-ADDED, run-p7-propno-audit. `admin_role_changes` comes from
+      // `20260802131500_property_number_and_role_audit.sql`, which IS
+      // applied — but this file has not been regenerated since run-p6, so
+      // the table is transcribed from the migration rather than generated.
+      // Same precedent, and the same instruction, as the hand-added
+      // function signatures further down: CONFIRM BY REGENERATING, and
+      // delete this comment when the regenerated file agrees.
+      //
+      // No Insert is reachable from the app: the table has no INSERT policy
+      // and no INSERT grant for anon or authenticated, and only the two
+      // SECURITY DEFINER functions write it. The Insert/Update members
+      // below exist because the generated shape always has them, not
+      // because anything may use them.
+      // -----------------------------------------------------------------
+      admin_role_changes: {
+        Row: {
+          actor_id: string | null
+          changed_at: string
+          from_role: Database["public"]["Enums"]["user_role"]
+          id: string
+          target_id: string
+          to_role: Database["public"]["Enums"]["user_role"]
+          via: string
+        }
+        Insert: {
+          actor_id?: string | null
+          changed_at?: string
+          from_role: Database["public"]["Enums"]["user_role"]
+          id?: string
+          target_id: string
+          to_role: Database["public"]["Enums"]["user_role"]
+          via: string
+        }
+        Update: {
+          actor_id?: string | null
+          changed_at?: string
+          from_role?: Database["public"]["Enums"]["user_role"]
+          id?: string
+          target_id?: string
+          to_role?: Database["public"]["Enums"]["user_role"]
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_role_changes_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_role_changes_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -194,6 +254,8 @@ export type Database = {
           is_trending: boolean
           lot_area_sqm: number | null
           price_php: number
+          // HAND-ADDED, run-p7-propno-audit (see the note above `admin_role_changes`).
+          property_no: string | null
           published_at: string | null
           search_vector: unknown
           slug: string
@@ -217,6 +279,8 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php: number
+          // HAND-ADDED, run-p7-propno-audit.
+          property_no?: string | null
           published_at?: string | null
           search_vector?: unknown
           slug: string
@@ -240,6 +304,8 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php?: number
+          // HAND-ADDED, run-p7-propno-audit.
+          property_no?: string | null
           published_at?: string | null
           search_vector?: unknown
           slug?: string

@@ -69,6 +69,7 @@ export default async function EditListingPage({ params }: Props) {
         listing={{
           id: listing.id,
           slug: listing.slug,
+          propertyNo: listing.propertyNo,
           title: listing.title,
           category: listing.category,
           pricePhp: listing.pricePhp,

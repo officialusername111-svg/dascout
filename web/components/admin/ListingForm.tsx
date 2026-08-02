@@ -21,6 +21,7 @@ import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
 export type ListingFormValues = {
   id: string
   slug: string
+  propertyNo: string | null
   title: string
   category: string
   pricePhp: number
@@ -119,6 +120,31 @@ export function ListingForm(props: Props) {
       {isEdit && <input type="hidden" name="listingId" value={props.listing.id} />}
 
       <div className="agrid">
+        {/* First, because it is the identifier: the number the office quotes on the phone
+            before anybody says the title. Optional — nothing refuses a listing without
+            one — but unique across every listing that has one. */}
+        <div className={`${fieldClass('property_no')} wide`}>
+          <label htmlFor="lf-propno">
+            Property number <span className="amuted">(optional)</span>
+          </label>
+          <input
+            id="lf-propno"
+            name="property_no"
+            type="text"
+            maxLength={24}
+            autoComplete="off"
+            defaultValue={initial('property_no', listing?.propertyNo ?? '')}
+            placeholder="e.g. DS-0142"
+          />
+          <div className="hint">
+            Your own reference for this property. It has to be different from every other
+            listing&rsquo;s, and it is never shown to buyers.
+          </div>
+          <div className="ferr">
+            {errors.property_no ?? 'Up to 24 characters, and not already in use.'}
+          </div>
+        </div>
+
         <div className={`${fieldClass('title')} wide`}>
           <label htmlFor="lf-title">Title</label>
           <input

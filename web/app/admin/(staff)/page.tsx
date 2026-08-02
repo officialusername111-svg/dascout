@@ -92,8 +92,15 @@ export default async function AdminListingsPage({
       <form className="afilters" method="get" action="/admin">
         {status && <input type="hidden" name="status" value={status} />}
         <div className="field">
-          <label htmlFor="admin-q">Search title, address or area</label>
-          <input id="admin-q" name="q" type="search" defaultValue={q ?? ''} autoComplete="off" />
+          <label htmlFor="admin-q">Search property number, title, address or area</label>
+          <input
+            id="admin-q"
+            name="q"
+            type="search"
+            defaultValue={q ?? ''}
+            autoComplete="off"
+            placeholder="e.g. DS-0142"
+          />
         </div>
         <div className="field">
           <label htmlFor="admin-sort">Order by</label>
@@ -121,6 +128,12 @@ export default async function AdminListingsPage({
             <div className="arow" key={row.id}>
               <span className={pillClass(row)}>{row.statusLabel}</span>
               <div className="t">
+                {/* The office's own reference, above the title because that is what gets
+                    quoted on the phone. A listing without one says so rather than leaving
+                    a gap that reads as a rendering fault. */}
+                <span className="meta">
+                  {row.propertyNo ?? <i>No property no.</i>}
+                </span>
                 <b>{row.title}</b>
                 <span className="meta">
                   {row.categoryLabel} · {row.location} · {row.priceLabel}
