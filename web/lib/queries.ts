@@ -339,7 +339,17 @@ export async function getPopularFeatures(limit = 11): Promise<string[]> {
     .map(([name]) => name)
 }
 
-/** The rotating hero card: trending first, topped up with the newest listings. */
+/**
+ * The rotating hero card: trending first, topped up with the newest listings.
+ *
+ * The second sort key USED to be `price_php desc`, which made the hero "the most
+ * expensive trending listing". That is why it changed: ordering requires SELECT on the
+ * column, so that one `.order()` was the single thing keeping `price_php` inside the
+ * public site's column grant — and the standing rule is no peso amounts anywhere public.
+ * See `20260802160000_listings_detach_anon_column_grant.sql`. `published_at` is also the
+ * better hero rule on its own terms: newest-first is what a visitor expects, and it
+ * matches how every other public list on the site is already ordered.
+ */
 export async function getSpotlightListings(limit = 3): Promise<ListingCard[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -347,7 +357,8 @@ export async function getSpotlightListings(limit = 3): Promise<ListingCard[]> {
     .select(CARD_COLUMNS)
     .eq('status', 'live')
     .order('is_trending', { ascending: false })
-    .order('price_php', { ascending: false })
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
     .limit(limit)
 
   if (error) throw error
