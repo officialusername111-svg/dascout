@@ -16,11 +16,19 @@ instructions is actively dangerous** (see "Things that will bite you").
 
 ## ⚠️ Read this first
 
-**The git repo is `D:\Workspace\DaScout\dascout` — one level BELOW the working directory
-`D:\Workspace\DaScout`.** Three sessions in a row have lost their opening tool calls to this.
+**Paths in this document are repo-relative. Prefix them with `dascout/` from the workspace root.**
 
-**Two commits are unpushed and the owner has not yet OK'd the push.** Everything below that talks
-about the admin redesign describes code that exists in the repo and not on the live site.
+The git repo is `D:\Workspace\DaScout\dascout`, one level BELOW the working directory
+`D:\Workspace\DaScout`. So `web/.env.local` below means `dascout/web/.env.local` when you pass it
+to a tool. Three sessions in a row lost their opening tool calls to this, because each handoff
+carried a *warning* about the trap instead of a rule for converting the paths — the warning was
+treated as the fix. The standing rule now lives in `D:\Workspace\DaScout\CLAUDE.md`, which loads
+automatically every session.
+
+**Status of the two unpushed commits: PUSHED and live** as of 2026-08-02 (`12b6131..d3273a0`,
+which also carried this document). The admin redesign and the property-number change are on
+dascoutprime.com. The sections below were written before that push — read them as the record of
+what was built, not as a description of what is still pending.
 
 ---
 
