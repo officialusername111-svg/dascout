@@ -6,12 +6,27 @@ import { after } from 'next/server'
 import * as z from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { sendMatchAlerts } from '@/lib/match-alerts'
-import { getStaffUser, isStaffRole } from '@/lib/admin/auth'
+import { sendEmail } from '@/lib/email'
+import { getStaffUser, getSuperAdmin, isStaffRole } from '@/lib/admin/auth'
 import {
   STATUS_LABELS,
   TRANSITIONS,
   publishBlockersFor,
+  stampLabel,
 } from '@/lib/admin/queries'
+import {
+  DemoteAdminSchema,
+  INVITE_DUPLICATE,
+  INVITE_REFUSED,
+  INVITE_SUBJECT,
+  InviteAdminSchema,
+  classifyInviteError,
+  classifyRevokeError,
+  describeInviteSend,
+  describeRevokeOutcome,
+  inviteEmailBody,
+  inviteLinkFor,
+} from '@/lib/admin/invites'
 import {
   bucketForStatus,
   isValidPhotoPath,
@@ -1346,6 +1361,140 @@ export async function toggleRequestHandled(
     ok: true,
     message: handled ? 'Marked as handled.' : 'Put back on the open list.',
   }
+}
+
+// ---------------------------------------------------------------------------
+// Admin accounts (super admin only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Both actions below differ from every other action in this file in exactly one way:
+ * they open with `getSuperAdmin()` instead of `getStaffUser()`. Everything else — the
+ * uniform denial, the zod parse, the posted values handed back, the error codes mapped
+ * by SQLSTATE and never by message — is the same, on purpose.
+ *
+ * Neither is the security boundary. `create_admin_invite` and `revoke_staff_admin` are
+ * SECURITY DEFINER functions that ask `is_super_admin()` themselves and raise 42501 if
+ * the answer is no, and the `role` column is not in any UPDATE grant `authenticated`
+ * holds. A staff admin who hand-writes this POST is refused three times over.
+ */
+
+/**
+ * Invites somebody to become a staff admin.
+ *
+ * The order of the four steps is the whole design:
+ *
+ * 1. The database mints the secret. `create_admin_invite` returns 32 random bytes hex
+ *    encoded and stores only their SHA-256 hash, so the raw token exists exactly twice —
+ *    in this function's local variable and, a moment later, in the invitee's mailbox.
+ * 2. The email is AWAITED, not handed to `after()`. Everywhere else in this file mail is
+ *    a courtesy hung off a write that already succeeded, so `after()` is right. Here the
+ *    email IS the deliverable: an invitation nobody received is not an invitation, and
+ *    the person who typed the address has to be told so while they are still looking at
+ *    the form.
+ * 3. A failed send is reported as a failure. `sendEmail` returns false and never throws,
+ *    so this branch is real and cannot be skipped by assuming success.
+ * 4. Nothing about the token reaches the return value. See `lib/admin/invites.ts`.
+ */
+export async function inviteAdmin(
+  _previous: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const user = await getSuperAdmin()
+  if (!user) return denied()
+
+  const raw = { email: formData.get('email') }
+  const parsed = InviteAdminSchema.safeParse(raw)
+  if (!parsed.success) return invalid(parsed.error, submittedValues(raw))
+
+  const { email } = parsed.data
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.rpc('create_admin_invite', { invite_email: email })
+
+  if (error) {
+    switch (classifyInviteError(error.code)) {
+      case 'denied':
+        return denied()
+      case 'refused':
+        // No field error: 23514 is raised both for an address the database refused and
+        // for a concurrent double-submit, and marking the field invalid would assert the
+        // first when it may well have been the second.
+        return {
+          ok: false,
+          code: 'conflict',
+          message: INVITE_REFUSED,
+          values: submittedValues(raw),
+        }
+      case 'duplicate':
+        return {
+          ok: false,
+          code: 'conflict',
+          message: INVITE_DUPLICATE,
+          values: submittedValues(raw),
+        }
+      default:
+        // A fault, not something the person at the keyboard can fix. The global handler
+        // logs it; the error object carries no token, only a code and a message.
+        throw error
+    }
+  }
+
+  // `returns table (...)` arrives as an array. No row means the function did not do what
+  // its contract says, which is a fault rather than a message on a form.
+  const invite = data?.[0]
+  if (!invite) throw new Error('create_admin_invite returned no row')
+
+  const delivered = await sendEmail({
+    to: email,
+    subject: INVITE_SUBJECT,
+    text: inviteEmailBody({
+      link: inviteLinkFor(invite.invite_token),
+      expiresLabel: stampLabel(invite.invite_expires_at),
+    }),
+  })
+
+  revalidatePath('/admin/admins')
+
+  return describeInviteSend(email, delivered, submittedValues(raw))
+}
+
+/**
+ * Takes admin access away from a staff account.
+ *
+ * The demotion target becomes a `buyer` rather than being deleted: revoking a privilege
+ * must not destroy a person's account, their favourites or their history. The function
+ * refuses to touch an `admin` row and refuses to touch the caller's own, so this control
+ * cannot empty the owner tier and lock everybody out of invites and demotions.
+ *
+ * `no_change` comes back as a conflict, not as a success. Both of the situations that
+ * produce it — the row is not a staff admin any more, or it is the caller's own — mean
+ * the list on the screen is out of date, and saying "done" to either would be a lie.
+ */
+export async function demoteAdmin(
+  _previous: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const user = await getSuperAdmin()
+  if (!user) return denied()
+
+  const parsed = DemoteAdminSchema.safeParse({ profileId: formData.get('profileId') })
+  if (!parsed.success) return invalid(parsed.error)
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.rpc('revoke_staff_admin', {
+    target_id: parsed.data.profileId,
+  })
+
+  if (error) {
+    if (classifyRevokeError(error.code) === 'denied') return denied()
+    throw error
+  }
+
+  revalidatePath('/admin/admins')
+
+  return describeRevokeOutcome(data)
 }
 
 /** The slug and status a revalidation needs, read after a write that did not return them. */
