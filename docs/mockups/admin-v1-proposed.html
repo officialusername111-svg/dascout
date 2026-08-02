@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DaScout Admin - proposed redesign (mockup)</title>
+<style>
+:root{
+  --ink-950:#000000; --ink-900:#0D0D0F; --ink-800:#1C1C20; --ink-700:#2E2E34;
+  --gold:#D4AF5A; --gold-d:#B8923E; --gold-l:#E9CE8F; --on-gold:#1C1403;
+  --bg:#FFFFFF; --bg-2:#F6F4EE;
+  --ink:#16161A; --ink-2:#52525B; --ink-3:#7A7A83; --line:#E7E4DA;
+  --ok:#1E7A46; --err:#B3261E; --warn:#8A5A00; --warn-bg:#FDF6E3;
+  --r:14px; --r-s:8px;
+  --shadow-s:0 1px 3px rgba(0,0,0,.08);
+  --dur-1:150ms; --dur-2:220ms; --ease:cubic-bezier(.23,1,.32,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg-2);color:var(--ink);font-size:15.5px;line-height:1.6}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+:focus-visible{outline:2.5px solid var(--gold-d);outline-offset:2px;border-radius:4px}
+
+/* ---------- shared chrome (unchanged from live) ---------- */
+.admin-bar{background:var(--ink-950);color:rgba(255,255,255,.8)}
+.admin-bar .in{max-width:1220px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.admin-bar b{font-weight:700;color:var(--gold-l);font-size:16px}
+.admin-bar nav{display:flex;gap:2px;font-size:14px;font-weight:600}
+.admin-bar nav a{padding:8px 12px;border-radius:6px}
+.admin-bar nav a[aria-current="page"]{color:var(--gold-l);box-shadow:inset 0 -2.5px 0 var(--gold)}
+.admin-bar .who{margin-left:auto;font-size:12.5px}
+
+.wrap{max-width:1220px;margin:0 auto;padding:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13px;
+  letter-spacing:.04em;text-transform:uppercase;padding:0 18px;min-height:42px;border-radius:var(--r-s);
+  white-space:nowrap;transition:filter var(--dur-2) var(--ease),background-color var(--dur-2) var(--ease),transform var(--dur-1) var(--ease)}
+.btn:active{transform:translateY(1px)}
+.btn-gold{background:linear-gradient(180deg,var(--gold-l),var(--gold));color:var(--on-gold)}
+.btn-dark{background:var(--ink-900);color:var(--gold-l)}
+.btn-ghost{border:1.5px solid var(--line);color:var(--ink);background:var(--bg)}
+.btn-sm{min-height:34px;padding:0 12px;font-size:12px}
+
+h1{font-size:27px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.lede{color:var(--ink-2);font-size:14.5px;margin-top:2px}
+
+.note{background:#fff;border:1px solid var(--line);
+  border-radius:var(--r-s);padding:12px 16px;margin:18px 0;font-size:13.5px;color:var(--ink-2)}
+.note b{color:var(--ink)}
+
+/* ---------- 1. LISTINGS INDEX ---------- */
+/* one toolbar instead of three stacked blocks */
+.toolbar{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 14px;box-shadow:var(--shadow-s)}
+.segmented{display:flex;background:var(--bg-2);border-radius:var(--r-s);padding:3px;gap:2px}
+.segmented a{padding:7px 13px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--ink-2);
+  transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease)}
+.segmented a[aria-current="true"]{background:var(--ink-900);color:var(--gold-l)}
+.segmented .n{opacity:.6;font-size:12px;margin-left:5px}
+.search{flex:1;min-width:190px;position:relative}
+.search input{width:100%;height:40px;padding:0 12px 0 34px;border:1.5px solid var(--line);
+  border-radius:var(--r-s);font-size:14px;background:var(--bg)}
+.search input::placeholder{color:var(--ink-3)}
+.search svg{position:absolute;left:11px;top:12px;width:16px;height:16px;stroke:var(--ink-3);fill:none;stroke-width:2}
+.tsel{height:40px;border:1.5px solid var(--line);border-radius:var(--r-s);padding:0 10px;font-size:13.5px;background:var(--bg);color:var(--ink)}
+
+/* the attention strip - blockers promoted out of grey meta text */
+.attention{display:flex;align-items:center;gap:10px;background:var(--warn-bg);border:1px solid #F0DFB4;
+  border-radius:var(--r-s);padding:10px 14px;margin-bottom:14px;font-size:13.5px;color:var(--warn)}
+.attention b{color:#6B4600}
+.attention a{margin-left:auto;font-weight:700;text-decoration:underline;white-space:nowrap}
+
+/* aligned rows so the eye can scan a column, not re-read a sentence */
+.tablehead,.lrow{display:grid;grid-template-columns:30px 86px 88px 1fr 140px 98px 178px;gap:12px;align-items:center}
+/* The property number is the admin's own handle on a listing, so it gets a real column
+   rather than being buried in the meta line. Tabular figures keep it scannable. */
+.lrow .ref{font-variant-numeric:tabular-nums;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:12.5px;font-weight:700;color:var(--ink-2);letter-spacing:-.01em}
+.lrow .ref.unset{color:var(--warn);font-weight:600}
+.tablehead{padding:0 14px 8px;font-size:11.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3)}
+.lrow{background:#fff;border:1px solid var(--line);border-radius:var(--r-s);padding:12px 14px;margin-bottom:7px;
+  transition:border-color var(--dur-1) var(--ease),box-shadow var(--dur-1) var(--ease)}
+.lrow:hover{border-color:var(--gold);box-shadow:var(--shadow-s)}
+/* Flagged rows are marked by the warning chip in the Listing cell and by the count in
+   the attention strip above, not by an edge stripe. */
+.lrow .title{font-weight:700;font-size:15px;line-height:1.35}
+.lrow .sub{color:var(--ink-3);font-size:12.5px;margin-top:1px}
+.lrow .amt{font-variant-numeric:tabular-nums;font-size:14px;font-weight:600}
+.lrow .when{color:var(--ink-3);font-size:12.5px;font-variant-numeric:tabular-nums}
+.lrow .acts{display:flex;gap:6px;justify-content:flex-end}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold-d);cursor:pointer}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;padding:5px 9px;border-radius:99px;background:var(--bg-2);color:var(--ink-2)}
+.pill.live{background:#E6F4EC;color:var(--ok)}
+.pill.sold{background:var(--ink-900);color:var(--gold-l)}
+.pill.draft{background:var(--bg-2);color:var(--ink-3)}
+.dot{width:6px;height:6px;border-radius:99px;background:currentColor}
+
+/* the blocker chip - actionable, not trivia */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+  padding:3px 8px;border-radius:99px;background:var(--warn-bg);color:var(--warn);margin-top:4px}
+
+/* bulk bar appears only with a selection */
+.bulk{display:flex;align-items:center;gap:12px;background:var(--ink-900);color:#fff;
+  border-radius:var(--r-s);padding:10px 16px;margin-bottom:12px;font-size:13.5px}
+.bulk .sp{margin-left:auto;display:flex;gap:8px}
+.bulk .btn-ghost{border-color:rgba(255,255,255,.3);color:#fff;background:transparent}
+
+/* truncated pagination */
+.pager{display:flex;gap:5px;align-items:center;justify-content:center;margin-top:18px;font-size:13.5px}
+.pager a,.pager span{min-width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:6px;border:1px solid var(--line);background:#fff;font-weight:600}
+.pager a[aria-current="page"]{background:var(--ink-900);color:var(--gold-l);border-color:var(--ink-900)}
+.pager .gap{border:none;background:none;color:var(--ink-3)}
+.pager .count{margin-left:10px;color:var(--ink-3);border:none;background:none;width:auto}
+
+/* ---------- 2. LISTING DETAIL ---------- */
+.dwrap{display:grid;grid-template-columns:210px 1fr;gap:24px;align-items:start}
+.dnav{position:sticky;top:16px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:8px}
+.dnav a{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:6px;font-size:14px;
+  font-weight:600;color:var(--ink-2);transition:background var(--dur-1) var(--ease)}
+.dnav a:hover{background:var(--bg-2)}
+.dnav a.on{background:var(--ink-900);color:var(--gold-l)}
+.dnav .warn{margin-left:auto;width:7px;height:7px;border-radius:99px;background:var(--gold-d)}
+
+/* the sticky action bar - status + blockers + publish, always in reach */
+.abar{position:sticky;top:0;z-index:40;background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 16px;margin-bottom:16px;box-shadow:var(--shadow-s);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.abar .ttl{font-weight:800;font-size:16px;letter-spacing:-.01em}
+.abar .meta{color:var(--ink-3);font-size:12.5px}
+.abar .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
+.saved{color:var(--ok);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+
+/* blockers as a checklist you can act on, not a paragraph */
+.blockers{background:var(--warn-bg);border:1px solid #F0DFB4;border-radius:var(--r);padding:14px 16px;margin-bottom:16px}
+.blockers h3{font-size:13.5px;font-weight:800;color:#6B4600;margin-bottom:8px}
+.blockers ul{list-style:none;display:grid;gap:6px}
+.blockers li{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--warn)}
+.blockers .box{width:15px;height:15px;border-radius:4px;border:1.5px solid currentColor;flex-shrink:0}
+.blockers .box.done{background:var(--ok);border-color:var(--ok);position:relative}
+.blockers .box.done::after{content:"";position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.blockers li.done{color:var(--ok);text-decoration:line-through;opacity:.75}
+.blockers a{margin-left:auto;font-weight:700;text-decoration:underline;font-size:12.5px}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.panel h2{font-size:17px;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
+.panel .ph{color:var(--ink-3);font-size:13px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;height:40px;border:1.5px solid var(--line);
+  border-radius:var(--r-s);padding:0 11px;font-size:14px;background:var(--bg);color:var(--ink);font-family:inherit}
+.field textarea{height:74px;padding:9px 11px;resize:vertical}
+.field .hint{font-size:12px;color:var(--ink-3);margin-top:4px}
+.photos{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.ph-t{aspect-ratio:4/3;border-radius:var(--r-s);background:linear-gradient(135deg,#E8E4D8,#D8D3C4);
+  position:relative;border:1px solid var(--line)}
+.ph-t.cover{outline:2.5px solid var(--gold-d);outline-offset:1px}
+.ph-t .tag{position:absolute;bottom:6px;left:6px;font-size:9.5px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;background:var(--ink-900);color:var(--gold-l);padding:3px 7px;border-radius:99px}
+.ph-add{aspect-ratio:4/3;border-radius:var(--r-s);border:1.5px dashed var(--line);display:flex;
+  align-items:center;justify-content:center;color:var(--ink-3);font-size:12.5px;font-weight:600;text-align:center}
+
+.sec-label{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);margin:34px 0 10px;padding-top:22px;border-top:2px solid var(--line)}
+.sec-label:first-of-type{border-top:none;padding-top:0;margin-top:8px}
+
+@media (max-width:900px){
+  .tablehead{display:none}
+  .lrow{grid-template-columns:auto 1fr;gap:8px 12px}
+  .lrow .amt,.lrow .when{grid-column:2}
+  .lrow .acts{grid-column:2;justify-content:flex-start}
+  .dwrap{grid-template-columns:1fr}
+  .dnav{position:static;display:flex;overflow-x:auto;gap:4px}
+  .grid2,.photos{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="admin-bar"><div class="in">
+  <b>DaScout Admin</b>
+  <nav><a href="#" aria-current="page">Listings</a><a href="#">New listing</a><a href="#">Requests</a><a href="#">Admins</a><a href="#">Password</a><a href="#">View site</a></nav>
+  <span class="who">Ronard Danay · admin</span>
+</div></div>
+
+<div class="wrap">
+
+  <div class="note">
+    <b>Mockup, not built.</b> Proposed redesign of the two admin screens. Existing black+gold tokens,
+    existing components. The changes are layout, hierarchy and state, not a new visual language.
+    Peso amounts appear here because this is the admin panel; they remain banned everywhere public.
+  </div>
+
+  <!-- ============ SCREEN 1 ============ -->
+  <div class="sec-label">Screen 1 / Listings</div>
+
+  <h1>Listings</h1>
+  <p class="lede">Every listing in every status. This is the only screen that can see a draft.</p>
+
+  <!-- one toolbar: status, search, sort together -->
+  <div class="toolbar">
+    <div class="segmented">
+      <a href="#" aria-current="true">All <span class="n">24</span></a>
+      <a href="#">Draft <span class="n">6</span></a>
+      <a href="#">Review <span class="n">2</span></a>
+      <a href="#">Live <span class="n">14</span></a>
+      <a href="#">Sold <span class="n">2</span></a>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="Search property no., title, address or area">
+    </div>
+    <select class="tsel"><option>Recently changed</option><option>Newest first</option><option>Price: high to low</option></select>
+  </div>
+
+  <!-- blockers surfaced once, at the top, with a way to act -->
+  <div class="attention">
+    <b>3 listings need attention</b> before they can go live: 2 missing a cover photo and a property number, 1 missing lot area.
+    <a href="#">Show only these</a>
+  </div>
+
+  <!-- bulk bar: appears when rows are ticked -->
+  <div class="bulk">
+    <b>2 selected</b>
+    <span style="opacity:.7">Both are drafts</span>
+    <span class="sp">
+      <button class="btn btn-ghost btn-sm">Send to review</button>
+      <button class="btn btn-gold btn-sm">Publish</button>
+      <button class="btn btn-ghost btn-sm">Clear</button>
+    </span>
+  </div>
+
+  <div class="tablehead">
+    <span><input type="checkbox"></span>
+    <span>Property no.</span><span>Status</span><span>Listing</span><span>Price</span><span>Changed</span><span></span>
+  </div>
+
+  <div class="lrow flag">
+    <span><input type="checkbox" checked></span>
+    <span class="ref unset">not set</span>
+    <span><span class="pill draft"><i class="dot"></i>Draft</span></span>
+    <span>
+      <span class="title">Dacera Heights Corner Lot</span>
+      <span class="sub">Residential Lot · Lagao, General Santos City · 240 sqm</span>
+      <span class="chip">No cover photo chosen</span>
+    </span>
+    <span class="amt">₱4,200,000</span>
+    <span class="when">2 hours ago</span>
+    <span class="acts"><a class="btn btn-dark btn-sm" href="#">Open</a></span>
+  </div>
+
+  <div class="lrow flag">
+    <span><input type="checkbox" checked></span>
+    <span class="ref unset">not set</span>
+    <span><span class="pill draft"><i class="dot"></i>Draft</span></span>
+    <span>
+      <span class="title">Villa Consuelo Modern Home</span>
+      <span class="sub">Residential Bldg · Calumpang, General Santos City · 4 bed</span>
+      <span class="chip">No cover photo chosen</span>
+    </span>
+    <span class="amt">₱8,750,000</span>
+    <span class="when">Yesterday</span>
+    <span class="acts"><a class="btn btn-dark btn-sm" href="#">Open</a></span>
+  </div>
+
+  <div class="lrow">
+    <span><input type="checkbox"></span>
+    <span class="ref">DS-0118</span>
+    <span><span class="pill live"><i class="dot"></i>Live</span></span>
+    <span>
+      <span class="title">National Highway Frontage Lot</span>
+      <span class="sub">Commercial Lot · Bula, General Santos City · 850 sqm · 9 photos</span>
+    </span>
+    <span class="amt">₱12,400,000</span>
+    <span class="when">4 days ago</span>
+    <span class="acts">
+      <a class="btn btn-dark btn-sm" href="#">Open</a>
+      <a class="btn btn-ghost btn-sm" href="#">View public</a>
+    </span>
+  </div>
+
+  <div class="lrow">
+    <span><input type="checkbox"></span>
+    <span class="ref">DS-0074</span>
+    <span><span class="pill sold"><i class="dot"></i>Sold</span></span>
+    <span>
+      <span class="title">Santiago Boulevard Commercial Building</span>
+      <span class="sub">Commercial Bldg · General Santos City · 12 photos</span>
+    </span>
+    <span class="amt">₱24,000,000</span>
+    <span class="when">3 weeks ago</span>
+    <span class="acts">
+      <a class="btn btn-dark btn-sm" href="#">Open</a>
+      <a class="btn btn-ghost btn-sm" href="#">View public</a>
+    </span>
+  </div>
+
+  <!-- truncated, not one button per page -->
+  <nav class="pager">
+    <span class="gap">‹</span>
+    <a href="#" aria-current="page">1</a><a href="#">2</a><a href="#">3</a>
+    <span class="gap">…</span><a href="#">12</a>
+    <span class="gap">›</span>
+    <span class="count">24 listings</span>
+  </nav>
+
+  <!-- ============ SCREEN 2 ============ -->
+  <div class="sec-label">Screen 2 / Listings &rsaquo; Details</div>
+
+  <!-- sticky bar: identity, status, save state and the primary action stay in reach -->
+  <div class="abar">
+    <div>
+      <div class="ttl">Dacera Heights Corner Lot</div>
+      <div class="meta">No property number yet · Residential Lot · Lagao, General Santos City · ₱4,200,000</div>
+    </div>
+    <span class="pill draft"><i class="dot"></i>Draft</span>
+    <span class="sp">
+      <span class="saved">✓ Saved 12:04</span>
+      <a class="btn btn-ghost btn-sm" href="#">Back to listings</a>
+      <button class="btn btn-gold btn-sm">Publish</button>
+    </span>
+  </div>
+
+  <div class="dwrap">
+    <nav class="dnav">
+      <a href="#" class="on">Details</a>
+      <a href="#">Features</a>
+      <a href="#">Photos <i class="warn"></i></a>
+      <a href="#">Verification</a>
+      <a href="#">Lifecycle</a>
+    </nav>
+
+    <div>
+      <!-- what's blocking publish, at the top, itemised -->
+      <div class="blockers">
+        <h3>3 things left before this can go live</h3>
+        <ul>
+          <li><i class="box"></i> Give it a property number <a href="#">Go to Details</a></li>
+          <li><i class="box"></i> Choose a cover photo <a href="#">Go to Photos</a></li>
+          <li><i class="box"></i> Add lot area in square metres <a href="#">Go to Details</a></li>
+          <li class="done"><i class="box done"></i> Title, category and location set</li>
+          <li class="done"><i class="box done"></i> Verification record complete</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h2>Details</h2>
+        <p class="ph">What buyers read on the public page.</p>
+        <div class="grid2">
+          <div class="field">
+            <label>Property number</label>
+            <input placeholder="e.g. DS-0142" style="border-color:var(--gold-d);font-family:ui-monospace,Consolas,monospace">
+            <span class="hint" style="color:var(--warn)">Your own reference. Must be unique.</span>
+          </div>
+          <div class="field"><label>Title</label><input value="Dacera Heights Corner Lot"></div>
+          <div class="field"><label>Category</label><select><option>Residential Lot</option></select></div>
+          <div class="field"><label>Town</label><select><option>General Santos City</option></select></div>
+          <div class="field"><label>Area detail</label><input value="Lagao"></div>
+          <div class="field"><label>Price (₱)</label><input value="4200000"></div>
+          <div class="field">
+            <label>Lot area (sqm)</label><input placeholder="Required before publishing" style="border-color:var(--gold-d)">
+            <span class="hint" style="color:var(--warn)">Needed to publish.</span>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Description</label><textarea>Corner lot in a gated subdivision, titled and ready for transfer.</textarea></div>
+      </div>
+
+      <div class="panel">
+        <h2>Photos</h2>
+        <p class="ph">The cover photo is the one buyers see first. Drag to reorder.</p>
+        <div class="photos">
+          <div class="ph-t cover"><span class="tag">Cover</span></div>
+          <div class="ph-t"></div><div class="ph-t"></div><div class="ph-t"></div>
+          <div class="ph-add">+ Upload</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
