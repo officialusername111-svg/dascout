@@ -86,8 +86,12 @@ create unique index if not exists listings_property_no_unique_idx
 --    The owner asked for the field to exist and be typed in by the admin. Requiring it is a
 --    separate decision, and it stays additive: a later migration adds the one raise above,
 --    and the fixtures get a number at the same time, deliberately rather than as collateral.
---    Until then the admin panel shows a missing number as a soft blocker in its checklist,
---    which is what the mockup actually depicts.
+--    Until then NOTHING flags a missing number, in the database or on screen. The soft
+--    blocker in a publish checklist belongs to the approved-but-UNBUILT admin redesign
+--    (docs/mockups/admin-v1-proposed.html) — that is where the mockup depicts it. The admin
+--    panel as it stands today has no such checklist, so a missing property number is silent
+--    everywhere. Corrected 2026-08-02: the earlier wording here described the mockup as if
+--    it were shipped behaviour.
 -- ---------------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------------

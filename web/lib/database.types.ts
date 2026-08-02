@@ -1,6 +1,19 @@
 // Generated from the DaScout Supabase project (kogpuuidawbmttyswvsx).
 // Regenerate after any schema change:  supabase gen types typescript --linked > supabase/types/database.types.ts
 // Do not edit by hand. Keep web/lib/database.types.ts in step with this file.
+//
+// Regenerated 2026-08-02 against the live database, after run-p6 (admin invites and the
+// admin/staff privilege split) and run-p7 (property number and the role-change audit trail)
+// were both applied. Everything that used to be hand-transcribed here and in
+// web/lib/database.types.ts is now generated, and was checked against what was transcribed.
+// The two files are byte-identical.
+//
+// ONE DELIBERATE DEPARTURE FROM THE GENERATOR, kept rather than lost in the regeneration:
+// `list_admin_accounts.full_name` is `string | null` below, not the `string` the generator
+// emits. The generator marks every RETURNS TABLE column non-null because a function
+// signature carries no nullability. `profiles.full_name` is genuinely nullable, so the
+// generated type would promise the app a null cannot arrive when it can. The correction is
+// marked at its own site — re-apply it after any future regeneration.
 
 export type Json =
   | string
@@ -18,21 +31,73 @@ export type Database = {
   }
   public: {
     Tables: {
-      // -----------------------------------------------------------------
-      // HAND-ADDED, run-p7-propno-audit. `admin_role_changes` comes from
-      // `20260802131500_property_number_and_role_audit.sql`, which IS
-      // applied — but this file has not been regenerated since run-p6, so
-      // the table is transcribed from the migration rather than generated.
-      // Same precedent, and the same instruction, as the hand-added
-      // function signatures further down: CONFIRM BY REGENERATING, and
-      // delete this comment when the regenerated file agrees.
-      //
-      // No Insert is reachable from the app: the table has no INSERT policy
-      // and no INSERT grant for anon or authenticated, and only the two
-      // SECURITY DEFINER functions write it. The Insert/Update members
-      // below exist because the generated shape always has them, not
-      // because anything may use them.
-      // -----------------------------------------------------------------
+      admin_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          granted_role: Database["public"]["Enums"]["user_role"]
+          id: string
+          invited_by: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          granted_role?: Database["public"]["Enums"]["user_role"]
+          id?: string
+          invited_by?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          granted_role?: Database["public"]["Enums"]["user_role"]
+          id?: string
+          invited_by?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_invites_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_role_changes: {
         Row: {
           actor_id: string | null
@@ -254,7 +319,6 @@ export type Database = {
           is_trending: boolean
           lot_area_sqm: number | null
           price_php: number
-          // HAND-ADDED, run-p7-propno-audit (see the note above `admin_role_changes`).
           property_no: string | null
           published_at: string | null
           search_vector: unknown
@@ -279,7 +343,6 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php: number
-          // HAND-ADDED, run-p7-propno-audit.
           property_no?: string | null
           published_at?: string | null
           search_vector?: unknown
@@ -304,7 +367,6 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php?: number
-          // HAND-ADDED, run-p7-propno-audit.
           property_no?: string | null
           published_at?: string | null
           search_vector?: unknown
@@ -567,28 +629,12 @@ export type Database = {
     Functions: {
       clear_my_listing_views: { Args: never; Returns: number }
       confirm_property_request: { Args: { req_id: string }; Returns: undefined }
-      // ---------------------------------------------------------------------
-      // HAND-ADDED, run-p6-admin-invites. The five functions below come from
-      // `20260802021757_admin_invites_and_super_admin_split.sql`, which is
-      // WRITTEN BUT NOT YET APPLIED, so `supabase gen types` cannot see them
-      // and the generator would delete them if run before the apply. They are
-      // transcribed from the migration's own signatures so `tsc` and `vitest`
-      // work pre-apply. Same precedent as run-p5b-double-optin.
-      //
-      // CONFIRM BY REGENERATING once the migration has been applied, and
-      // delete this comment when the regenerated file agrees. Two known places
-      // it will differ: `full_name` below is widened to `string | null`
-      // because `profiles.full_name` is nullable and the app must handle that
-      // (the generator emits RETURNS TABLE columns as non-null); and
-      // regeneration will also add the `admin_invites` table, which is left
-      // out here on purpose because nothing in the app selects it this round.
-      // ---------------------------------------------------------------------
       create_admin_invite: {
         Args: { invite_email: string }
         Returns: {
+          invite_expires_at: string
           invite_id: string
           invite_token: string
-          invite_expires_at: string
         }[]
       }
       is_staff: { Args: never; Returns: boolean }
@@ -596,11 +642,17 @@ export type Database = {
       list_admin_accounts: {
         Args: never
         Returns: {
-          profile_id: string
-          email: string
-          full_name: string | null
-          role: Database["public"]["Enums"]["user_role"]
           created_at: string
+          email: string
+          // HAND-CORRECTED, and the ONLY departure from `supabase gen types` in this
+          // file. The generator emits every RETURNS TABLE column as non-null, because a
+          // function signature carries no nullability of its own. `profiles.full_name`
+          // is nullable and the app must handle a null here, so the generated `string`
+          // would be a promise the database does not make. Re-apply this after any
+          // future regeneration — see the note at the top of the file.
+          full_name: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["user_role"]
         }[]
       }
       redeem_admin_invite: { Args: { raw_token: string }; Returns: string }

@@ -1,6 +1,19 @@
 // Generated from the DaScout Supabase project (kogpuuidawbmttyswvsx).
 // Regenerate after any schema change:  supabase gen types typescript --linked > supabase/types/database.types.ts
 // Do not edit by hand. Keep web/lib/database.types.ts in step with this file.
+//
+// Regenerated 2026-08-02 against the live database, after run-p6 (admin invites and the
+// admin/staff privilege split) and run-p7 (property number and the role-change audit trail)
+// were both applied. Everything that used to be hand-transcribed here and in
+// web/lib/database.types.ts is now generated, and was checked against what was transcribed.
+// The two files are byte-identical.
+//
+// ONE DELIBERATE DEPARTURE FROM THE GENERATOR, kept rather than lost in the regeneration:
+// `list_admin_accounts.full_name` is `string | null` below, not the `string` the generator
+// emits. The generator marks every RETURNS TABLE column non-null because a function
+// signature carries no nullability. `profiles.full_name` is genuinely nullable, so the
+// generated type would promise the app a null cannot arrive when it can. The correction is
+// marked at its own site — re-apply it after any future regeneration.
 
 export type Json =
   | string
@@ -18,6 +31,118 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          granted_role: Database["public"]["Enums"]["user_role"]
+          id: string
+          invited_by: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          granted_role?: Database["public"]["Enums"]["user_role"]
+          id?: string
+          invited_by?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          granted_role?: Database["public"]["Enums"]["user_role"]
+          id?: string
+          invited_by?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_invites_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_role_changes: {
+        Row: {
+          actor_id: string | null
+          changed_at: string
+          from_role: Database["public"]["Enums"]["user_role"]
+          id: string
+          target_id: string
+          to_role: Database["public"]["Enums"]["user_role"]
+          via: string
+        }
+        Insert: {
+          actor_id?: string | null
+          changed_at?: string
+          from_role: Database["public"]["Enums"]["user_role"]
+          id?: string
+          target_id: string
+          to_role: Database["public"]["Enums"]["user_role"]
+          via: string
+        }
+        Update: {
+          actor_id?: string | null
+          changed_at?: string
+          from_role?: Database["public"]["Enums"]["user_role"]
+          id?: string
+          target_id?: string
+          to_role?: Database["public"]["Enums"]["user_role"]
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_role_changes_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_role_changes_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -194,6 +319,7 @@ export type Database = {
           is_trending: boolean
           lot_area_sqm: number | null
           price_php: number
+          property_no: string | null
           published_at: string | null
           search_vector: unknown
           slug: string
@@ -217,6 +343,7 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php: number
+          property_no?: string | null
           published_at?: string | null
           search_vector?: unknown
           slug: string
@@ -240,6 +367,7 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php?: number
+          property_no?: string | null
           published_at?: string | null
           search_vector?: unknown
           slug?: string
@@ -501,11 +629,38 @@ export type Database = {
     Functions: {
       clear_my_listing_views: { Args: never; Returns: number }
       confirm_property_request: { Args: { req_id: string }; Returns: undefined }
+      create_admin_invite: {
+        Args: { invite_email: string }
+        Returns: {
+          invite_expires_at: string
+          invite_id: string
+          invite_token: string
+        }[]
+      }
       is_staff: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      list_admin_accounts: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          // HAND-CORRECTED, and the ONLY departure from `supabase gen types` in this
+          // file. The generator emits every RETURNS TABLE column as non-null, because a
+          // function signature carries no nullability of its own. `profiles.full_name`
+          // is nullable and the app must handle a null here, so the generated `string`
+          // would be a promise the database does not make. Re-apply this after any
+          // future regeneration — see the note at the top of the file.
+          full_name: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
+      redeem_admin_invite: { Args: { raw_token: string }; Returns: string }
       reorder_listing_photos: {
         Args: { p_listing_id: string; p_photo_ids: string[] }
         Returns: number
       }
+      revoke_staff_admin: { Args: { target_id: string }; Returns: string }
       top_listings: {
         Args: { period?: string; row_limit?: number }
         Returns: {

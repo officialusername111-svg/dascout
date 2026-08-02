@@ -25,8 +25,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <SignInForm denied={denied} />
       </div>
       <p className="amuted">
-        No staff account? Ask whoever administers the DaScout Supabase project — accounts are not
-        self-service.
+        No staff account? Ask a DaScout super admin to invite you. The invitation arrives by
+        email, and the link in it gives your account access — nothing on this page can grant it
+        to you.
       </p>
     </main>
   )
