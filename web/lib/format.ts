@@ -48,3 +48,16 @@ export function compactCount(n: number): string {
   }
   return String(n)
 }
+
+/**
+ * "001 - Dacera Heights Corner Lot" — the property number leads the title wherever a
+ * listing names itself, so the reference is the first thing read and the first thing
+ * quoted back. A listing without a number just shows its title; no separator is left
+ * dangling, and no placeholder stands in for a number that does not exist.
+ *
+ * Deliberately NOT applied on the admin listings index, which has a property-number
+ * column of its own — prefixing there would print the same reference twice on one row.
+ */
+export function displayTitle(propertyNo: string | null | undefined, title: string): string {
+  return propertyNo ? `${propertyNo} - ${title}` : title
+}

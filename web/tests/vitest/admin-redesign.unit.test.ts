@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { backHrefFrom, filterQuery, pageWindow, withParams } from '@/lib/admin/navigation'
 import { checklistChips, publishBlockersFor, publishChecklistFor } from '@/lib/admin/queries'
+import { displayTitle } from '@/lib/format'
 
 /**
  * The admin v1 redesign — the three pieces of logic behind it that are easy to get quietly
@@ -47,6 +48,28 @@ describe('backHrefFrom — "Back to listings" keeps the filter', () => {
 
   it('drops unknown keys rather than passing them through', () => {
     expect(backHrefFrom('status=live&role=admin&debug=1')).toBe('/admin?status=live')
+  })
+})
+
+describe('displayTitle — the property number leads the name', () => {
+  it('puts the reference first, in the owner-specified shape', () => {
+    expect(displayTitle('001', 'Dacera Heights Corner Lot')).toBe('001 - Dacera Heights Corner Lot')
+  })
+
+  it('leaves the title alone when there is no number', () => {
+    // 63 of the 75 rows in the database have no property number, and it is not required
+    // to publish — so "no number" is the common case, not the edge case. A dangling
+    // separator or a placeholder would be on screen more often than a real reference.
+    expect(displayTitle(null, 'Tupi Irrigated Rice Farm')).toBe('Tupi Irrigated Rice Farm')
+    expect(displayTitle(undefined, 'Tupi Irrigated Rice Farm')).toBe('Tupi Irrigated Rice Farm')
+    expect(displayTitle('', 'Tupi Irrigated Rice Farm')).toBe('Tupi Irrigated Rice Farm')
+  })
+
+  it('does not care what shape the reference takes', () => {
+    // The database only constrains it to trimmed, 1–24 characters, because the office
+    // picks its own scheme — this must not quietly assume DS-#### or a pure number.
+    expect(displayTitle('DS-0142', 'Lot 4')).toBe('DS-0142 - Lot 4')
+    expect(displayTitle('GSC/2026/07', 'Lot 4')).toBe('GSC/2026/07 - Lot 4')
   })
 })
 

@@ -16,6 +16,12 @@ export type ListingCard = {
   id: string
   slug: string
   title: string
+  /**
+   * The office's own reference, shown ahead of the title wherever the listing names
+   * itself. Null on every listing created before the field existed, and on any listing
+   * staff have not given one — it is not required to publish.
+   */
+  propertyNo: string | null
   categoryKey: CategoryKey
   categoryLabel: string
   location: string
@@ -31,12 +37,6 @@ export type ListingDetail = ListingCard & {
   description: string | null
   features: string[]
   photos: { url: string; alt: string }[]
-  /**
-   * The office's own reference for this property, shown so a buyer can quote it in an
-   * enquiry. Null on every listing created before the field existed, and on any listing
-   * staff have not given one — it is not required to publish.
-   */
-  propertyNo: string | null
 }
 
 export type TownRow = {
@@ -54,7 +54,7 @@ export type TownRow = {
  * card ends up rendering differently on two pages for no reason anyone can find later.
  */
 export const CARD_COLUMNS = `
-  id, slug, title, category, area_detail, lot_area_sqm, floor_area_sqm,
+  id, slug, title, property_no, category, area_detail, lot_area_sqm, floor_area_sqm,
   bedrooms, bathrooms, is_trending, published_at,
   towns!inner ( id, name, province, slug ),
   listing_photos ( storage_path, alt_text, sort_order, is_primary ),
@@ -65,6 +65,7 @@ export type RawListing = {
   id: string
   slug: string
   title: string
+  property_no: string | null
   category: DbCategory
   area_detail: string | null
   lot_area_sqm: number | null
@@ -137,6 +138,7 @@ export function toCard(row: RawListing, features?: string[]): ListingCard {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    propertyNo: row.property_no,
     categoryKey: keyFromDb(row.category),
     categoryLabel: labelFromDb(row.category),
     location: locationOf(row),
@@ -264,11 +266,7 @@ export async function getListingBySlug(slug: string): Promise<ListingDetail | nu
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('listings')
-    // `property_no` is selected HERE and on no other public query: the owner's decision is
-    // that a buyer can quote a reference in an enquiry, which is a property-page need. It
-    // is deliberately absent from CARD_COLUMNS — a reference on every card is noise, and
-    // the anon grant that makes this readable was chosen for this one surface.
-    .select(`${CARD_COLUMNS}, description, property_no`)
+    .select(`${CARD_COLUMNS}, description`)
     .eq('status', 'live')
     .eq('slug', slug)
     .maybeSingle()
@@ -276,10 +274,7 @@ export async function getListingBySlug(slug: string): Promise<ListingDetail | nu
   if (error) throw error
   if (!data) return null
 
-  const row = data as unknown as RawListing & {
-    description: string | null
-    property_no: string | null
-  }
+  const row = data as unknown as RawListing & { description: string | null }
   const features = featuresOf(row)
 
   return {
@@ -287,7 +282,6 @@ export async function getListingBySlug(slug: string): Promise<ListingDetail | nu
     description: row.description,
     features,
     photos: sortedPhotos(row),
-    propertyNo: row.property_no,
   }
 }
 

@@ -8,6 +8,7 @@ import { ListingCardTile, Specs } from '@/components/ListingCard'
 import { Gallery } from '@/components/property/Gallery'
 import { RecordVisit } from '@/components/property/RecordVisit'
 import { SaveButton } from '@/components/property/SaveButton'
+import { displayTitle } from '@/lib/format'
 import {
   getListingBySlug,
   getPopularFeatures,
@@ -26,12 +27,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     listing.description ??
     `${listing.categoryLabel} in ${listing.location}. Title-verified by DaScout.`
 
+  // The reference leads here too, so a shared link and a browser tab both carry it.
+  const heading = displayTitle(listing.propertyNo, listing.title)
+
   return {
-    title: listing.title,
+    title: heading,
     description,
     alternates: { canonical: `/property/${listing.slug}` },
     openGraph: {
-      title: listing.title,
+      title: heading,
       description,
       type: 'article',
       images: listing.photo ? [{ url: listing.photo }] : undefined,
@@ -49,17 +53,13 @@ export default async function PropertyPage({ params }: Props) {
     getPopularFeatures(),
   ])
 
-  // The reference goes in the subject line as well as on the page. Putting it where staff
-  // will actually read it is the whole reason the number was made public — an enquiry that
-  // names the listing by reference can be matched without anyone guessing from the title.
-  const mailRef = listing.propertyNo ? ` [${listing.propertyNo}]` : ''
-  const mailSubject = encodeURIComponent(
-    `Inquiry: ${listing.title} (${listing.location})${mailRef}`
-  )
+  // The enquiry names the listing exactly as the page does, reference first. Putting it
+  // where staff will actually read it is the whole reason the number was made public — an
+  // enquiry that leads with the reference can be matched without guessing from the title.
+  const named = displayTitle(listing.propertyNo, listing.title)
+  const mailSubject = encodeURIComponent(`Inquiry: ${named} (${listing.location})`)
   const mailBody = encodeURIComponent(
-    `Hi DaScout,\n\nI'd like to inquire about "${listing.title}" in ${listing.location}.` +
-      `${listing.propertyNo ? `\nReference: ${listing.propertyNo}` : ''}` +
-      `\n\nMy questions:\n\n`
+    `Hi DaScout,\n\nI'd like to inquire about "${named}" in ${listing.location}.\n\nMy questions:\n\n`
   )
 
   return (
@@ -78,17 +78,13 @@ export default async function PropertyPage({ params }: Props) {
 
           <div className="prop-info">
             <span className="pill">{listing.categoryLabel}</span>
-            <h1>{listing.title}</h1>
+            {/* The reference leads the title — "001 - Dacera Heights Corner Lot" — so it
+                is the first thing read and the first thing quoted back. A listing without
+                one shows its title alone rather than a dangling separator. */}
+            <h1>{displayTitle(listing.propertyNo, listing.title)}</h1>
             <div className="loc">
               <Icon name="pin" /> {listing.location} · Mindanao
             </div>
-            {/* The reference a buyer quotes when they enquire. Rendered only when staff
-                have given one — an empty "Ref." label would read as a rendering fault. */}
-            {listing.propertyNo && (
-              <p className="prop-ref">
-                Reference <b>{listing.propertyNo}</b>
-              </p>
-            )}
             <div className="prop-specs">
               <Specs specs={listing.specs} />
             </div>

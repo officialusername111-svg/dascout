@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { FavButton } from '@/components/FavButton'
+import { displayTitle } from '@/lib/format'
 import type { ListingCard as Listing, Spec } from '@/lib/queries'
 
 export function Specs({ specs }: { specs: Spec[] }) {
@@ -49,7 +50,7 @@ export function ListingCardTile({
         </span>
       </span>
       <span className="bd">
-        <h3>{listing.title}</h3>
+        <h3>{displayTitle(listing.propertyNo, listing.title)}</h3>
         <span className="loc">
           <Icon name="pin" /> {listing.location}
         </span>

@@ -481,11 +481,6 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
   .aphotos{grid-template-columns:1fr}
 }
 
-/* The public reference number. Quiet by design — it is a thing to quote, not a headline. */
-.prop-ref{margin-top:8px;font-size:13px;color:var(--ink-3);letter-spacing:.01em}
-.prop-ref b{font-family:ui-monospace,Consolas,monospace;font-weight:700;color:var(--ink-2);
-  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-
 /* ==========================================================================
    ADMIN v1 REDESIGN — docs/mockups/admin-v1-proposed.html
    Layout, hierarchy and state only. No new visual language: every colour,

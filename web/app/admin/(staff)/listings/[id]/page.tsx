@@ -8,6 +8,7 @@ import { ListingForm } from '@/components/admin/ListingForm'
 import { PhotoManager } from '@/components/admin/PhotoManager'
 import { VerificationPanel } from '@/components/admin/VerificationPanel'
 import { backHrefFrom, one } from '@/lib/admin/navigation'
+import { displayTitle } from '@/lib/format'
 import {
   getAdminListingDetail,
   getFeatureOptions,
@@ -80,9 +81,10 @@ export default async function EditListingPage({ params, searchParams }: Props) {
         listingId={listing.id}
         status={listing.status}
         statusLabel={listing.statusLabel}
-        title={listing.title}
+        // Reference first, the same way the public page and every card name it.
+        title={displayTitle(listing.propertyNo, listing.title)}
         meta={[
-          listing.propertyNo ?? 'No property number yet',
+          listing.propertyNo ? null : 'No property number yet',
           listing.categoryLabel,
           listing.townLabel,
           listing.priceLabel,
