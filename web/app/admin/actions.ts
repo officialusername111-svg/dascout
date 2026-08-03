@@ -9,6 +9,19 @@ import { sendMatchAlerts } from '@/lib/match-alerts'
 import { sendEmail } from '@/lib/email'
 import { getStaffUser, getSuperAdmin, isStaffRole } from '@/lib/admin/auth'
 import {
+  CHECK_VIOLATION,
+  FK_VIOLATION,
+  RAISE_EXCEPTION,
+  RLS_DENIED,
+  UNIQUE_VIOLATION,
+  blankToNull,
+  blankToUndefined,
+  denied,
+  invalid,
+  submittedValues,
+  type ActionResult,
+} from '@/lib/admin/action-result'
+import {
   STATUS_LABELS,
   TRANSITIONS,
   publishBlockersFor,
@@ -67,99 +80,17 @@ import type { Database } from '@/lib/database.types'
 
 type ListingStatus = Database['public']['Enums']['listing_status']
 
-export type ActionErrorCode =
-  | 'validation'
-  | 'forbidden'
-  | 'not_found'
-  | 'conflict'
-  | 'precondition'
-  | 'storage'
-  | 'unexpected'
-
 /**
- * One shape for every action, so one renderer in the UI covers all of them.
- * `warning` on a successful result is for work that finished but left something a
- * human should know about — a deleted row whose file could not be removed, say.
- *
- * `values` carries the raw strings the browser just posted, back to the form that
- * posted them. React resets an uncontrolled form as soon as its action settles, so a
- * rejected submission would otherwise wipe every field — including the nine that were
- * fine. Handing the values back is the only way the form can restore them as its new
- * defaults. They are for redisplay only and are validated again on the next submit.
+ * The result shape, the SQLSTATE constants and the four builders now live in
+ * `lib/admin/action-result.ts`, unchanged, because `'use server'` will not export a
+ * non-async function and `app/admin/settings-actions.ts` needs the same helpers. The two
+ * types are re-exported here so every existing
+ * `import type { ActionResult } from '@/app/admin/actions'` keeps working.
  */
-export type ActionResult<T = undefined> =
-  | { ok: true; message?: string; warning?: string; data?: T }
-  | {
-      ok: false
-      code: ActionErrorCode
-      message: string
-      fieldErrors?: Record<string, string>
-      values?: Record<string, string>
-    }
-
-/** Postgres codes the admin actually has to tell apart. */
-const UNIQUE_VIOLATION = '23505'
-const FK_VIOLATION = '23503'
-const CHECK_VIOLATION = '23514'
-const RAISE_EXCEPTION = 'P0001'
-const RLS_DENIED = '42501'
-
-/**
- * One sentence for every refusal, whether the caller is signed out, signed in as a
- * buyer, or signed in as staff whose profile row has gone. A message that varied
- * would tell an outsider which accounts exist.
- */
-const DENIAL = 'You need a staff account to do that.'
+export type { ActionErrorCode, ActionResult } from '@/lib/admin/action-result'
 
 /** Also deliberately uniform: it must not reveal whether the email is registered. */
 const SIGNIN_FAILED = 'That email and password did not match an account.'
-
-function denied<T>(): ActionResult<T> {
-  return { ok: false, code: 'forbidden', message: DENIAL }
-}
-
-/**
- * Turns a zod failure into the shape the forms render: one line under each field, plus
- * a banner for anything that belongs to the form as a whole (a cross-field rule).
- */
-function invalid<T>(error: z.ZodError, values?: Record<string, string>): ActionResult<T> {
-  const fieldErrors: Record<string, string> = {}
-  for (const issue of error.issues) {
-    const field = issue.path[0]
-    if (typeof field !== 'string' || field in fieldErrors) continue
-    fieldErrors[field] = issue.message
-  }
-
-  const formLevel = error.issues.find((issue) => issue.path.length === 0)?.message
-
-  return {
-    ok: false,
-    code: 'validation',
-    message: formLevel ?? 'Some of the details need fixing.',
-    fieldErrors,
-    values,
-  }
-}
-
-/**
- * The posted strings, ready to be echoed back to a form that has to be redrawn.
- * Anything that is not a string — an absent field, an unticked checkbox, a file — is
- * dropped rather than turned into "null", so the form falls back to its own default
- * for those instead of showing a word the clerk never typed.
- */
-function submittedValues(raw: Record<string, unknown>): Record<string, string> {
-  const values: Record<string, string> = {}
-  for (const [field, value] of Object.entries(raw)) {
-    if (typeof value === 'string') values[field] = value
-  }
-  return values
-}
-
-const blankToNull = (value: unknown) =>
-  typeof value === 'string' && value.trim() === '' ? null : value
-
-const blankToUndefined = (value: unknown) =>
-  value === null || (typeof value === 'string' && value.trim() === '') ? undefined : value
 
 /**
  * The fields the listing form owns. Nothing here can set `status`, `published_at`,

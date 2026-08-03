@@ -23,6 +23,10 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             <Link href="/admin">Listings</Link>
             <Link href="/admin/listings/new">New listing</Link>
             <Link href="/admin/requests">Requests</Link>
+            {/* The lookup lists — property types, towns, features. Unconditional, like
+                Listings and Requests: these are the words the office uses for its own
+                properties, not an access decision. */}
+            <Link href="/admin/settings">Settings</Link>
             {/* Shown to the owner tier only. This is signposting, not a control: the
                 page itself calls requireSuperAdmin() and both RPCs behind it refuse a
                 staff caller at the database. Hiding the link only saves a staff admin

@@ -190,7 +190,7 @@ export async function getListings(filters: ListingFilters): Promise<{ listings: 
     .from('listings')
     .select(
       filters.feat
-        ? `${CARD_COLUMNS}, matched:listing_features!inner ( features!inner ( name ) )`
+        ? `${CARD_COLUMNS}, matched:listing_features!inner ( features!inner ( slug ) )`
         : CARD_COLUMNS,
       { count: 'exact' }
     )
@@ -201,7 +201,15 @@ export async function getListings(filters: ListingFilters): Promise<{ listings: 
 
   if (filters.trending) query = query.eq('is_trending', true)
 
-  if (filters.feat) query = query.eq('matched.features.name', filters.feat)
+  /**
+   * MATCHED BY SLUG, NOT BY NAME. `?feat=` used to carry the feature's display name and
+   * this filter used to compare against `features.name`, which worked only because nothing
+   * in the product could rename a feature. The settings screen can, as of listing encoding
+   * v2 piece 2 — so a rename would have silently broken every saved link, every bookmark
+   * and every search result pointing at the old name. The slug is the key that does not
+   * move; it is set once at creation and the edit form has no field for it.
+   */
+  if (filters.feat) query = query.eq('matched.features.slug', filters.feat)
 
 
   if (filters.loc) {
@@ -321,30 +329,41 @@ export async function getTowns(): Promise<TownRow[]> {
   }))
 }
 
+export type PopularFeature = { name: string; slug: string }
+
 /**
  * The feature chips in the drawer — only features live listings actually carry, most
  * common first, so tapping one never lands on an empty result.
+ *
+ * BOTH HALVES ARE RETURNED because they do different jobs: the name is what a person
+ * reads, the slug is what the link carries. They used to be the same string, which is why
+ * a feature could not be renamed without breaking every chip link — see the `?feat=`
+ * filter above.
  */
-export async function getPopularFeatures(limit = 11): Promise<string[]> {
+export async function getPopularFeatures(limit = 11): Promise<PopularFeature[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('listing_features')
-    .select('features!inner ( name ), listings!inner ( status )')
+    .select('features!inner ( name, slug ), listings!inner ( status )')
     .eq('listings.status', 'live')
 
   if (error) throw error
 
-  const counts = new Map<string, number>()
-  for (const row of (data ?? []) as unknown as { features: { name: string } | null }[]) {
-    const name = row.features?.name
-    if (!name) continue
-    counts.set(name, (counts.get(name) ?? 0) + 1)
+  // Tallied by slug, not by name: the slug is the identity of a feature, and two rows
+  // that momentarily share a name during a rename must not merge into one chip.
+  const counts = new Map<string, { feature: PopularFeature; count: number }>()
+  for (const row of (data ?? []) as unknown as { features: PopularFeature | null }[]) {
+    const feature = row.features
+    if (!feature?.slug || !feature.name) continue
+    const seen = counts.get(feature.slug)
+    if (seen) seen.count += 1
+    else counts.set(feature.slug, { feature, count: 1 })
   }
 
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count || a.feature.name.localeCompare(b.feature.name))
     .slice(0, limit)
-    .map(([name]) => name)
+    .map((entry) => entry.feature)
 }
 
 /**

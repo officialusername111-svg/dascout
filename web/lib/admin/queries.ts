@@ -8,6 +8,7 @@ import {
   type CandidateState,
 } from '@/lib/admin/invites'
 import { bucketForStatus, displayUrls, type PhotoBucket } from '@/lib/admin/photos'
+import { navGroupLabel } from '@/lib/admin/settings'
 import { labelFromDb, type DbCategory } from '@/lib/categories'
 import { describeBudget } from '@/lib/budget'
 import { peso } from '@/lib/format'
@@ -673,6 +674,150 @@ export async function getFeatureOptions(): Promise<FeatureOption[]> {
 
   if (error) throw error
   return data ?? []
+}
+
+// ---------------------------------------------------------------------------
+// Settings — the three lookup lists
+// ---------------------------------------------------------------------------
+
+export type SettingsPropertyTypeRow = {
+  id: string
+  name: string
+  pluralName: string
+  slug: string
+  icon: string
+  groupKey: string | null
+  groupLabel: string
+  sortOrder: number
+  isActive: boolean
+  /** Listings pointing at this type, in EVERY status — the FK counts drafts too. */
+  listingCount: number
+  /**
+   * One of the five seeded types, identified by its `legacy_category`. Such a row is the
+   * bridge between the old enum and the new table and must not be deleted — see
+   * BUILT_IN_TYPE_BLOCKED in `lib/admin/settings.ts`.
+   */
+  isBuiltIn: boolean
+}
+
+export type SettingsTownRow = {
+  id: string
+  name: string
+  province: string
+  slug: string
+  isActive: boolean
+  listingCount: number
+}
+
+export type SettingsFeatureRow = {
+  id: string
+  name: string
+  slug: string
+  sortOrder: number
+  isActive: boolean
+  listingCount: number
+}
+
+export type SettingsLists = {
+  propertyTypes: SettingsPropertyTypeRow[]
+  towns: SettingsTownRow[]
+  features: SettingsFeatureRow[]
+}
+
+/**
+ * Everything the settings screen shows, in one guarded read.
+ *
+ * THE COUNTS ARE THE REASON THIS IS NOT THREE PLAIN SELECTS. All three foreign keys are
+ * ON DELETE RESTRICT, so a delete of a row something still points at is refused by the
+ * database with a bare 23503. Catching that after the click is the backstop, not the
+ * design: the screen has to be able to say "4 listings still use this" and disable the
+ * button BEFORE anybody presses it, and that needs the count per row.
+ *
+ * They are tallied in memory from three narrow reads rather than asked for as embedded
+ * counts, the same trade `getAdminStatusCounts` records: PostgREST cannot express a plain
+ * count of an inbound FK without a view, and at this table's size one read of one uuid
+ * column is far cheaper than a view nobody maintains. The listings read serves BOTH the
+ * property-type and the town tallies, so it is one round trip and not two.
+ *
+ * Counts include listings in every status, deliberately. A draft holds the foreign key
+ * exactly as firmly as a live listing does, and a count that only saw published rows would
+ * disable nothing and then let the database refuse the delete anyway.
+ */
+export async function getSettingsLists(): Promise<SettingsLists> {
+  await requireStaff()
+  const supabase = await createClient()
+
+  const [types, towns, features, listings, links] = await Promise.all([
+    supabase
+      .from('property_types')
+      .select('id, slug, name, plural_name, icon, group_key, sort_order, is_active, legacy_category')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+    supabase
+      .from('towns')
+      .select('id, name, province, slug, is_active')
+      .order('name', { ascending: true })
+      .order('province', { ascending: true }),
+    supabase
+      .from('features')
+      .select('id, name, slug, sort_order, is_active')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+    supabase.from('listings').select('property_type_id, town_id'),
+    supabase.from('listing_features').select('feature_id'),
+  ])
+
+  if (types.error) throw types.error
+  if (towns.error) throw towns.error
+  if (features.error) throw features.error
+  if (listings.error) throw listings.error
+  if (links.error) throw links.error
+
+  const typeCounts = new Map<string, number>()
+  const townCounts = new Map<string, number>()
+  for (const row of listings.data ?? []) {
+    if (row.property_type_id) {
+      typeCounts.set(row.property_type_id, (typeCounts.get(row.property_type_id) ?? 0) + 1)
+    }
+    if (row.town_id) townCounts.set(row.town_id, (townCounts.get(row.town_id) ?? 0) + 1)
+  }
+
+  const featureCounts = new Map<string, number>()
+  for (const row of links.data ?? []) {
+    featureCounts.set(row.feature_id, (featureCounts.get(row.feature_id) ?? 0) + 1)
+  }
+
+  return {
+    propertyTypes: (types.data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      pluralName: row.plural_name,
+      slug: row.slug,
+      icon: row.icon,
+      groupKey: row.group_key,
+      groupLabel: navGroupLabel(row.group_key),
+      sortOrder: row.sort_order,
+      isActive: row.is_active,
+      listingCount: typeCounts.get(row.id) ?? 0,
+      isBuiltIn: row.legacy_category !== null,
+    })),
+    towns: (towns.data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      province: row.province,
+      slug: row.slug,
+      isActive: row.is_active,
+      listingCount: townCounts.get(row.id) ?? 0,
+    })),
+    features: (features.data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      sortOrder: row.sort_order,
+      isActive: row.is_active,
+      listingCount: featureCounts.get(row.id) ?? 0,
+    })),
+  }
 }
 
 // ---------------------------------------------------------------------------

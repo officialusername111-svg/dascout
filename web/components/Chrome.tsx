@@ -80,7 +80,13 @@ export function Header({ current }: { current?: 'home' }) {
   )
 }
 
-export function Sidebar({ features }: { features: string[] }) {
+/**
+ * `features` carries the name AND the key, because the chip shows one and links with the
+ * other. It was a plain `string[]` until the settings screen made a feature renameable —
+ * a link built from the display name breaks the moment somebody corrects a spelling, and
+ * every saved `?feat=` URL breaks with it.
+ */
+export function Sidebar({ features }: { features: { name: string; slug: string }[] }) {
   const { sidebarOpen, closeSidebar, accountUserId } = useUI()
 
   return (
@@ -132,11 +138,11 @@ export function Sidebar({ features }: { features: string[] }) {
             <div className="sb-feat">
               {features.map((feature) => (
                 <Link
-                  key={feature}
-                  href={`/?feat=${encodeURIComponent(feature)}#listings`}
+                  key={feature.slug}
+                  href={`/?feat=${encodeURIComponent(feature.slug)}#listings`}
                   onClick={closeSidebar}
                 >
-                  {feature}
+                  {feature.name}
                 </Link>
               ))}
             </div>

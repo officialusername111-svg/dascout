@@ -613,6 +613,43 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 .ablockers a{margin-left:auto;font-weight:700;text-decoration:underline;font-size:12.5px;
   min-height:40px;display:inline-flex;align-items:center;white-space:nowrap}
 
+/* ==========================================================================
+   ADMIN SETTINGS — the three lookup lists (listing encoding v2, piece 2)
+   Four primitives the existing admin did not have: the icon swatch on a
+   property-type row, the tabular sort-order number, the inline add/edit form
+   under a list, and the one-line blocked-delete banner. Every colour, radius
+   and duration below is an existing token; nothing new is introduced.
+   ========================================================================== */
+.aswatch{width:38px;height:38px;border-radius:10px;background:var(--bg-2);display:grid;place-items:center;
+  color:var(--ink-2);flex-shrink:0}
+.aswatch .icon{width:18px;height:18px}
+.alist .arow .anum{font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:700;color:var(--ink-3);
+  min-width:34px;text-align:right}
+/* Two buttons inside one row cell; the delete form must not become a block. */
+.adel{display:inline-flex;gap:6px}
+/* A blocked delete has to LOOK blocked. The sample's rule is that a feature in use shows a
+   disabled Delete rather than erroring on click, and a disabled button drawn identically to
+   an enabled one only teaches people that the screen is broken. Scoped to this screen's own
+   rows and forms — `.btn` has no global disabled state and giving it one would restyle the
+   pending state of every button in the product. */
+.alist .arow .btn:disabled,.addform .btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* The inline form. It sits INSIDE a panel, so it is bordered rather than raised —
+   a second card inside a card reads as a separate screen. */
+.addform{border:1px solid var(--line);border-radius:var(--r-s);padding:16px 18px;margin-top:12px;
+  background:var(--bg-2)}
+.addform h3{font-family:var(--font-head),system-ui,sans-serif;font-size:15px;font-weight:800;
+  color:var(--ink-900);margin-bottom:12px}
+.addform .field input,.addform .field select{background:#fff}
+.addform .amuted{margin-top:10px}
+/* An edit form replaces its row inside `.alist`, which is a grid — without this it
+   would inherit the row gap and sit flush against the next row. */
+.alist > .addform{margin-top:0}
+
+.warnrow{display:flex;align-items:center;gap:10px;background:var(--warn-bg);border:1px solid var(--warn-line);
+  border-radius:var(--r-s);padding:11px 15px;margin-top:14px;font-size:13.5px;color:var(--warn);flex-wrap:wrap}
+.warnrow b{color:var(--warn-ink)}
+
 @media (max-width:900px){
   .atablehead{display:none}
   .atable .arow{grid-template-columns:minmax(0,1fr);gap:6px}

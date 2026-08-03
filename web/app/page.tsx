@@ -48,14 +48,21 @@ function withParams(filters: Search, changes: Record<string, string | undefined>
 }
 
 /** "12 properties · Residential Lot · in "Tupi"" — what the search actually did. */
-function describeFilters(filters: ListingFilters, total: number, labels: { size?: string }) {
+function describeFilters(
+  filters: ListingFilters,
+  total: number,
+  labels: { size?: string; feat?: string }
+) {
   const bits: string[] = []
   if (filters.cat) {
     const label = describeCategory(filters.cat)
     if (label) bits.push(label)
   }
   if (filters.loc) bits.push(`in "${filters.loc}"`)
-  if (filters.feat) bits.push(filters.feat.toLowerCase())
+  // The feature's NAME, resolved from the key the URL carries. `?feat=` holds the slug
+  // since listing encoding v2 piece 2 — printing it raw would put
+  // "all-documents-verified" in a sentence a person is meant to read.
+  if (filters.feat) bits.push((labels.feat ?? filters.feat.replace(/-/g, ' ')).toLowerCase())
   if (labels.size) bits.push(labels.size)
   if (!bits.length) return null
   return `${total} propert${total === 1 ? 'y' : 'ies'} · ${bits.join(' · ')}`
@@ -93,6 +100,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const pages = Math.ceil(results.total / PAGE_SIZE)
   const status = describeFilters(filters, results.total, {
     size: SIZE_BANDS.find((band) => band.value === filters.size)?.label,
+    feat: features.find((feature) => feature.slug === filters.feat)?.name,
   })
 
   return (
