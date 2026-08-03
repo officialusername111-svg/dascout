@@ -85,7 +85,7 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
         slug: zzSlug(`apply1-${suffix}`),
         price_php: 100000,
         town_id: townId,
-        status: 'draft',
+        status: 'list',
         created_by: staffId,
         ...fields,
       } as ListingInsert)
@@ -255,9 +255,10 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
 
   it('refuses to publish a listing that has no category', async () => {
     // The listing above cannot reach a public status. Two independent things enforce that —
-    // guard_listing_publish and the listings_category_required_when_public CHECK — and the
-    // test asserts the outcome rather than which one fired, because either is correct and
-    // apply 2 redesigns the first of them.
+    // guard_listing_publish (which since apply 2 refuses `list -> live` outright, as it is
+    // not an edge in the lifecycle graph) and the listings_category_required_when_public
+    // CHECK — and the test asserts the outcome rather than which one fired, because either
+    // is correct.
     const { data: listing } = await staff
       .from('listings')
       .select('id')
@@ -275,7 +276,7 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
       .select('status')
       .eq('id', listing!.id)
       .single()
-    expect(after!.status).toBe('draft')
+    expect(after!.status).toBe('list')
   })
 
   // -- 4. the feature foreign key -------------------------------------------

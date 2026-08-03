@@ -21,7 +21,7 @@ import { staffClient, buyerClient, staffUserId, anonClient, zzTitle, zzSlug } fr
  * The listing needs `status in ('live','sold')` to accept an INSERT into `listing_views`
  * at all (`listing_views_insert_visible`), so this fixture goes live for the few seconds
  * the suite needs and is withdrawn again in `afterAll` — same pattern as
- * `reorder-photos-rpc.integration.test.ts` and `verification-events.integration.test.ts`.
+ * `reorder-photos-rpc.integration.test.ts`.
  */
 describe('listing_views RLS + clear_my_listing_views RPC (D.17/D.18/D.19)', () => {
   let staff: SupabaseClient<Database>
@@ -49,7 +49,7 @@ describe('listing_views RLS + clear_my_listing_views RPC (D.17/D.18/D.19)', () =
         category: 'residential_lot',
         price_php: 100000,
         town_id: town.id,
-        status: 'draft',
+        status: 'list',
         created_by: staffId,
       })
       .select('id')
@@ -57,21 +57,13 @@ describe('listing_views RLS + clear_my_listing_views RPC (D.17/D.18/D.19)', () =
     if (error) throw error
     listingId = listing.id
 
-    // The guard trigger only gates transitions *to* live/sold — both fieldwork events
-    // are required first (same mechanism as publish-guard-trigger.integration.test.ts).
-    const { error: eventError } = await staff.from('verification_events').insert([
-      { listing_id: listingId, kind: 'title_check', performed_by: staffId, notes: 'BT history-RLS fixture.' },
-      {
-        listing_id: listingId,
-        kind: 'ground_validation',
-        performed_by: staffId,
-        notes: 'BT history-RLS fixture, ten+ chars.',
-      },
-    ])
-    if (eventError) throw eventError
-
-    const { error: liveError } = await staff.from('listings').update({ status: 'live' }).eq('id', listingId)
-    if (liveError) throw liveError
+    // The guard trigger enforces the lifecycle graph, so `live` is reached the way the
+    // admin reaches it — through For Approval. There is no longer any evidence to attach
+    // first; approval IS the path (same mechanism as publish-guard-trigger.integration.test.ts).
+    for (const status of ['for_approval', 'live'] as const) {
+      const { error: hopError } = await staff.from('listings').update({ status }).eq('id', listingId)
+      if (hopError) throw hopError
+    }
 
     const { data: buyerRow, error: buyerInsertError } = await buyer
       .from('listing_views')
@@ -99,15 +91,21 @@ describe('listing_views RLS + clear_my_listing_views RPC (D.17/D.18/D.19)', () =
   })
 
   afterAll(async () => {
-    // `verification_events` FK is ON DELETE RESTRICT, so this fixture is permanently
-    // undeletable once it has events — withdraw it so nothing this run created is public
-    // for longer than the assertions need, and report the residual for orchestrator sweep.
+    // Withdraw FIRST so the fixture stops being public the moment the assertions are done,
+    // and only then delete — if the delete fails for any reason, what is left behind is at
+    // least invisible. The delete now actually succeeds: dropping `verification_events`
+    // (listing encoding v2 apply 2) removed the last ON DELETE RESTRICT foreign key into
+    // `listings`, which is what used to make a fixture like this a permanent residual.
     const { error: withdrawError } = await staff
       .from('listings')
       .update({ status: 'withdrawn' })
       .eq('id', listingId)
     if (withdrawError) console.warn(`[cleanup] could not withdraw listing-views-rls fixture: ${withdrawError.message}`)
-    console.log(`[residual-listing] listing-views-rls fixture ${listingId} ends withdrawn; has events, undeletable (RESTRICT).`)
+
+    const { error: deleteError } = await staff.from('listings').delete().eq('id', listingId)
+    if (deleteError) {
+      console.warn(`[residual-listing] listing-views-rls fixture ${listingId}: ${deleteError.message}`)
+    }
   })
 
   it("D.17: buyer reads own listing_views row, not the other person's", async () => {

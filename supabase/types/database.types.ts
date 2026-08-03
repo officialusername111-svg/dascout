@@ -678,48 +678,6 @@ export type Database = {
         }
         Relationships: []
       }
-      verification_events: {
-        Row: {
-          id: string
-          kind: Database["public"]["Enums"]["verification_kind"]
-          listing_id: string
-          notes: string | null
-          occurred_at: string
-          performed_by: string | null
-        }
-        Insert: {
-          id?: string
-          kind: Database["public"]["Enums"]["verification_kind"]
-          listing_id: string
-          notes?: string | null
-          occurred_at?: string
-          performed_by?: string | null
-        }
-        Update: {
-          id?: string
-          kind?: Database["public"]["Enums"]["verification_kind"]
-          listing_id?: string
-          notes?: string | null
-          occurred_at?: string
-          performed_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "verification_events_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "verification_events_performed_by_fkey"
-            columns: ["performed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -782,9 +740,8 @@ export type Database = {
         | "commercial_lot"
         | "residential_building"
         | "commercial_building"
-      listing_status: "draft" | "verifying" | "live" | "sold" | "withdrawn"
+      listing_status: "list" | "for_approval" | "live" | "sold" | "withdrawn"
       user_role: "buyer" | "broker" | "staff" | "admin"
-      verification_kind: "title_check" | "ground_validation" | "published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -919,9 +876,8 @@ export const Constants = {
         "residential_building",
         "commercial_building",
       ],
-      listing_status: ["draft", "verifying", "live", "sold", "withdrawn"],
+      listing_status: ["list", "for_approval", "live", "sold", "withdrawn"],
       user_role: ["buyer", "broker", "staff", "admin"],
-      verification_kind: ["title_check", "ground_validation", "published"],
     },
   },
 } as const

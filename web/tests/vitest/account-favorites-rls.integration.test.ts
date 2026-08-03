@@ -39,7 +39,7 @@ describe('favorites RLS: own-row write, cross-row read denial, anon opacity (C.9
         category: 'residential_lot',
         price_php: 100000,
         town_id: townId,
-        status: 'draft',
+        status: 'list',
         created_by: staffId,
       })
       .select('id')

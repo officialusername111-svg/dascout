@@ -52,7 +52,7 @@ test.describe('Admin listings redesign', () => {
 
   test('a listing that cannot go live says so on the row, not in grey meta text', async ({ page }) => {
     await signInAsStaff(page)
-    await page.goto('/admin?status=draft')
+    await page.goto('/admin?status=list')
 
     const rows = page.locator('.atable .arow')
     if (!(await rows.count())) test.skip(true, 'No draft listings to inspect.')
@@ -66,7 +66,7 @@ test.describe('Admin listings redesign', () => {
     // which is AC-30 and is asserted in anon-rls-reads. So the listing is found by driving
     // the real screen rather than by fetching an id first.
     await signInAsStaff(page)
-    await page.goto('/admin?status=draft')
+    await page.goto('/admin?status=list')
 
     const first = page.locator('.atable .arow a', { hasText: 'Open' }).first()
     if (!(await first.count())) test.skip(true, 'No draft listings to open.')
@@ -87,7 +87,7 @@ test.describe('Admin listings redesign', () => {
 
   test('opening a listing and coming back keeps the filter, search and sort', async ({ page }) => {
     await signInAsStaff(page)
-    await page.goto('/admin?status=draft&sort=title')
+    await page.goto('/admin?status=list&sort=title')
 
     const first = page.locator('.atable .arow a', { hasText: 'Open' }).first()
     if (!(await first.count())) test.skip(true, 'No draft listings to open.')
@@ -107,7 +107,7 @@ test.describe('Admin listings redesign', () => {
 
     const url = new URL(page.url())
     expect(url.pathname).toBe('/admin')
-    expect(url.searchParams.get('status')).toBe('draft')
+    expect(url.searchParams.get('status')).toBe('list')
     expect(url.searchParams.get('sort')).toBe('title')
   })
 })

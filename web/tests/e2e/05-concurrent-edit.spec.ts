@@ -26,7 +26,7 @@ test.describe('Concurrent edit: last-write-wins on price (AC-34)', () => {
         category: 'residential_lot',
         price_php: 1000000,
         town_id: town!.id,
-        status: 'draft',
+        status: 'list',
       })
       .select('id')
       .single()
@@ -68,7 +68,7 @@ test.describe('Concurrent edit: last-write-wins on price (AC-34)', () => {
     } finally {
       await context1.close()
       await context2.close()
-      // Plain draft, no events -> deletable cleanup.
+      // Never left `list`; nothing holds a RESTRICT reference -> deletable cleanup.
       const { error: delError } = await staff.from('listings').delete().eq('id', listingId)
       if (delError) console.warn(`[cleanup] concurrent-edit fixture ${listingId}: ${delError.message}`)
     }

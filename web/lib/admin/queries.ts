@@ -31,7 +31,6 @@ import type { Database } from '@/lib/database.types'
  */
 
 type ListingStatus = Database['public']['Enums']['listing_status']
-type VerificationKind = Database['public']['Enums']['verification_kind']
 
 export const ADMIN_PAGE_SIZE = 25
 
@@ -41,20 +40,14 @@ const RANGE_NOT_SATISFIABLE = 'PGRST103'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const STATUS_LABELS: Record<ListingStatus, string> = {
-  draft: 'Draft',
-  verifying: 'Verifying',
+  list: 'List',
+  for_approval: 'For Approval',
   live: 'Live',
   sold: 'Sold',
   withdrawn: 'Withdrawn',
 }
 
-export const STATUS_ORDER: ListingStatus[] = ['draft', 'verifying', 'live', 'sold', 'withdrawn']
-
-export const KIND_LABELS: Record<VerificationKind, string> = {
-  title_check: 'Title check',
-  ground_validation: 'Ground validation',
-  published: 'Published',
-}
+export const STATUS_ORDER: ListingStatus[] = ['list', 'for_approval', 'live', 'sold', 'withdrawn']
 
 /**
  * The one clock the whole admin uses. Rows are stored in UTC and read back in the
@@ -77,19 +70,24 @@ export function stampLabel(value: string | null | undefined): string | null {
  * The lifecycle graph. `sold` is terminal on purpose: a closed sale is a statement
  * about the world, and un-selling a property is a correction someone has to make
  * deliberately in the database, not a button a tired clerk can reach at 5 PM.
+ *
+ * `guard_listing_publish` enforces this same graph inside the database as of
+ * 20260803110000_listing_encoding_v2_apply2.sql. The two must stay in step: a move
+ * added here and not there is refused at the last moment with a database message, and
+ * a move added there and not here is simply unreachable from the screen.
  */
 export const TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {
-  draft: ['verifying'],
-  verifying: ['draft', 'live'],
+  list: ['for_approval'],
+  for_approval: ['list', 'live'],
   live: ['sold', 'withdrawn'],
   sold: [],
   withdrawn: ['live'],
 }
 
 export function transitionLabel(from: ListingStatus, to: ListingStatus): string {
-  if (from === 'draft' && to === 'verifying') return 'Submit for verification'
-  if (from === 'verifying' && to === 'draft') return 'Send back to draft'
-  if (from === 'verifying' && to === 'live') return 'Publish'
+  if (from === 'list' && to === 'for_approval') return 'Submit for approval'
+  if (from === 'for_approval' && to === 'list') return 'Send back to the list'
+  if (from === 'for_approval' && to === 'live') return 'Publish'
   if (from === 'live' && to === 'sold') return 'Mark as sold'
   if (from === 'live' && to === 'withdrawn') return 'Withdraw from the site'
   if (from === 'withdrawn' && to === 'live') return 'Relist'
@@ -97,20 +95,18 @@ export function transitionLabel(from: ListingStatus, to: ListingStatus): string 
 }
 
 export function transitionHint(from: ListingStatus, to: ListingStatus): string {
-  if (from === 'draft' && to === 'verifying') return 'Hands it to whoever does the fieldwork.'
-  if (from === 'verifying' && to === 'draft') return 'Nothing is published; the listing goes back for edits.'
-  if (from === 'verifying' && to === 'live')
+  if (from === 'list' && to === 'for_approval') return 'Hands it to whoever signs listings off.'
+  if (from === 'for_approval' && to === 'list') return 'Nothing is published; the listing goes back for edits.'
+  if (from === 'for_approval' && to === 'live')
     return 'Moves the photos to the public bucket and puts the listing on the site.'
   if (from === 'live' && to === 'sold') return 'Final. The listing stops appearing as available.'
   if (from === 'live' && to === 'withdrawn')
     return 'Takes it off the site. Photos already published stay reachable by their direct link.'
-  if (from === 'withdrawn' && to === 'live') return 'Puts it back on the site using the existing verification record.'
+  if (from === 'withdrawn' && to === 'live') return 'Puts it back on the site.'
   return ''
 }
 
 export type PublishCheckInput = {
-  titleChecks: number
-  groundValidations: number
   photoCount: number
   primaryCount: number
 }
@@ -118,21 +114,20 @@ export type PublishCheckInput = {
 /**
  * Why a listing cannot go live yet, in words the person reading them can act on.
  *
- * Both fieldwork kinds are required independently — one visit does not stand in for
- * the other, and the database trigger enforces the same two so this list can never
- * be the only thing between an unverified property and the public site.
+ * Photos only, since apply 2 of listing encoding v2. The two fieldwork checks that used
+ * to head this list were counts of `verification_events` rows, and that table is gone —
+ * approval is now the act of moving the listing from For Approval to Live, and the
+ * database enforces that path in `guard_listing_publish` rather than counting evidence.
  */
 export function publishBlockersFor(input: PublishCheckInput): string[] {
   const blockers: string[] = []
-  if (input.titleChecks < 1) blockers.push('No title check has been recorded.')
-  if (input.groundValidations < 1) blockers.push('No ground validation has been recorded.')
   if (input.photoCount < 1) blockers.push('The listing has no photos.')
   else if (input.primaryCount !== 1) blockers.push('No cover photo has been chosen.')
   return blockers
 }
 
 /** Where a checklist item sends someone who wants to fix it. */
-export type CheckAnchor = 'details' | 'photos' | 'verification'
+export type CheckAnchor = 'details' | 'photos'
 
 export type PublishCheckItem = {
   id: string
@@ -166,22 +161,6 @@ export function publishChecklistFor(
   input: PublishCheckInput & { propertyNo: string | null }
 ): PublishCheckItem[] {
   return [
-    {
-      id: 'title-check',
-      label: 'Title check recorded',
-      chip: 'No title check',
-      done: input.titleChecks >= 1,
-      required: true,
-      anchor: 'verification',
-    },
-    {
-      id: 'ground-validation',
-      label: 'Ground validation recorded',
-      chip: 'No ground validation',
-      done: input.groundValidations >= 1,
-      required: true,
-      anchor: 'verification',
-    },
     {
       id: 'has-photo',
       label: 'At least one photo uploaded',
@@ -253,7 +232,7 @@ export type AdminListingFilters = {
   page?: number
   /**
    * Restrict to these ids. Used by the attention filter, which computes its set from the
-   * whole draft/verifying population rather than from one page. An EMPTY array means
+   * whole List/For Approval population rather than from one page. An EMPTY array means
    * "restrict to nothing" and correctly returns no rows; `undefined` means no restriction.
    */
   ids?: string[]
@@ -275,7 +254,7 @@ export type AdminListingRow = {
   updatedAtLabel: string | null
   /** Unfinished checklist items, in chip wording. Empty when the listing is complete. */
   blockers: string[]
-  /** True only where an unfinished checklist still means something — draft and verifying. */
+  /** True only where an unfinished checklist still means something — List and For Approval. */
   needsAttention: boolean
 }
 
@@ -301,7 +280,7 @@ export async function getAdminStatusCounts(): Promise<AdminStatusCounts> {
   const { data, error } = await supabase.from('listings').select('status')
   if (error) throw error
 
-  const counts = { all: 0, draft: 0, verifying: 0, live: 0, sold: 0, withdrawn: 0 }
+  const counts = { all: 0, list: 0, for_approval: 0, live: 0, sold: 0, withdrawn: 0 }
   for (const row of (data ?? []) as { status: ListingStatus }[]) {
     counts.all += 1
     counts[row.status] += 1
@@ -319,7 +298,7 @@ export type AdminAttention = {
 /**
  * The "N listings need attention" strip on the index.
  *
- * Restricted to draft and verifying — see ATTENTION_STATUSES. The ids come back so
+ * Restricted to List and For Approval — see ATTENTION_STATUSES. The ids come back so
  * "Show only these" can filter the real list rather than re-deriving the set from a page
  * that has already been paginated, which would have quietly reported only the gaps
  * visible on page one.
@@ -330,7 +309,7 @@ export async function getAdminAttention(): Promise<AdminAttention> {
 
   const { data, error } = await supabase
     .from('listings')
-    .select('id, property_no, listing_photos ( is_primary ), verification_events ( kind )')
+    .select('id, property_no, listing_photos ( is_primary )')
     .in('status', ATTENTION_STATUSES)
   if (error) throw error
 
@@ -341,7 +320,6 @@ export async function getAdminAttention(): Promise<AdminAttention> {
     id: string
     property_no: string | null
     listing_photos: { is_primary: boolean }[]
-    verification_events: { kind: VerificationKind }[]
   }[]) {
     const gaps = checklistChips(checklistForRow(row))
     if (!gaps.length) continue
@@ -358,15 +336,14 @@ export async function getAdminAttention(): Promise<AdminAttention> {
 }
 
 /**
- * `verification_events ( kind )` is embedded so an index row can show the SAME publish
- * checklist the detail screen shows. Without it the index could only ever report the photo
- * half of the story, which is how "no cover chosen" ended up as the one gap staff saw.
+ * `listing_photos ( id, is_primary )` is embedded so an index row can show the SAME
+ * publish checklist the detail screen shows, rather than a different one derived from
+ * whatever the list query happened to select.
  */
 const INDEX_COLUMNS = `
   id, slug, property_no, title, status, category, price_php, updated_at,
   towns ( name, province ),
-  listing_photos ( id, is_primary ),
-  verification_events ( kind )
+  listing_photos ( id, is_primary )
 `
 
 type RawIndexRow = {
@@ -380,18 +357,14 @@ type RawIndexRow = {
   updated_at: string
   towns: { name: string; province: string } | null
   listing_photos: { id: string; is_primary: boolean }[]
-  verification_events: { kind: VerificationKind }[]
 }
 
 /** The checklist for one raw index row — the same function the detail screen calls. */
 function checklistForRow(row: {
   property_no: string | null
   listing_photos: { is_primary: boolean }[]
-  verification_events: { kind: VerificationKind }[]
 }): PublishCheckItem[] {
   return publishChecklistFor({
-    titleChecks: row.verification_events.filter((e) => e.kind === 'title_check').length,
-    groundValidations: row.verification_events.filter((e) => e.kind === 'ground_validation').length,
     photoCount: row.listing_photos.length,
     primaryCount: row.listing_photos.filter((p) => p.is_primary).length,
     propertyNo: row.property_no,
@@ -403,11 +376,12 @@ function checklistForRow(row: {
  * already published, so reporting "no cover photo" against it is noise, not attention —
  * and scoping the attention sweep this way keeps it to the small end of the table.
  */
-const ATTENTION_STATUSES: ListingStatus[] = ['draft', 'verifying']
+const ATTENTION_STATUSES: ListingStatus[] = ['list', 'for_approval']
 
 /**
- * The listing index, every status included — this is the only screen in the product
- * that can see a draft, so it is also the screen that has to be sure who is asking.
+ * The listing index, every status included — this is the only screen in the product that
+ * can see an unpublished listing, so it is also the screen that has to be sure who is
+ * asking.
  */
 export async function getAdminListings(filters: AdminListingFilters): Promise<AdminListingsPage> {
   await requireStaff()
@@ -488,16 +462,6 @@ export type AdminPhoto = {
   url: string | null
 }
 
-export type AdminEvent = {
-  id: string
-  kind: VerificationKind
-  kindLabel: string
-  notes: string | null
-  occurredAtLabel: string | null
-  /** The name recorded against the event, or a plain marker when the actor row is gone. */
-  actorName: string
-}
-
 export type AdminTransition = {
   to: ListingStatus
   label: string
@@ -532,7 +496,6 @@ export type AdminListingDetail = {
   soldAtLabel: string | null
   featureIds: string[]
   photos: AdminPhoto[]
-  events: AdminEvent[]
   /** Where new uploads for this listing must go, derived from status. */
   uploadBucket: PhotoBucket
   slugEditable: boolean
@@ -583,15 +546,6 @@ type RawDetailRow = {
   }[]
 }
 
-type RawEventRow = {
-  id: string
-  kind: VerificationKind
-  notes: string | null
-  occurred_at: string
-  performed_by: string | null
-  profiles: { id: string; full_name: string | null } | null
-}
-
 /**
  * One listing with everything its edit page needs, plus the four things the page must
  * not work out for itself: which bucket uploads belong in, whether the slug may still
@@ -608,18 +562,14 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
 
   const supabase = await createClient()
 
-  const [listingResult, eventsResult] = await Promise.all([
-    supabase.from('listings').select(DETAIL_COLUMNS).eq('id', id).maybeSingle(),
-    supabase
-      .from('verification_events')
-      .select('id, kind, notes, occurred_at, performed_by, profiles ( id, full_name )')
-      .eq('listing_id', id)
-      .order('occurred_at', { ascending: false }),
-  ])
+  const listingResult = await supabase
+    .from('listings')
+    .select(DETAIL_COLUMNS)
+    .eq('id', id)
+    .maybeSingle()
 
   if (listingResult.error) throw listingResult.error
   if (!listingResult.data) return null
-  if (eventsResult.error) throw eventsResult.error
 
   const row = listingResult.data as unknown as RawDetailRow
   const uploadBucket = bucketForStatus(row.status)
@@ -642,19 +592,7 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     url: urls[photo.storage_path] ?? null,
   }))
 
-  const rawEvents = (eventsResult.data ?? []) as unknown as RawEventRow[]
-  const events: AdminEvent[] = rawEvents.map((event) => ({
-    id: event.id,
-    kind: event.kind,
-    kindLabel: KIND_LABELS[event.kind],
-    notes: event.notes,
-    occurredAtLabel: stampLabel(event.occurred_at),
-    actorName: event.profiles?.full_name ?? (event.performed_by ? 'Staff account' : 'Not recorded'),
-  }))
-
   const checkInput = {
-    titleChecks: rawEvents.filter((event) => event.kind === 'title_check').length,
-    groundValidations: rawEvents.filter((event) => event.kind === 'ground_validation').length,
     photoCount: photos.length,
     primaryCount: photos.filter((photo) => photo.isPrimary).length,
   }
@@ -698,11 +636,10 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     soldAtLabel: stampLabel(row.sold_at),
     featureIds: row.listing_features.map((link) => link.feature_id),
     photos,
-    events,
     uploadBucket,
     // Once a listing has been public, its address is in search results and other
     // people's messages. Renaming it then would break every link that points at it.
-    slugEditable: row.status === 'draft' || row.status === 'verifying',
+    slugEditable: row.status === 'list' || row.status === 'for_approval',
     allowedTransitions,
     publishBlockers,
     publishChecklist,

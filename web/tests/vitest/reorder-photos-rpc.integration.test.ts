@@ -42,7 +42,7 @@ describe('reorder_listing_photos RPC guards', () => {
         category: 'residential_lot',
         price_php: 100000,
         town_id: townId,
-        status: 'draft',
+        status: 'list',
         created_by: staffId,
       })
       .select('id')
@@ -65,7 +65,7 @@ describe('reorder_listing_photos RPC guards', () => {
     expect(rpcError).toBeNull()
     expect(written).toBe(-1)
 
-    // No events were ever recorded — plain deletable draft cleanup.
+    // Never left `list`, and nothing holds a RESTRICT reference to it — plain cleanup.
     const { error: delError } = await staff.from('listings').delete().eq('id', listingId)
     if (delError) console.warn(`[residual-listing] rpc-mismatch fixture ${listingId}: ${delError.message}`)
   })
@@ -81,26 +81,13 @@ describe('reorder_listing_photos RPC guards', () => {
         category: 'residential_lot',
         price_php: 100000,
         town_id: townId,
-        status: 'draft',
+        status: 'list',
         created_by: staffId,
       })
       .select('id')
       .single()
     if (error) throw error
     const listingId = listing.id
-
-    // The trigger requires both fieldwork events before a direct flip to `live` is
-    // even possible — same mechanism proven in publish-guard-trigger.integration.test.ts.
-    const { error: eventError } = await staff.from('verification_events').insert([
-      { listing_id: listingId, kind: 'title_check', performed_by: staffId, notes: 'RPC guard fixture.' },
-      {
-        listing_id: listingId,
-        kind: 'ground_validation',
-        performed_by: staffId,
-        notes: 'RPC guard fixture, ten+ chars.',
-      },
-    ])
-    if (eventError) throw eventError
 
     const { data: photo, error: photoError } = await staff
       .from('listing_photos')
@@ -117,8 +104,12 @@ describe('reorder_listing_photos RPC guards', () => {
     try {
       // Live only for the few hundred ms this assertion needs, per the
       // production-visibility protocol — withdrawn again in the finally block below.
-      const { error: liveError } = await staff.from('listings').update({ status: 'live' }).eq('id', listingId)
-      if (liveError) throw liveError
+      // `guard_listing_publish` enforces the lifecycle graph since listing encoding v2
+      // apply 2, so `live` is reached through For Approval rather than in one hop.
+      for (const status of ['for_approval', 'live'] as const) {
+        const { error: hopError } = await staff.from('listings').update({ status }).eq('id', listingId)
+        if (hopError) throw hopError
+      }
 
       const { data: written, error: rpcError } = await (buyer as unknown as ReorderRpcClient).rpc(
         'reorder_listing_photos',
@@ -136,12 +127,17 @@ describe('reorder_listing_photos RPC guards', () => {
       expect(unchanged?.is_primary).toBe(true)
       expect(unchanged?.sort_order).toBe(0)
     } finally {
+      // Withdraw first so it stops being public immediately, then delete. The delete now
+      // succeeds: dropping `verification_events` removed the last ON DELETE RESTRICT
+      // foreign key into `listings`, so this fixture is no longer a permanent residual.
       const { error: withdrawError } = await staff
         .from('listings')
         .update({ status: 'withdrawn' })
         .eq('id', listingId)
       if (withdrawError) console.warn(`[cleanup] could not withdraw rpc-buyer-denied fixture: ${withdrawError.message}`)
-      console.log(`[residual-listing] rpc-buyer-denied fixture ${listingId} ends withdrawn; has events, undeletable (RESTRICT).`)
+
+      const { error: delError } = await staff.from('listings').delete().eq('id', listingId)
+      if (delError) console.warn(`[residual-listing] rpc-buyer-denied fixture ${listingId}: ${delError.message}`)
     }
   })
 })

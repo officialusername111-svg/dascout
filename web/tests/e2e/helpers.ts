@@ -130,10 +130,13 @@ export function zzSlug(suffix: string): string {
 /**
  * A minimal LIVE listing, built directly through a staff supabase-js session rather than
  * the admin UI — the account suite needs a resolvable, publicly-readable listing as a
- * fixture, not a proof of the publish workflow (that is 03-listing-journey's job). Same
- * shortcut `publish-guard-trigger`/`reorder-photos-rpc` use in the Vitest suite: both
- * fieldwork events, then a direct UPDATE to `live` (the guard trigger only gates
- * transitions *to* live/sold, so nothing about this path is a real bypass).
+ * fixture, not a proof of the publish workflow (that is 03-listing-journey's job).
+ *
+ * It still walks the real lifecycle graph, because since
+ * 20260803110000_listing_encoding_v2_apply2.sql `guard_listing_publish` enforces that
+ * graph in the database: `list -> live` in one hop is refused for a direct session
+ * exactly as it is for the admin screen. The shortcut here is skipping the UI, not
+ * skipping approval.
  */
 export async function createLiveListing(
   staff: SupabaseClient<Database>,
@@ -152,7 +155,7 @@ export async function createLiveListing(
       category: 'residential_lot',
       price_php: 100000,
       town_id: town.id,
-      status: 'draft',
+      status: 'list',
       created_by: staffId,
     })
     .select('id')
@@ -160,22 +163,29 @@ export async function createLiveListing(
   if (error) throw error
   const id = listing.id as string
 
-  const { error: eventError } = await staff.from('verification_events').insert([
-    { listing_id: id, kind: 'title_check', performed_by: staffId, notes: `BT fixture (${suffix}).` },
-    { listing_id: id, kind: 'ground_validation', performed_by: staffId, notes: `BT fixture (${suffix}), ten+ chars.` },
-  ])
-  if (eventError) throw eventError
-
-  const { error: liveError } = await staff.from('listings').update({ status: 'live' }).eq('id', id)
-  if (liveError) throw liveError
+  for (const status of ['for_approval', 'live'] as const) {
+    const { error: hopError } = await staff.from('listings').update({ status }).eq('id', id)
+    if (hopError) throw hopError
+  }
 
   return { id, slug }
 }
 
-/** Withdraws a listing built by `createLiveListing` — it stays undeletable (RESTRICT). */
+/**
+ * Withdraws a listing built by `createLiveListing`, then deletes it.
+ *
+ * The delete used to be impossible: `verification_events.listing_id` was ON DELETE
+ * RESTRICT, so any fixture that had been through the publish path was a permanent
+ * residual. That table is gone as of listing encoding v2 apply 2, and every remaining
+ * foreign key into `listings` cascades — so cleanup can actually clean up. Withdraw
+ * first regardless, so a failed delete leaves something invisible rather than public.
+ */
 export async function withdrawListing(staff: SupabaseClient<Database>, id: string): Promise<void> {
   const { error } = await staff.from('listings').update({ status: 'withdrawn' }).eq('id', id)
   if (error) console.warn(`[cleanup] could not withdraw fixture listing ${id}: ${error.message}`)
+
+  const { error: deleteError } = await staff.from('listings').delete().eq('id', id)
+  if (deleteError) console.warn(`[residual-listing] fixture ${id}: ${deleteError.message}`)
 }
 
 /**

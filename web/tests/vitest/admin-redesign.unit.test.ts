@@ -12,8 +12,8 @@ import { displayTitle } from '@/lib/format'
 
 describe('backHrefFrom — "Back to listings" keeps the filter', () => {
   it('restores the filter, search, sort and page it was given', () => {
-    expect(backHrefFrom('status=draft&q=dacera&sort=title&page=3')).toBe(
-      '/admin?status=draft&q=dacera&sort=title&page=3'
+    expect(backHrefFrom('status=list&q=dacera&sort=title&page=3')).toBe(
+      '/admin?status=list&q=dacera&sort=title&page=3'
     )
   })
 
@@ -37,7 +37,7 @@ describe('backHrefFrom — "Back to listings" keeps the filter', () => {
     '//evil.example.com',
     'https://evil.example.com',
     '/../../etc/passwd',
-    'status=draft&next=https://evil.example.com',
+    'status=list&next=https://evil.example.com',
     'javascript:alert(1)',
   ])('never emits anything outside /admin for %s', (hostile) => {
     const href = backHrefFrom(hostile)
@@ -98,12 +98,12 @@ describe('pageWindow — pagination is truncated, not one link per page', () => 
 
 describe('filterQuery / withParams', () => {
   it('keeps the other filters when one of them changes', () => {
-    const current = { status: 'draft', q: 'lot', sort: 'title', page: '2' }
-    expect(withParams(current, { page: '3' })).toBe('/admin?status=draft&q=lot&sort=title&page=3')
+    const current = { status: 'list', q: 'lot', sort: 'title', page: '2' }
+    expect(withParams(current, { page: '3' })).toBe('/admin?status=list&q=lot&sort=title&page=3')
   })
 
   it('drops a filter asked to be dropped', () => {
-    expect(withParams({ status: 'draft', page: '2' }, { status: undefined })).toBe('/admin?page=2')
+    expect(withParams({ status: 'list', page: '2' }, { status: undefined })).toBe('/admin?page=2')
   })
 
   it('ignores blank and array-valued params rather than emitting empty keys', () => {
@@ -112,7 +112,7 @@ describe('filterQuery / withParams', () => {
 })
 
 describe('the publish checklist', () => {
-  const complete = { titleChecks: 1, groundValidations: 1, photoCount: 3, primaryCount: 1 }
+  const complete = { photoCount: 3, primaryCount: 1 }
 
   it('marks every hard item done on a complete listing', () => {
     const items = publishChecklistFor({ ...complete, propertyNo: 'DS-0142' })
@@ -162,8 +162,8 @@ describe('the publish checklist', () => {
    * checklist and the blockers are two functions on purpose so this cannot drift, and this
    * test is what catches it if someone later "tidies" them back together.
    *
-   * `guard_listing_publish` in the database enforces the same set a third time — see §2 of
-   * 20260802131500_property_number_and_role_audit.sql for why it was left out there too.
+   * `guard_listing_publish` in the database has never carried the property number — see §2
+   * of 20260802131500_property_number_and_role_audit.sql for why it was left out there too.
    */
   it('never lets a soft item become a publish blocker', () => {
     const noNumber = { ...complete, propertyNo: null }
@@ -181,13 +181,20 @@ describe('the publish checklist', () => {
     for (const item of soft) expect(blockers).not.toContain(item.label)
   })
 
-  it('still blocks on every hard item, so the redesign did not loosen the gate', () => {
-    expect(
-      publishBlockersFor({ titleChecks: 0, groundValidations: 0, photoCount: 0, primaryCount: 0 })
-    ).toEqual([
-      'No title check has been recorded.',
-      'No ground validation has been recorded.',
+  /**
+   * The two fieldwork blockers ("No title check has been recorded.", "No ground validation
+   * has been recorded.") were removed with `verification_events` in listing encoding v2
+   * apply 2. Approval is now the act of moving the listing from For Approval to Live, and
+   * `guard_listing_publish` enforces that path in the database — so the gate did not
+   * disappear, it moved. What must NOT happen is a listing going live with no usable
+   * photo, which is what is still asserted here.
+   */
+  it('still blocks on every remaining hard item, so the removal did not loosen the photo gate', () => {
+    expect(publishBlockersFor({ photoCount: 0, primaryCount: 0 })).toEqual([
       'The listing has no photos.',
+    ])
+    expect(publishBlockersFor({ photoCount: 3, primaryCount: 0 })).toEqual([
+      'No cover photo has been chosen.',
     ])
   })
 })

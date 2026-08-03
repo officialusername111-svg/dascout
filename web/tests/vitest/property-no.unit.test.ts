@@ -372,7 +372,7 @@ describe('createListing — the property number as it reaches the database', () 
 })
 
 describe('updateListing — the same two rules on the edit screen', () => {
-  const current = { data: { id: LISTING, slug: 'corner-lot-lagao', status: 'draft' }, error: null }
+  const current = { data: { id: LISTING, slug: 'corner-lot-lagao', status: 'list' }, error: null }
 
   it('clearing the number writes NULL, which releases the unique index', async () => {
     const stub = makeClient({ read: () => current, update: () => ({ data: null, error: null }) })

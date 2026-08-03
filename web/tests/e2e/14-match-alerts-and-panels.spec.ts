@@ -49,17 +49,12 @@ async function publishThroughAdminUi(page: Page, listingId: string) {
   await expect(page.locator('.aqueue > div', { hasText: 'bt-fixture.jpg' })).toHaveClass(/good/, { timeout: 15_000 })
   await page.reload()
 
-  await page.locator('#notes-title_check').fill('BT match-alerts fixture: title check recorded.')
-  await page.locator('form:has(#notes-title_check)').getByRole('button', { name: 'Record title check' }).click()
-  await expect(page.locator('form:has(#notes-title_check) .fmsg.ok')).toBeVisible()
+  // No fieldwork events to record any more — approval IS the move from For Approval to
+  // Live (listing encoding v2 apply 2). The cover photo above is the only precondition.
 
-  await page.locator('#notes-ground_validation').fill('BT match-alerts fixture: ground validation walked the boundary.')
-  await page.locator('form:has(#notes-ground_validation)').getByRole('button', { name: 'Record ground validation' }).click()
-  await expect(page.locator('form:has(#notes-ground_validation) .fmsg.ok')).toBeVisible()
-
-  await page.getByRole('button', { name: 'Submit for verification' }).click()
-  await page.getByRole('button', { name: /Yes — submit for verification/i }).click()
-  await expect(page.locator('.pill', { hasText: 'Verifying' })).toBeVisible()
+  await page.getByRole('button', { name: 'Submit for approval' }).click()
+  await page.getByRole('button', { name: /Yes — submit for approval/i }).click()
+  await expect(page.locator('.pill', { hasText: 'For Approval' })).toBeVisible()
 
   const publishBtn = page.getByRole('button', { name: 'Publish', exact: true })
   await expect(publishBtn).toBeEnabled()
@@ -176,14 +171,16 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
   test.afterAll(async () => {
     const staff = await staffDirectClient()
 
-    // Leave the listing withdrawn (BT finding: once a listing carries verification_events
-    // it cannot be DELETEd — the FK is RESTRICT and staff has no DELETE grant on that
-    // table either; see the BT report). Withdrawing it is what actually matters for
-    // residue: price_history is only anon-readable while the listing is live/sold, so a
-    // withdrawn listing's history rows are no longer public even though the rows persist.
+    // Withdraw first, then delete. Withdrawing is what matters for residue on its own —
+    // price_history is only anon-readable while the listing is live/sold — but the delete
+    // now succeeds as well: `verification_events` was the last ON DELETE RESTRICT foreign
+    // key into `listings` and it is gone as of listing encoding v2 apply 2.
     if (listingId) {
       const { error: withdrawErr } = await staff.from('listings').update({ status: 'withdrawn' }).eq('id', listingId)
       if (withdrawErr) console.warn('[BT cleanup] listing withdraw failed:', withdrawErr.message)
+
+      const { error: deleteErr } = await staff.from('listings').delete().eq('id', listingId)
+      if (deleteErr) console.warn('[BT cleanup] listing delete failed:', deleteErr.message)
     }
 
     const { error } = await staff

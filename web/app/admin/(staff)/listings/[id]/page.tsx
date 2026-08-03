@@ -6,7 +6,6 @@ import { LifecyclePanel } from '@/components/admin/LifecyclePanel'
 import { ListingActionBar } from '@/components/admin/ListingActionBar'
 import { ListingForm } from '@/components/admin/ListingForm'
 import { PhotoManager } from '@/components/admin/PhotoManager'
-import { VerificationPanel } from '@/components/admin/VerificationPanel'
 import { backHrefFrom, one } from '@/lib/admin/navigation'
 import { displayTitle } from '@/lib/format'
 import {
@@ -29,12 +28,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const ANCHOR_LABEL: Record<CheckAnchor, string> = {
   details: 'Go to Details',
   photos: 'Go to Photos',
-  verification: 'Go to Verification',
 }
 
 /**
- * The one screen where a listing is actually worked on: fields, features, photos, the
- * verification record and the lifecycle controls.
+ * The one screen where a listing is actually worked on: fields, features, photos and
+ * the lifecycle controls.
  *
  * The ARRANGEMENT changed in the v1 admin redesign, the work did not. What used to be five
  * equal panels stacked in a column — with the reasons a publish was unavailable computed on
@@ -65,7 +63,7 @@ export default async function EditListingPage({ params, searchParams }: Props) {
   // The move this listing is working towards, promoted into the sticky bar. Selling and
   // withdrawing are deliberately NOT here — see ListingActionBar.
   const primary =
-    listing.allowedTransitions.find((t) => t.to === 'verifying' || t.to === 'live') ?? null
+    listing.allowedTransitions.find((t) => t.to === 'for_approval' || t.to === 'live') ?? null
 
   const outstanding = listing.publishChecklist.filter((item) => !item.done)
   const requiredLeft = outstanding.filter((item) => item.required).length
@@ -73,7 +71,6 @@ export default async function EditListingPage({ params, searchParams }: Props) {
   // showing either of them a publish checklist is telling them about work that is done.
   const showChecklist = outstanding.length > 0 && !isPublic
   const photosIncomplete = outstanding.some((item) => item.anchor === 'photos')
-  const verificationIncomplete = outstanding.some((item) => item.anchor === 'verification')
 
   return (
     <>
@@ -104,10 +101,6 @@ export default async function EditListingPage({ params, searchParams }: Props) {
           <a href="#photos">
             Photos
             {photosIncomplete && <i className="warn" aria-label="incomplete" />}
-          </a>
-          <a href="#verification">
-            Verification
-            {verificationIncomplete && <i className="warn" aria-label="incomplete" />}
           </a>
           <a href="#lifecycle">Status</a>
         </nav>
@@ -177,10 +170,6 @@ export default async function EditListingPage({ params, searchParams }: Props) {
               uploadBucket={listing.uploadBucket}
               photos={listing.photos}
             />
-          </div>
-
-          <div id="verification">
-            <VerificationPanel listingId={listing.id} events={listing.events} />
           </div>
 
           <div id="lifecycle">

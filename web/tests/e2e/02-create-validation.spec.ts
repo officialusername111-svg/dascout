@@ -43,11 +43,12 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await page.goto('/admin/listings/new')
   })
 
-  // Every fixture in this file is a plain draft with zero verification_events, so it
-  // stays deletable (no FK RESTRICT) — sweep them all rather than tracking ids one by one.
+  // Every fixture in this file is a plain `list` entry that never left that status, and
+  // every remaining foreign key into `listings` cascades — sweep them all rather than
+  // tracking ids one by one.
   test.afterAll(async () => {
     const staff = await staffDirectClient()
-    const { error } = await staff.from('listings').delete().ilike('title', 'ZZ Test AC%').eq('status', 'draft')
+    const { error } = await staff.from('listings').delete().ilike('title', 'ZZ Test AC%').eq('status', 'list')
     if (error) console.warn(`[cleanup] AC-7..12/33 sweep failed: ${error.message}`)
   })
 
@@ -65,7 +66,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
 
     await expect(page).toHaveURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     await expect(page.getByRole('heading', { name: title })).toBeVisible()
-    await expect(page.locator('.pill.muted', { hasText: 'Draft' })).toBeVisible()
+    await expect(page.locator('.pill.muted', { hasText: 'List' })).toBeVisible()
   })
 
   test.describe('AC-8: required fields — one blank at a time, others valid', () => {

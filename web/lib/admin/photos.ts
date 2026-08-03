@@ -40,12 +40,16 @@ export const MAX_PHOTO_BYTES = 10 * 1024 * 1024
  * `withdrawn` from `live` — a withdrawn listing has always been published, so its
  * objects are already public and moving them back would be churn over bytes the
  * internet has already seen (run assumption A4/A10). If the graph ever gains a
- * `draft → withdrawn` edge this function has to grow a `published_at` branch.
+ * `list → withdrawn` edge this function has to grow a `published_at` branch.
+ *
+ * DRAFT_BUCKET keeps its name. It is a Supabase storage bucket identifier
+ * (`listing-photos-draft`), not a status value, and renaming a bucket means moving
+ * every object in it — the listing_status rename in apply 2 has nothing to do with it.
  */
 export function bucketForStatus(status: ListingStatus): PhotoBucket {
   switch (status) {
-    case 'draft':
-    case 'verifying':
+    case 'list':
+    case 'for_approval':
       return DRAFT_BUCKET
     case 'live':
     case 'sold':
@@ -197,7 +201,7 @@ export async function movePhotosToPublic(supabase: Client, paths: string[]): Pro
 
 /**
  * The compensating pass. A publish that moved the photos and then failed to flip
- * the status has left them public while the listing is still `verifying`, which
+ * the status has left them public while the listing is still `for_approval`, which
  * makes the bucket-from-status rule a lie and exposes photos of an unpublished
  * property. Best effort and run exactly once: if it fails too, the caller reports
  * the paths so a human can finish the job rather than looping.

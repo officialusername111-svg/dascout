@@ -10,10 +10,16 @@ import {
 
 /**
  * The full staff journey on one ZZ-test listing: create -> features -> photos
- * (upload/downscale/reorder/cover/delete) -> verification events -> lifecycle
- * (draft<->verifying, publish, live price edit, withdraw, relist, withdraw).
+ * (upload/downscale/reorder/cover/delete) -> lifecycle (list<->for_approval, publish,
+ * live price edit, withdraw, relist, withdraw).
  * Tests run in file order against one shared page/listing (test.describe.serial),
  * because most of these criteria are sequential states of the same row.
+ *
+ * The verification-event steps that used to sit between photos and lifecycle are gone
+ * with the table they wrote to (listing encoding v2 apply 2). Approval is now the act of
+ * moving the listing from For Approval to Live, and `guard_listing_publish` enforces that
+ * path in the database — so what used to be "record two events, then publish" is simply
+ * "publish from For Approval".
  */
 test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-13..29, 35)', () => {
   let browser: Browser
@@ -34,7 +40,7 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     await context.close()
   })
 
-  test('create + AC-35a/b empty states + AC-29a/d spot check (draft offers only "Submit for verification")', async () => {
+  test('create + AC-35a empty state + AC-29a/d spot check (a list entry offers only "Submit for approval")', async () => {
     await page.goto('/admin/listings/new')
     const title = zzTitle('BT journey main')
     await page.locator('#lf-title').fill(title)
@@ -50,36 +56,35 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
 
     // AC-35a
     await expect(page.locator('.apanel:has(#photosH) .empty', { hasText: 'No photos yet' })).toBeVisible()
-    // AC-35b
-    await expect(page.locator('.apanel:has(#verifyH) .empty', { hasText: 'Nothing recorded yet' })).toBeVisible()
 
-    // AC-29a/d: from draft, the only transition offered is to verifying.
+    // AC-29a/d: from List, the only transition offered is to For Approval.
     const transitionButtons = page.locator('.atrans > div > form button[type="button"]')
     await expect(transitionButtons).toHaveCount(1)
-    await expect(transitionButtons.first()).toHaveText('Submit for verification')
+    await expect(transitionButtons.first()).toHaveText('Submit for approval')
   })
 
-  test('AC-24a: draft -> verifying is ungated', async () => {
-    await page.getByRole('button', { name: 'Submit for verification' }).click()
-    await page.getByRole('button', { name: /Yes — submit for verification/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Verifying')
-    await expect(page.locator('.pill', { hasText: 'Verifying' })).toBeVisible()
+  test('AC-24a: list -> for_approval is ungated', async () => {
+    await page.getByRole('button', { name: 'Submit for approval' }).click()
+    await page.getByRole('button', { name: /Yes — submit for approval/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('For Approval')
+    await expect(page.locator('.pill', { hasText: 'For Approval' })).toBeVisible()
   })
 
-  test('AC-26 (i, iii): publish blocked with 0 events and 0 photos, blockers named', async () => {
+  test('AC-26 (iii): publish blocked with 0 photos, blocker named', async () => {
+    // The two fieldwork blockers went with `verification_events`; the photo gate is what
+    // is left, and it is the one that actually protects the public page from rendering
+    // an empty card.
     const publishBtn = page.getByRole('button', { name: 'Publish', exact: true })
     await expect(publishBtn).toBeDisabled()
     const blockers = page.locator('.ablockers')
-    await expect(blockers).toContainText('No title check has been recorded.')
-    await expect(blockers).toContainText('No ground validation has been recorded.')
     await expect(blockers).toContainText('The listing has no photos.')
   })
 
-  test('AC-24b: verifying -> draft (kick back) is ungated', async () => {
-    await page.getByRole('button', { name: 'Send back to draft' }).click()
-    await page.getByRole('button', { name: /Yes — send back to draft/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Draft')
-    await expect(page.locator('.pill', { hasText: 'Draft' })).toBeVisible()
+  test('AC-24b: for_approval -> list (kick back) is ungated', async () => {
+    await page.getByRole('button', { name: 'Send back to the list' }).click()
+    await page.getByRole('button', { name: /Yes — send back to the list/i }).click()
+    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('List')
+    await expect(page.locator('.pill', { hasText: 'List' })).toBeVisible()
   })
 
   test('AC-13a: features — check 3, save, then uncheck 1 and save again', async () => {
@@ -107,10 +112,10 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     await expect(page.locator(`input[name="featureIds"][value="${firstId}"]`)).not.toBeChecked()
   })
 
-  test('AC-24a (again): back to verifying to do the fieldwork', async () => {
-    await page.getByRole('button', { name: 'Submit for verification' }).click()
-    await page.getByRole('button', { name: /Yes — submit for verification/i }).click()
-    await expect(page.locator('.pill', { hasText: 'Verifying' })).toBeVisible()
+  test('AC-24a (again): back to For Approval, where publishing is possible', async () => {
+    await page.getByRole('button', { name: 'Submit for approval' }).click()
+    await page.getByRole('button', { name: /Yes — submit for approval/i }).click()
+    await expect(page.locator('.pill', { hasText: 'For Approval' })).toBeVisible()
   })
 
   test('AC-14: valid upload downscales to <=1920px and lands under 10MB; AC-15a: bad mime rejected client-side', async () => {
@@ -255,48 +260,16 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     expect(draftResp.status).toBeGreaterThanOrEqual(400)
   })
 
-  test('AC-20/21: record title_check and ground_validation; short ground_validation notes rejected', async () => {
-    const titleCheckForm = page.locator('form:has(#notes-title_check)')
-    const groundValidationForm = page.locator('form:has(#notes-ground_validation)')
+  /**
+   * AC-20/21/23 (recording the two fieldwork events and reading them back) were deleted
+   * with the capability they tested: `verification_events`, the panel that wrote to it and
+   * the `recordVerificationEvent` action are all gone as of listing encoding v2 apply 2.
+   * Same precedent as the invite system's retired self-service path — a test for a removed
+   * capability is deleted, not weakened into something that still passes.
+   */
 
-    // Ground-validation short-notes rejection first (AC-20/21 note in the dispatch).
-    // minLength/required are convenience HTML attrs only — strip them so the click
-    // actually reaches the server instead of being blocked by native validation,
-    // same as a tampered POST with no client constraints at all would arrive.
-    await page.locator('#notes-ground_validation').evaluate((el) => {
-      el.removeAttribute('required')
-      el.removeAttribute('minlength')
-    })
-    await page.locator('#notes-ground_validation').fill('too short')
-    await groundValidationForm.getByRole('button', { name: 'Record ground validation' }).click()
-    await expect(page.locator('.field.invalid:has(#notes-ground_validation) .ferr')).toContainText(
-      '10 characters'
-    )
-
-    // No client-supplied actor field exists anywhere on this form.
-    await expect(page.locator('input[name="performed_by"], input[name="actor"]')).toHaveCount(0)
-
-    await page.locator('#notes-title_check').fill('Registry of Deeds confirmed clean title.')
-    await titleCheckForm.getByRole('button', { name: 'Record title check' }).click()
-    await expect(titleCheckForm.locator('.fmsg.ok')).toContainText('Title check recorded')
-
-    await page.locator('#notes-ground_validation').fill('Walked the boundary with the barangay captain, markers intact.')
-    await groundValidationForm.getByRole('button', { name: 'Record ground validation' }).click()
-    await expect(groundValidationForm.locator('.fmsg.ok')).toContainText('Ground validation recorded')
-  })
-
-  test('AC-23: both events visible newest-first with kind, timestamp, actor, notes', async () => {
-    await page.reload()
-    const rows = page.locator('.apanel:has(#verifyH) .alist .arow')
-    await expect(rows).toHaveCount(2)
-    // Newest first: ground_validation was recorded after title_check.
-    await expect(rows.first()).toContainText('Ground validation')
-    await expect(rows.last()).toContainText('Title check')
-    await expect(rows.first()).toContainText('Walked the boundary')
-  })
-
-  test('AC-26 (again): publish still blocked before satisfied, then AC-25 happy path publishes', async () => {
-    // At this point events + 1 photo + 1 primary all exist — no blockers left.
+  test('AC-26 (again): with a cover photo in place, AC-25 happy path publishes', async () => {
+    // 1 photo + 1 primary exist by now — no blockers left.
     const publishBtn = page.getByRole('button', { name: 'Publish', exact: true })
     await expect(publishBtn).toBeEnabled()
     await publishBtn.click()
@@ -309,14 +282,6 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     expect(listing!.status).toBe('live')
     expect(listing!.published_at).not.toBeNull()
     slug = listing!.slug
-
-    const { data: events } = await staff
-      .from('verification_events')
-      .select('kind, performed_by')
-      .eq('listing_id', listingId)
-      .eq('kind', 'published')
-    expect(events).toHaveLength(1)
-    expect(events![0].performed_by).not.toBeNull()
   })
 
   test('AC-19/AC-25: photos moved+verified into the public bucket before the flip, and serve publicly', async () => {
@@ -362,7 +327,7 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     expect(after!).toBeGreaterThan(before!)
   })
 
-  test('AC-29c spot check: a live listing offers only sold/withdraw, never back to draft/verifying', async () => {
+  test('AC-29c spot check: a live listing offers only sold/withdraw, never back to List/For Approval', async () => {
     await page.reload()
     const transitionButtons = page.locator('.atrans > div > form button[type="button"]')
     const labels = await transitionButtons.allTextContents()
@@ -398,21 +363,24 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     }
   })
 
-  test('AC-28c: relist writes a second published event (relist needs no fresh fieldwork)', async () => {
+  /**
+   * AC-28c: relist puts a withdrawn listing straight back on the site WITHOUT passing
+   * through For Approval again. That edge is deliberate and named (brief section 8b D10):
+   * the owner's table says Withdrawn merely hides a listing. It is also the one way around
+   * the approval gate, which is exactly why it is asserted rather than left implicit — if
+   * the matrix in `guard_listing_publish` ever loses `withdrawn -> live`, this fails loudly.
+   */
+  test('AC-28c: relist goes withdrawn -> live in one step, no second approval', async () => {
     await page.getByRole('button', { name: 'Relist' }).click()
     await page.getByRole('button', { name: /Yes — relist/i }).click()
     await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
 
     const staff = await staffDirectClient()
-    const { data: events } = await staff
-      .from('verification_events')
-      .select('id')
-      .eq('listing_id', listingId)
-      .eq('kind', 'published')
-    expect(events).toHaveLength(2)
+    const { data } = await staff.from('listings').select('status').eq('id', listingId).single()
+    expect(data!.status).toBe('live')
   })
 
-  test('final withdraw (production-visibility protocol: end this fixture withdrawn)', async () => {
+  test('final withdraw + delete (production-visibility protocol, and the fixture cleans up now)', async () => {
     await page.reload()
     await page.getByRole('button', { name: 'Withdraw from the site' }).click()
     await page.getByRole('button', { name: /Yes — withdraw/i }).click()
@@ -421,6 +389,14 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     const staff = await staffDirectClient()
     const { data } = await staff.from('listings').select('status').eq('id', listingId).single()
     expect(data!.status).toBe('withdrawn')
-    console.log(`[journey-fixture] listing ${listingId} (slug ${slug}) ends withdrawn; has verification_events, undeletable (RESTRICT) — residual for orchestrator cleanup.`)
+
+    // Withdraw first, delete second. This listing used to be a permanent residual because
+    // `verification_events.listing_id` was ON DELETE RESTRICT; that table is gone and every
+    // remaining foreign key into `listings` cascades, so the journey now tidies up after
+    // itself instead of leaving a ZZ row on production for someone else to sweep.
+    const { error } = await staff.from('listings').delete().eq('id', listingId)
+    if (error) {
+      console.warn(`[journey-fixture] listing ${listingId} (slug ${slug}) ends withdrawn but undeleted: ${error.message}`)
+    }
   })
 })

@@ -264,7 +264,7 @@ const UpdateListingSchema = z.object({
   ),
 })
 
-const StatusEnum = z.enum(['draft', 'verifying', 'live', 'sold', 'withdrawn'])
+const StatusEnum = z.enum(['list', 'for_approval', 'live', 'sold', 'withdrawn'])
 
 function listingFieldsFrom(formData: FormData) {
   return {
@@ -403,9 +403,9 @@ export async function signOut(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a listing as a `draft`. Status is not a form field — every listing starts
- * unpublished and only the lifecycle moves it, which is what makes the verification
- * record meaningful.
+ * Creates a listing as a `list` entry. Status is not a form field — every listing starts
+ * unpublished and only the lifecycle moves it, which is what makes the approval step
+ * mean anything.
  */
 export async function createListing(
   _previous: ActionResult | null,
@@ -429,7 +429,7 @@ export async function createListing(
   for (let attempt = 0; attempt < 4 && !listingId; attempt += 1) {
     const { data, error } = await supabase
       .from('listings')
-      .insert({ ...parsed.data, slug, status: 'draft', created_by: user.id })
+      .insert({ ...parsed.data, slug, status: 'list', created_by: user.id })
       .select('id')
       .single()
 
@@ -515,7 +515,7 @@ export async function updateListing(
   if (readError) throw readError
   if (!current) return { ok: false, code: 'not_found', message: 'That listing no longer exists.' }
 
-  const slugEditable = current.status === 'draft' || current.status === 'verifying'
+  const slugEditable = current.status === 'list' || current.status === 'for_approval'
   const slugChanged = slug !== null && slug !== current.slug
 
   if (slugChanged && !slugEditable) {
@@ -1084,78 +1084,6 @@ export async function deletePhoto(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Verification events
-// ---------------------------------------------------------------------------
-
-const RecordEventSchema = z
-  .object({
-    listingId: z.uuid({ error: 'That listing could not be identified.' }),
-    // `published` is missing on purpose: that event is written by the database trigger
-    // when the status actually flips, so it can never be claimed from a form.
-    kind: z.enum(['title_check', 'ground_validation'], {
-      error: 'Choose which check you carried out.',
-    }),
-    notes: z.preprocess(
-      blankToNull,
-      z.string().trim().max(2000, { error: 'Keep the notes under 2000 characters.' }).nullable()
-    ),
-  })
-  .refine((value) => value.kind !== 'ground_validation' || (value.notes?.length ?? 0) >= 10, {
-    error: 'Ground validation needs notes — at least 10 characters describing what was walked and found.',
-    path: ['notes'],
-  })
-
-/**
- * Appends one fieldwork record. This table is the audit trail the brand rests on, so:
- *
- * - `performed_by` comes from the session and nothing else. A client-supplied actor
- *   field is not read here, and the database policy independently refuses any insert
- *   whose `performed_by` is not the caller.
- * - `occurred_at` is the database's own clock, never a date off a form.
- * - There is no edit and no delete, here or anywhere in the admin, and the policies
- *   grant neither. A trail that can be rewritten is not a trail.
- */
-export async function recordVerificationEvent(
-  _previous: ActionResult | null,
-  formData: FormData
-): Promise<ActionResult> {
-  const user = await getStaffUser()
-  if (!user) return denied()
-
-  const parsed = RecordEventSchema.safeParse({
-    listingId: formData.get('listingId'),
-    kind: formData.get('kind'),
-    notes: formData.get('notes'),
-  })
-  if (!parsed.success) return invalid(parsed.error)
-
-  const { listingId, kind, notes } = parsed.data
-  const supabase = await createClient()
-
-  const { error } = await supabase.from('verification_events').insert({
-    listing_id: listingId,
-    kind,
-    notes,
-    performed_by: user.id,
-  })
-
-  if (error) {
-    if (error.code === FK_VIOLATION) {
-      return { ok: false, code: 'not_found', message: 'That listing no longer exists.' }
-    }
-    if (error.code === RLS_DENIED) return denied()
-    throw error
-  }
-
-  revalidateAdmin(listingId)
-
-  return {
-    ok: true,
-    message: kind === 'title_check' ? 'Title check recorded.' : 'Ground validation recorded.',
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
@@ -1173,16 +1101,14 @@ const TransitionSchema = z.object({
  *
  * 1. `expectedFrom` is compared against the stored status, so two staff acting on the
  *    same listing cannot both "succeed" — the second is told to reload.
- * 2. The graph is checked before anything else, so `draft → live` is refused here and
- *    never reaches the database at all.
+ * 2. The graph is checked before anything else, so `list → live` is refused here and
+ *    never reaches the database at all. `guard_listing_publish` enforces the same graph
+ *    underneath, for the callers that never come through this action.
  * 3. Publish preconditions are evaluated with the same function the edit page uses to
  *    list them, so the message names the missing piece instead of failing generically.
  * 4. Photos move to the public bucket and are verified present *before* the status
  *    flips. A live listing whose images 404 is worse than a publish that did not happen.
  * 5. The flip is a guarded update. Zero rows means the status moved under us.
- *
- * The `published` event is not written here. The database trigger writes it inside the
- * same statement as the flip, which is the only way the two can never disagree.
  */
 export async function transitionListing(
   _previous: ActionResult | null,
@@ -1201,18 +1127,14 @@ export async function transitionListing(
   const { listingId, to, expectedFrom } = parsed.data
   const supabase = await createClient()
 
-  const [listingResult, eventsResult] = await Promise.all([
-    supabase
-      .from('listings')
-      .select('id, slug, status, listing_photos ( storage_path, is_primary )')
-      .eq('id', listingId)
-      .maybeSingle(),
-    supabase.from('verification_events').select('kind').eq('listing_id', listingId),
-  ])
+  const listingResult = await supabase
+    .from('listings')
+    .select('id, slug, status, listing_photos ( storage_path, is_primary )')
+    .eq('id', listingId)
+    .maybeSingle()
 
   if (listingResult.error) throw listingResult.error
   if (!listingResult.data) return { ok: false, code: 'not_found', message: 'That listing no longer exists.' }
-  if (eventsResult.error) throw eventsResult.error
 
   const listing = listingResult.data as unknown as {
     id: string
@@ -1241,10 +1163,7 @@ export async function transitionListing(
   }
 
   if (to === 'live') {
-    const events = eventsResult.data ?? []
     const blockers = publishBlockersFor({
-      titleChecks: events.filter((event) => event.kind === 'title_check').length,
-      groundValidations: events.filter((event) => event.kind === 'ground_validation').length,
       photoCount: listing.listing_photos.length,
       primaryCount: listing.listing_photos.filter((photo) => photo.is_primary).length,
     })
@@ -1283,7 +1202,7 @@ export async function transitionListing(
 
   if (flipError) {
     const compensation = await compensateMovedPhotos(supabase, movedPaths)
-    // The trigger is the backstop for the two fieldwork events; it raises a check
+    // `guard_listing_publish` is the backstop for the lifecycle graph; it raises a check
     // violation, which is a precondition failure and not a system fault.
     if (flipError.code === CHECK_VIOLATION || flipError.code === RAISE_EXCEPTION) {
       return {

@@ -29,8 +29,8 @@ test.describe.serial('Sold path: live -> sold, sold is terminal (AC-28a, AC-29b)
     await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     listingId = page.url().split('/').pop()!
 
-    await page.getByRole('button', { name: 'Submit for verification' }).click()
-    await page.getByRole('button', { name: /Yes — submit for verification/i }).click()
+    await page.getByRole('button', { name: 'Submit for approval' }).click()
+    await page.getByRole('button', { name: /Yes — submit for approval/i }).click()
 
     const photo = await generateSmallJpeg(page)
     await page.locator('#photo-input').setInputFiles([{ name: 'sold-fixture.jpg', mimeType: 'image/jpeg', buffer: photo }])
@@ -38,19 +38,8 @@ test.describe.serial('Sold path: live -> sold, sold is terminal (AC-28a, AC-29b)
       timeout: 15_000,
     })
 
-    await page.locator('#notes-title_check').fill('Title check for sold-path fixture.')
-    await page.locator('form:has(#notes-title_check)').getByRole('button', { name: 'Record title check' }).click()
-    await expect(page.locator('form:has(#notes-title_check) .fmsg.ok')).toContainText('Title check recorded')
-
-    await page.locator('#notes-ground_validation').fill('Ground validation for sold-path fixture, boundary walked.')
-    await page
-      .locator('form:has(#notes-ground_validation)')
-      .getByRole('button', { name: 'Record ground validation' })
-      .click()
-    await expect(page.locator('form:has(#notes-ground_validation) .fmsg.ok')).toContainText(
-      'Ground validation recorded'
-    )
-
+    // No fieldwork events to record any more — approval IS the move from For Approval to
+    // Live (listing encoding v2 apply 2). A cover photo is the only remaining precondition.
     await page.reload()
     await page.getByRole('button', { name: 'Publish', exact: true }).click()
     await page.getByRole('button', { name: /Yes — publish/i }).click()

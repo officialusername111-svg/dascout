@@ -8,8 +8,10 @@ import { bucketForStatus, isValidPhotoPath, PUBLIC_BUCKET, DRAFT_BUCKET } from '
 
 describe('bucketForStatus', () => {
   it.each([
-    ['draft', DRAFT_BUCKET],
-    ['verifying', DRAFT_BUCKET],
+    // DRAFT_BUCKET is a storage bucket name, not a status: it keeps its name through the
+    // listing_status rename in listing encoding v2 apply 2.
+    ['list', DRAFT_BUCKET],
+    ['for_approval', DRAFT_BUCKET],
     ['live', PUBLIC_BUCKET],
     ['sold', PUBLIC_BUCKET],
     ['withdrawn', PUBLIC_BUCKET],

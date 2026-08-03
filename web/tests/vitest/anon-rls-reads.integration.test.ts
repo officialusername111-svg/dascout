@@ -4,20 +4,27 @@ import type { Database } from '@/lib/database.types'
 import { staffClient, staffUserId, anonClient, zzTitle, zzSlug } from './helpers'
 
 /**
- * AC-30 — draft / verifying / withdrawn must be invisible to an anonymous
+ * AC-30 — list / for_approval / withdrawn must be invisible to an anonymous
  * client across all three tables that carry a listing's public-facing data.
  *
- * `withdrawn` is reached directly from `draft` here (not via a real publish):
- * the guard trigger only gates transitions *to* `live` and `sold`, so a plain
- * staff UPDATE to `withdrawn` is ungated at the DB level and never makes the
- * row (or its would-be photos) publicly visible even for a moment — the
- * safest possible fixture under the production-visibility protocol.
+ * `withdrawn` USED to be reached by a direct UPDATE from `draft`, because the
+ * old guard trigger only gated transitions *to* `live` and `sold`. Since
+ * 20260803110000_listing_encoding_v2_apply2.sql the guard enforces the whole
+ * lifecycle graph, and `list -> withdrawn` is not an edge in it — the only road
+ * to `withdrawn` is through `live`, which is exactly the graph the admin screen
+ * offers. So this fixture now walks list -> for_approval -> live -> withdrawn.
+ *
+ * The `live` step is one round trip wide and the listing has no photos and no
+ * features at that point (both are attached afterwards, deliberately), so the
+ * worst an anonymous visitor could catch is a bare ZZ-titled card for a few
+ * hundred milliseconds. Same production-visibility trade-off, and the same
+ * shape, as reorder-photos-rpc.integration.test.ts.
  */
-describe('anon RLS: draft/verifying/withdrawn return zero rows on all three tables (AC-30)', () => {
+describe('anon RLS: list/for_approval/withdrawn return zero rows on all three tables (AC-30)', () => {
   let staff: SupabaseClient<Database>
   let staffId: string
   let featureId: string
-  const ids: Record<'draft' | 'verifying' | 'withdrawn', string> = {} as never
+  const ids: Record<'list' | 'for_approval' | 'withdrawn', string> = {} as never
 
   beforeAll(async () => {
     staff = await staffClient()
@@ -30,7 +37,15 @@ describe('anon RLS: draft/verifying/withdrawn return zero rows on all three tabl
     if (featureError) throw featureError
     featureId = feature.id
 
-    for (const status of ['draft', 'verifying', 'withdrawn'] as const) {
+    // The route each fixture takes from `list` to the status it is meant to hold. Every
+    // hop is an edge in the matrix `guard_listing_publish` enforces; there is no shortcut.
+    const ROUTE = {
+      list: [],
+      for_approval: ['for_approval'],
+      withdrawn: ['for_approval', 'live', 'withdrawn'],
+    } as const
+
+    for (const status of ['list', 'for_approval', 'withdrawn'] as const) {
       const { data: listing, error } = await staff
         .from('listings')
         .insert({
@@ -39,7 +54,7 @@ describe('anon RLS: draft/verifying/withdrawn return zero rows on all three tabl
           category: 'residential_lot',
           price_php: 100000,
           town_id: town.id,
-          status: 'draft',
+          status: 'list',
           created_by: staffId,
         })
         .select('id')
@@ -47,10 +62,10 @@ describe('anon RLS: draft/verifying/withdrawn return zero rows on all three tabl
       if (error) throw error
       ids[status] = listing.id
 
-      if (status !== 'draft') {
+      for (const hop of ROUTE[status]) {
         const { error: updError } = await staff
           .from('listings')
-          .update({ status })
+          .update({ status: hop })
           .eq('id', listing.id)
         if (updError) throw updError
       }
@@ -79,7 +94,7 @@ describe('anon RLS: draft/verifying/withdrawn return zero rows on all three tabl
     }
   })
 
-  const statuses = ['draft', 'verifying', 'withdrawn'] as const
+  const statuses = ['list', 'for_approval', 'withdrawn'] as const
 
   it.each(statuses)('anon sees 0 listings rows for a %s listing', async (status) => {
     const anon = anonClient()
