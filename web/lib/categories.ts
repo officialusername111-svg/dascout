@@ -60,8 +60,19 @@ export function keyFromDb(db: DbCategory): CategoryKey {
   return BY_DB[db]
 }
 
-export function labelFromDb(db: DbCategory): string {
-  return CATEGORIES[BY_DB[db]].label
+/**
+ * Since apply 1b of listing encoding v2, `listings.category` is nullable. A null means the
+ * listing carries a property type the owner added after the migration, which has no enum
+ * value to map to — the real name lives in `property_types` and arrives with piece 2's
+ * join. Until then this returns a neutral placeholder rather than throwing, which is what
+ * an unguarded `CATEGORIES[BY_DB[null]].label` would do to the admin listings index the
+ * first time a new type is used.
+ *
+ * The public site never sees this branch: a CHECK constraint stops a listing reaching
+ * `live` or `sold` without a category.
+ */
+export function labelFromDb(db: DbCategory | null): string {
+  return db ? CATEGORIES[BY_DB[db]].label : 'Other type'
 }
 
 export function isCategoryKey(value: string): value is CategoryKey {

@@ -14,6 +14,12 @@
 // function. Applied as targeted edits against generator output rather than a wholesale
 // overwrite, so the hand-correction below survives.
 //
+// UPDATED 2026-08-03 again for apply 1b: `listings.category` is now NULLABLE. The column
+// is dropped entirely in apply 3; until then a null means the listing carries a property
+// type the owner added after the migration, which has no enum value to map to. Two CHECK
+// constraints make that safe — a listing cannot reach `live` or `sold` without a category,
+// so no public page can render a blank type.
+//
 // KNOWN GAP, pre-dating this change and left alone: `list_admin_candidates`,
 // `approve_admin_invite` and `decline_admin_invite` exist in the database but are absent
 // from the Functions block here — the app declares their shapes locally in
@@ -328,7 +334,7 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           broker_id: string | null
-          category: Database["public"]["Enums"]["listing_category"]
+          category: Database["public"]["Enums"]["listing_category"] | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -354,7 +360,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           broker_id?: string | null
-          category: Database["public"]["Enums"]["listing_category"]
+          category?: Database["public"]["Enums"]["listing_category"] | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -380,7 +386,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           broker_id?: string | null
-          category?: Database["public"]["Enums"]["listing_category"]
+          category?: Database["public"]["Enums"]["listing_category"] | null
           created_at?: string
           created_by?: string | null
           description?: string | null

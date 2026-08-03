@@ -41,6 +41,7 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
   const createdListings: string[] = []
   let zzFeatureId: string | null = null
   let zzFeatureListingId: string | null = null
+  let zzTypeId: string | null = null
 
   beforeAll(async () => {
     staff = await staffClient()
@@ -63,6 +64,10 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
     }
     if (zzFeatureId) {
       await staff.from('features').delete().eq('id', zzFeatureId)
+    }
+    // Last: the FK from listings is RESTRICT, so every listing using this type is gone by now.
+    if (zzTypeId) {
+      await staff.from('property_types').delete().eq('id', zzTypeId)
     }
   })
 
@@ -219,6 +224,58 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
       .single()
     expect(after!.category).toBe('residential_building')
     expect(after!.property_type_id).toBe(rbdg!.id)
+  })
+
+  // -- 3b. apply 1b: a sixth property type is usable before apply 3 ----------
+
+  it('lets a NEW property type be created and used on a draft, leaving category null', async () => {
+    // Apply 1 left listings.category NOT NULL, so a type with no legacy_category could not
+    // be assigned to anything until apply 3. Apply 1b relaxed that. This is the whole point
+    // of that migration: the owner can add a type today and encode against it.
+    const { data: type, error: typeError } = await staff
+      .from('property_types')
+      .insert({
+        slug: zzSlug('apply1b-type').toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+        name: zzTitle('apply1b type'),
+        plural_name: zzTitle('apply1b types'),
+        sort_order: 900,
+      })
+      .select('id, legacy_category')
+      .single()
+    if (typeError) throw typeError
+    zzTypeId = type.id
+
+    // No enum value to map to — that is what makes the null legitimate rather than a bug.
+    expect(type.legacy_category).toBeNull()
+
+    const row = await newListing('sixth-type', { property_type_id: type.id })
+    expect(row.property_type_id).toBe(type.id)
+    expect(row.category).toBeNull()
+  })
+
+  it('refuses to publish a listing that has no category', async () => {
+    // The listing above cannot reach a public status. Two independent things enforce that —
+    // guard_listing_publish and the listings_category_required_when_public CHECK — and the
+    // test asserts the outcome rather than which one fired, because either is correct and
+    // apply 2 redesigns the first of them.
+    const { data: listing } = await staff
+      .from('listings')
+      .select('id')
+      .eq('property_type_id', zzTypeId!)
+      .single()
+
+    const { error } = await staff
+      .from('listings')
+      .update({ status: 'live' })
+      .eq('id', listing!.id)
+    expect(error).not.toBeNull()
+
+    const { data: after } = await staff
+      .from('listings')
+      .select('status')
+      .eq('id', listing!.id)
+      .single()
+    expect(after!.status).toBe('draft')
   })
 
   // -- 4. the feature foreign key -------------------------------------------
