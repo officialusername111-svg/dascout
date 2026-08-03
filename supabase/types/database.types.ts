@@ -8,6 +8,18 @@
 // web/lib/database.types.ts is now generated, and was checked against what was transcribed.
 // The two files are byte-identical.
 //
+// UPDATED 2026-08-03 for listing encoding v2, apply 1: the `property_types` table,
+// `listings.property_type_id` / `frontage`, `property_requests.wanted_property_type_id`,
+// `towns.is_active`, `features.is_active` / `sort_order`, and the `legacy_category_of`
+// function. Applied as targeted edits against generator output rather than a wholesale
+// overwrite, so the hand-correction below survives.
+//
+// KNOWN GAP, pre-dating this change and left alone: `list_admin_candidates`,
+// `approve_admin_invite` and `decline_admin_invite` exist in the database but are absent
+// from the Functions block here — the app declares their shapes locally in
+// web/lib/admin/queries.ts. A future full regeneration will pull them in and must
+// re-apply the correction below at the same time.
+//
 // ONE DELIBERATE DEPARTURE FROM THE GENERATOR, kept rather than lost in the regeneration:
 // `list_admin_accounts.full_name` is `string | null` below, not the `string` the generator
 // emits. The generator marks every RETURNS TABLE column non-null because a function
@@ -179,18 +191,24 @@ export type Database = {
       features: {
         Row: {
           id: string
+          is_active: boolean
           name: string
           slug: string
+          sort_order: number
         }
         Insert: {
           id?: string
+          is_active?: boolean
           name: string
           slug: string
+          sort_order?: number
         }
         Update: {
           id?: string
+          is_active?: boolean
           name?: string
           slug?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -315,11 +333,13 @@ export type Database = {
           created_by: string | null
           description: string | null
           floor_area_sqm: number | null
+          frontage: string | null
           id: string
           is_trending: boolean
           lot_area_sqm: number | null
           price_php: number
           property_no: string | null
+          property_type_id: string | null
           published_at: string | null
           search_vector: unknown
           slug: string
@@ -339,11 +359,13 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           floor_area_sqm?: number | null
+          frontage?: string | null
           id?: string
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php: number
           property_no?: string | null
+          property_type_id?: string | null
           published_at?: string | null
           search_vector?: unknown
           slug: string
@@ -363,11 +385,13 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           floor_area_sqm?: number | null
+          frontage?: string | null
           id?: string
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php?: number
           property_no?: string | null
+          property_type_id?: string | null
           published_at?: string | null
           search_vector?: unknown
           slug?: string
@@ -390,6 +414,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_property_type_id_fkey"
+            columns: ["property_type_id"]
+            isOneToOne: false
+            referencedRelation: "property_types"
             referencedColumns: ["id"]
           },
           {
@@ -480,6 +511,7 @@ export type Database = {
           notes: string | null
           preferred_town: string | null
           profile_id: string | null
+          wanted_property_type_id: string | null
         }
         Insert: {
           budget_max?: number | null
@@ -493,6 +525,7 @@ export type Database = {
           notes?: string | null
           preferred_town?: string | null
           profile_id?: string | null
+          wanted_property_type_id?: string | null
         }
         Update: {
           budget_max?: number | null
@@ -506,6 +539,7 @@ export type Database = {
           notes?: string | null
           preferred_town?: string | null
           profile_id?: string | null
+          wanted_property_type_id?: string | null
         }
         Relationships: [
           {
@@ -515,7 +549,62 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "property_requests_wanted_property_type_id_fkey"
+            columns: ["wanted_property_type_id"]
+            isOneToOne: false
+            referencedRelation: "property_types"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      property_types: {
+        Row: {
+          created_at: string
+          group_key: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          legacy_category:
+            | Database["public"]["Enums"]["listing_category"]
+            | null
+          name: string
+          plural_name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_key?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          legacy_category?:
+            | Database["public"]["Enums"]["listing_category"]
+            | null
+          name: string
+          plural_name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_key?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          legacy_category?:
+            | Database["public"]["Enums"]["listing_category"]
+            | null
+          name?: string
+          plural_name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       request_match_alerts: {
         Row: {
@@ -558,6 +647,7 @@ export type Database = {
           created_at: string
           id: string
           initial: string | null
+          is_active: boolean
           name: string
           province: string
           slug: string
@@ -566,6 +656,7 @@ export type Database = {
           created_at?: string
           id?: string
           initial?: string | null
+          is_active?: boolean
           name: string
           province: string
           slug: string
@@ -574,6 +665,7 @@ export type Database = {
           created_at?: string
           id?: string
           initial?: string | null
+          is_active?: boolean
           name?: string
           province?: string
           slug?: string
@@ -639,6 +731,10 @@ export type Database = {
       }
       is_staff: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      legacy_category_of: {
+        Args: { p_type_id: string }
+        Returns: Database["public"]["Enums"]["listing_category"]
+      }
       list_admin_accounts: {
         Args: never
         Returns: {
