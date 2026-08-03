@@ -1,5 +1,22 @@
 # CLEAN-HISTORY — this file is append-only; each run adds a section, nothing is ever rewritten.
 
+## 2026-08-03 · clean-me run (scope: project — `D:\Workspace\DaScout\dascout`)
+
+Ran alongside making the invite approval queue live. Tracked tree was already clean; no stale
+`auto/` branches and no worktrees existed, so nothing in Tier B or C was touched.
+
+**Removed (Tier A — regenerable, gitignored):**
+- `web/.next` — **594.6 MB** of Next build output. Regenerate with `npm run build` from
+  `web/`. Note Playwright requires that build anyway, so the next E2E run rebuilds it.
+- `web/test-results` — empty Playwright output directory.
+
+**Parked for the owner (NOT removed):**
+- Four superseded handoffs in `docs/` — `HANDOFF-2026-08-01.md`, `HANDOFF-2026-08-02.md`,
+  `HANDOFF-2026-08-02-evening.md`, `HANDOFF-2026-08-02-night.md`. All are tracked history and
+  total ~40 KB. They are superseded, not junk: each records decisions and traps that the newer
+  handoffs summarise rather than repeat. Consolidating or moving them to `docs/archive/` is a
+  content judgement, not a cleanup, so it waits for the owner.
+
 ## 2026-08-02 · clean-me run (scope: project — `D:\Workspace\DaScout\dascout`)
 
 Triggered by item 8 of `docs/HANDOFF-2026-08-02.md`: "5 spent `auto/` branches, 2 worktrees".
