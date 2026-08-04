@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from 'react'
 import { createListing, updateListing, type ActionResult } from '@/app/admin/actions'
-import { CATEGORIES, CATEGORY_KEYS } from '@/lib/categories'
+import { Icon } from '@/components/Icon'
+import type { PropertyTypeOption } from '@/lib/admin/queries'
 
 /**
  * The listing's own fields, for both create and edit.
@@ -23,7 +24,8 @@ export type ListingFormValues = {
   slug: string
   propertyNo: string | null
   title: string
-  category: string
+  propertyTypeId: string | null
+  frontage: string | null
   pricePhp: number
   townId: string
   areaDetail: string | null
@@ -36,10 +38,11 @@ export type ListingFormValues = {
 }
 
 type Props =
-  | { mode: 'create'; towns: { id: string; label: string }[] }
+  | { mode: 'create'; towns: { id: string; label: string }[]; propertyTypes: PropertyTypeOption[] }
   | {
       mode: 'edit'
       towns: { id: string; label: string }[]
+      propertyTypes: PropertyTypeOption[]
       listing: ListingFormValues
       slugEditable: boolean
       statusLabel: string
@@ -103,7 +106,7 @@ export function ListingForm(props: Props) {
       <p className="sub2">
         {isEdit
           ? 'Editable in every status. Changing the price on a live listing is recorded in the price history automatically.'
-          : 'Saved as a draft. Nothing is published until it has been through verification.'}
+          : 'Saved to the list. It only reaches the public site once it has been submitted and approved.'}
       </p>
 
       {state?.ok && state.message && (
@@ -161,25 +164,33 @@ export function ListingForm(props: Props) {
           <div className="ferr">{errors.title ?? 'Give the listing a title.'}</div>
         </div>
 
-        <div className={fieldClass('category')}>
-          <label htmlFor="lf-category">Property type</label>
-          <select
-            key={`category-${generation}`}
-            id="lf-category"
-            name="category"
-            required
-            defaultValue={initial('category', listing?.category ?? '')}
+        <div className={`${fieldClass('property_type_id')} wide`}>
+          <label id="lf-ptype-label">Property type</label>
+          <div
+            className="typepicker"
+            key={`ptype-${generation}`}
+            role="radiogroup"
+            aria-labelledby="lf-ptype-label"
           >
-            <option value="" disabled>
-              Choose a type…
-            </option>
-            {CATEGORY_KEYS.map((key) => (
-              <option key={key} value={CATEGORIES[key].db}>
-                {CATEGORIES[key].label}
-              </option>
+            {props.propertyTypes.map((type) => (
+              <span key={type.id}>
+                <input
+                  className="sr-only"
+                  type="radio"
+                  id={`lf-ptype-${type.id}`}
+                  name="property_type_id"
+                  value={type.id}
+                  required
+                  defaultChecked={initial('property_type_id', listing?.propertyTypeId ?? '') === type.id}
+                />
+                <label htmlFor={`lf-ptype-${type.id}`} className="typechip">
+                  <Icon name={type.icon} />
+                  {type.name}
+                </label>
+              </span>
             ))}
-          </select>
-          <div className="ferr">{errors.category ?? 'Choose one of the five property types.'}</div>
+          </div>
+          <div className="ferr">{errors.property_type_id ?? 'Choose a property type from the list.'}</div>
         </div>
 
         <div className={fieldClass('town_id')}>
@@ -222,7 +233,7 @@ export function ListingForm(props: Props) {
 
         <div className={fieldClass('area_detail')}>
           <label htmlFor="lf-area">
-            Barangay or area <span className="amuted">(optional)</span>
+            Property location <span className="amuted">(optional)</span>
           </label>
           <input
             id="lf-area"
@@ -265,6 +276,22 @@ export function ListingForm(props: Props) {
             defaultValue={initial('floor_area_sqm', numberValue(listing?.floorAreaSqm ?? null))}
           />
           <div className="ferr">{errors.floor_area_sqm ?? 'Leave blank if unknown.'}</div>
+        </div>
+
+        <div className={`${fieldClass('frontage')} wide`}>
+          <label htmlFor="lf-frontage">
+            Frontage <span className="amuted">(optional)</span>
+          </label>
+          <input
+            id="lf-frontage"
+            name="frontage"
+            type="text"
+            maxLength={160}
+            defaultValue={initial('frontage', listing?.frontage ?? '')}
+            placeholder="e.g. 12m along the national highway"
+          />
+          <div className="hint">Free text — no unit is enforced.</div>
+          <div className="ferr">{errors.frontage ?? 'Keep this under 160 characters.'}</div>
         </div>
 
         <div className={fieldClass('bedrooms')}>
@@ -311,7 +338,7 @@ export function ListingForm(props: Props) {
             />
             <div className="hint">
               dascoutprime.com/property/<b>{props.listing.slug}</b> — editable only while the
-              listing is a draft or in verification. Once published it is fixed so existing links
+              listing is in List or For Approval. Once published it is fixed so existing links
               keep working.
             </div>
             <div className="ferr">
@@ -361,7 +388,7 @@ export function ListingForm(props: Props) {
 
       <div className="aactions">
         <button className="btn btn-gold" type="submit" disabled={pending}>
-          {pending ? 'Saving…' : isEdit ? 'Save details' : 'Create draft'}
+          {pending ? 'Saving…' : isEdit ? 'Save details' : 'Create listing'}
         </button>
         {!isEdit && <span className="amuted">You can add photos on the next screen.</span>}
       </div>

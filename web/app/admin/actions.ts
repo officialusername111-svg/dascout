@@ -110,15 +110,18 @@ const listingFieldShape = {
     .trim()
     .min(3, { error: 'The title needs at least 3 characters.' })
     .max(160, { error: 'Keep the title under 160 characters.' }),
-  category: z.enum(
-    [
-      'residential_lot',
-      'farm_land',
-      'commercial_lot',
-      'residential_building',
-      'commercial_building',
-    ],
-    { error: 'Choose one of the five property types.' }
+  /**
+   * `category` is gone from this shape as of listing encoding v2 piece 3 — the form
+   * collects `property_type_id` and `sync_listing_property_type()` (apply 1's trigger)
+   * derives `category` on write, so both generations of reader keep working. See
+   * `getPropertyTypeOptions()` for why the pick list is restricted to legacy-mapped
+   * types only, which is what keeps this insert from ever hitting that trigger's
+   * "no legacy category" exception.
+   */
+  property_type_id: z.uuid({ error: 'Choose a property type from the list.' }),
+  frontage: z.preprocess(
+    blankToNull,
+    z.string().trim().max(160, { error: 'Keep the frontage description under 160 characters.' }).nullable()
   ),
   price_php: z.preprocess(
     blankToUndefined,
@@ -201,7 +204,8 @@ function listingFieldsFrom(formData: FormData) {
   return {
     property_no: formData.get('property_no'),
     title: formData.get('title'),
-    category: formData.get('category'),
+    property_type_id: formData.get('property_type_id'),
+    frontage: formData.get('frontage'),
     price_php: formData.get('price_php'),
     town_id: formData.get('town_id'),
     area_detail: formData.get('area_detail'),
@@ -255,6 +259,19 @@ function slugify(title: string): string {
 
 function randomSlugSuffix(): string {
   return Math.random().toString(36).slice(2, 7)
+}
+
+/**
+ * Which of `listings`' two staff-facing foreign keys tripped a 23503.
+ *
+ * Same reasoning as `isPropertyNoConflict`: Postgres puts the constraint name in the
+ * error text, not a column enum, so the only way to route a bare 23503 to the right
+ * field is to read the message. Falls back to `town_id` — the field this branch
+ * historically meant — if neither name appears, rather than routing to nothing.
+ */
+function listingFkFieldOf(error: { message?: string | null } | null | undefined): 'property_type_id' | 'town_id' {
+  const text = (error?.message ?? '').toLowerCase()
+  return text.includes('property_type_id') ? 'property_type_id' : 'town_id'
 }
 
 // ---------------------------------------------------------------------------
@@ -369,13 +386,22 @@ export async function createListing(
       break
     }
     if (error.code === FK_VIOLATION) {
-      return {
-        ok: false,
-        code: 'validation',
-        message: 'That town is no longer in the list.',
-        fieldErrors: { town_id: 'Choose a town from the list.' },
-        values: submittedValues(raw),
-      }
+      const field = listingFkFieldOf(error)
+      return field === 'property_type_id'
+        ? {
+            ok: false,
+            code: 'validation',
+            message: 'That property type is no longer available.',
+            fieldErrors: { property_type_id: 'Choose a property type from the list.' },
+            values: submittedValues(raw),
+          }
+        : {
+            ok: false,
+            code: 'validation',
+            message: 'That town is no longer in the list.',
+            fieldErrors: { town_id: 'Choose a town from the list.' },
+            values: submittedValues(raw),
+          }
     }
     if (error.code === RLS_DENIED) return denied()
     // Both unique indexes an admin can trip raise 23505, and only one of them is worth
@@ -488,13 +514,22 @@ export async function updateListing(
       }
     }
     if (error.code === FK_VIOLATION) {
-      return {
-        ok: false,
-        code: 'validation',
-        message: 'That town is no longer in the list.',
-        fieldErrors: { town_id: 'Choose a town from the list.' },
-        values: submittedValues(raw),
-      }
+      const field = listingFkFieldOf(error)
+      return field === 'property_type_id'
+        ? {
+            ok: false,
+            code: 'validation',
+            message: 'That property type is no longer available.',
+            fieldErrors: { property_type_id: 'Choose a property type from the list.' },
+            values: submittedValues(raw),
+          }
+        : {
+            ok: false,
+            code: 'validation',
+            message: 'That town is no longer in the list.',
+            fieldErrors: { town_id: 'Choose a town from the list.' },
+            values: submittedValues(raw),
+          }
     }
     if (error.code === RLS_DENIED) return denied()
     throw error

@@ -122,12 +122,19 @@ export function LifecyclePanel({
             )
           })}
         </div>
-      ) : (
+      ) : status === 'sold' ? (
         <div className="empty">
           <b>This listing is sold</b>
           Sold is final. Reopening a closed sale is a deliberate correction in the database, not a
           button here.
         </div>
+      ) : (
+        // Reachable since piece 3: `transitions` is now the SECONDARY moves only, and it
+        // drains to empty the moment the one it held succeeds — this menu stays open
+        // through that (see ListingActionBar) so the message above stays visible, and
+        // lands here rather than the sold copy, which would be wrong for every other
+        // status.
+        <div className="empty">Nothing else to do here right now.</div>
       )}
     </section>
   )

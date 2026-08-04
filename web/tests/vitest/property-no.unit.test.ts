@@ -187,6 +187,7 @@ const STAFF = { id: '11111111-1111-4111-8111-111111111111', role: 'staff' as con
 
 const TOWN = '33333333-3333-4333-8333-333333333333'
 const LISTING = '44444444-4444-4444-8444-444444444444'
+const PROPERTY_TYPE = '55555555-5555-4555-8555-555555555555'
 
 type QueryResult = { data?: unknown; error?: unknown }
 
@@ -260,7 +261,7 @@ async function captureRedirect(run: () => Promise<unknown>): Promise<string> {
 function listingForm(fields: Record<string, string>): FormData {
   const fd = new FormData()
   fd.set('title', 'Corner Residential Lot, Lagao')
-  fd.set('category', 'residential_lot')
+  fd.set('property_type_id', PROPERTY_TYPE)
   fd.set('price_php', '1500000')
   fd.set('town_id', TOWN)
   for (const [key, value] of Object.entries(fields)) fd.set(key, value)

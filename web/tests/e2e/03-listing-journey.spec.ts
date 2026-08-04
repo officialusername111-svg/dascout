@@ -44,29 +44,36 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     await page.goto('/admin/listings/new')
     const title = zzTitle('BT journey main')
     await page.locator('#lf-title').fill(title)
-    await page.locator('#lf-category').selectOption({ index: 1 })
+    // Property type is a chip picker over the property_types lookup as of listing
+    // encoding v2 piece 3 — clicking the visible chip is what a mouse user does; the
+    // radio underneath it is sr-only and not itself a click target.
+    await page.locator('.typechip').first().click()
     await page.locator('#lf-town').selectOption({ index: 1 })
     await page.locator('#lf-price').fill('2500000')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
 
     await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     listingId = page.url().split('/').pop()!
 
-    await expect(page.getByRole('heading', { name: title })).toBeVisible()
+    // Not a `role=heading` — the bar renders the title in a plain `.ttl` div, a
+    // pre-existing gap unrelated to this piece (flagged separately, not fixed here).
+    await expect(page.locator('.aabar .ttl')).toHaveText(title)
 
     // AC-35a
     await expect(page.locator('.apanel:has(#photosH) .empty', { hasText: 'No photos yet' })).toBeVisible()
 
-    // AC-29a/d: from List, the only transition offered is to For Approval.
-    const transitionButtons = page.locator('.atrans > div > form button[type="button"]')
-    await expect(transitionButtons).toHaveCount(1)
-    await expect(transitionButtons.first()).toHaveText('Submit for approval')
+    // AC-29a/d: from List, the only transition is to For Approval, and it is promoted
+    // straight into the action bar as the primary move (piece 3) — nothing is left over
+    // for the "Status" menu, so that trigger does not render at all here.
+    await expect(page.getByRole('button', { name: 'Submit for approval' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Status ▾' })).toHaveCount(0)
   })
 
   test('AC-24a: list -> for_approval is ungated', async () => {
+    // Primary move, clicked straight from the bar — LifecyclePanel isn't mounted for it,
+    // so the pill flipping is the confirmation, not a `.fmsg`.
     await page.getByRole('button', { name: 'Submit for approval' }).click()
     await page.getByRole('button', { name: /Yes — submit for approval/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('For Approval')
     await expect(page.locator('.pill', { hasText: 'For Approval' })).toBeVisible()
   })
 
@@ -76,11 +83,18 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     // an empty card.
     const publishBtn = page.getByRole('button', { name: 'Publish', exact: true })
     await expect(publishBtn).toBeDisabled()
+    // Publish is the bar's primary action, so LifecyclePanel (and its own inline
+    // "The listing has no photos." reason list) isn't mounted for it at all — the one
+    // remaining `.ablockers` on the page is the top-of-page checklist, which already
+    // names the same gap in its own words.
     const blockers = page.locator('.ablockers')
-    await expect(blockers).toContainText('The listing has no photos.')
+    await expect(blockers).toContainText('At least one photo uploaded')
   })
 
   test('AC-24b: for_approval -> list (kick back) is ungated', async () => {
+    // Secondary move — from For Approval the primary is Publish, so this one lives
+    // behind the bar's "Status" menu (piece 3).
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     await page.getByRole('button', { name: 'Send back to the list' }).click()
     await page.getByRole('button', { name: /Yes — send back to the list/i }).click()
     await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('List')
@@ -274,7 +288,7 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     await expect(publishBtn).toBeEnabled()
     await publishBtn.click()
     await page.getByRole('button', { name: /Yes — publish/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
+    // Primary move again — confirmed by the pill, same reasoning as AC-24a.
     await expect(page.locator('.pill', { hasText: 'Live' }).first()).toBeVisible()
 
     const staff = await staffDirectClient()
@@ -329,6 +343,9 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
 
   test('AC-29c spot check: a live listing offers only sold/withdraw, never back to List/For Approval', async () => {
     await page.reload()
+    // Live has no primary (neither sold nor withdrawn matches for_approval/live), so both
+    // are secondary and sit behind "Status" — open it before reading the list.
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     const transitionButtons = page.locator('.atrans > div > form button[type="button"]')
     const labels = await transitionButtons.allTextContents()
     expect(labels.sort()).toEqual(['Mark as sold', 'Withdraw from the site'].sort())
@@ -341,6 +358,10 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
   })
 
   test('AC-28b: withdraw — /property/<slug> 404s for anon, and drops out of the sitemap after revalidation', async () => {
+    // Reload for a known-closed menu rather than trusting whatever AC-29c/AC-12c left
+    // it as — the previous test may or may not have left it open.
+    await page.reload()
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     await page.getByRole('button', { name: 'Withdraw from the site' }).click()
     await page.getByRole('button', { name: /Yes — withdraw/i }).click()
     await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Withdrawn')
@@ -371,9 +392,11 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
    * the matrix in `guard_listing_publish` ever loses `withdrawn -> live`, this fails loudly.
    */
   test('AC-28c: relist goes withdrawn -> live in one step, no second approval', async () => {
+    // Withdrawn's only transition is to Live, so — like every other for_approval/live-
+    // bound move — it is the bar's primary action, not a Status-menu item.
     await page.getByRole('button', { name: 'Relist' }).click()
     await page.getByRole('button', { name: /Yes — relist/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
+    await expect(page.locator('.pill', { hasText: 'Live' }).first()).toBeVisible()
 
     const staff = await staffDirectClient()
     const { data } = await staff.from('listings').select('status').eq('id', listingId).single()
@@ -382,6 +405,7 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
 
   test('final withdraw + delete (production-visibility protocol, and the fixture cleans up now)', async () => {
     await page.reload()
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     await page.getByRole('button', { name: 'Withdraw from the site' }).click()
     await page.getByRole('button', { name: /Yes — withdraw/i }).click()
     await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Withdrawn')

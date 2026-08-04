@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { FeaturesForm } from '@/components/admin/FeaturesForm'
-import { LifecyclePanel } from '@/components/admin/LifecyclePanel'
 import { ListingActionBar } from '@/components/admin/ListingActionBar'
 import { ListingForm } from '@/components/admin/ListingForm'
 import { PhotoManager } from '@/components/admin/PhotoManager'
@@ -11,6 +10,7 @@ import { displayTitle } from '@/lib/format'
 import {
   getAdminListingDetail,
   getFeatureOptions,
+  getPropertyTypeOptions,
   getTownOptions,
   type CheckAnchor,
 } from '@/lib/admin/queries'
@@ -49,13 +49,22 @@ export default async function EditListingPage({ params, searchParams }: Props) {
   const { id } = await params
   const search = await searchParams
 
-  const [listing, towns, features] = await Promise.all([
+  const [listing, towns, features, activePropertyTypes] = await Promise.all([
     getAdminListingDetail(id),
     getTownOptions(),
     getFeatureOptions(),
+    getPropertyTypeOptions(),
   ])
 
   if (!listing) notFound()
+
+  // The pick list is active, legacy-mapped types only (see getPropertyTypeOptions). A
+  // listing already carrying a type the owner has since archived must still show it
+  // selected, so it is added back in here rather than silently dropped from the form.
+  const propertyTypes =
+    listing.propertyType && !activePropertyTypes.some((t) => t.id === listing.propertyType!.id)
+      ? [...activePropertyTypes, listing.propertyType]
+      : activePropertyTypes
 
   const backHref = backHrefFrom(one(search.back))
   const isPublic = listing.status === 'live' || listing.status === 'sold'
@@ -64,6 +73,10 @@ export default async function EditListingPage({ params, searchParams }: Props) {
   // withdrawing are deliberately NOT here — see ListingActionBar.
   const primary =
     listing.allowedTransitions.find((t) => t.to === 'for_approval' || t.to === 'live') ?? null
+
+  // Everything else `allowedTransitions` offers, behind the bar's "Status" menu — see the
+  // doc comment on ListingActionBar for why this replaced a fourth page section.
+  const secondary = listing.allowedTransitions.filter((t) => t.to !== primary?.to)
 
   const outstanding = listing.publishChecklist.filter((item) => !item.done)
   const requiredLeft = outstanding.filter((item) => item.required).length
@@ -92,6 +105,9 @@ export default async function EditListingPage({ params, searchParams }: Props) {
         backHref={backHref}
         publicHref={isPublic ? `/property/${listing.slug}` : null}
         primary={primary}
+        secondary={secondary}
+        publishedAtLabel={listing.publishedAtLabel}
+        soldAtLabel={listing.soldAtLabel}
       />
 
       <div className="adwrap">
@@ -102,7 +118,6 @@ export default async function EditListingPage({ params, searchParams }: Props) {
             Photos
             {photosIncomplete && <i className="warn" aria-label="incomplete" />}
           </a>
-          <a href="#lifecycle">Status</a>
         </nav>
 
         <div className="adbody">
@@ -134,6 +149,7 @@ export default async function EditListingPage({ params, searchParams }: Props) {
             <ListingForm
               mode="edit"
               towns={towns}
+              propertyTypes={propertyTypes}
               slugEditable={listing.slugEditable}
               statusLabel={listing.statusLabel}
               listing={{
@@ -141,7 +157,8 @@ export default async function EditListingPage({ params, searchParams }: Props) {
                 slug: listing.slug,
                 propertyNo: listing.propertyNo,
                 title: listing.title,
-                category: listing.category,
+                propertyTypeId: listing.propertyTypeId,
+                frontage: listing.frontage,
                 pricePhp: listing.pricePhp,
                 townId: listing.townId,
                 areaDetail: listing.areaDetail,
@@ -169,17 +186,6 @@ export default async function EditListingPage({ params, searchParams }: Props) {
               status={listing.status}
               uploadBucket={listing.uploadBucket}
               photos={listing.photos}
-            />
-          </div>
-
-          <div id="lifecycle">
-            <LifecyclePanel
-              listingId={listing.id}
-              status={listing.status}
-              statusLabel={listing.statusLabel}
-              transitions={listing.allowedTransitions}
-              publishedAtLabel={listing.publishedAtLabel}
-              soldAtLabel={listing.soldAtLabel}
             />
           </div>
 

@@ -471,6 +471,8 @@ export type AdminTransition = {
   blockedBy: string[]
 }
 
+export type PropertyTypeOption = { id: string; slug: string; name: string; icon: string }
+
 export type AdminListingDetail = {
   id: string
   slug: string
@@ -480,6 +482,15 @@ export type AdminListingDetail = {
   statusLabel: string
   category: DbCategory
   categoryLabel: string
+  propertyTypeId: string | null
+  /**
+   * The listing's own type, resolved even when it is no longer active — an encoder
+   * archiving a type in Settings must not make every listing that already used it
+   * lose its label. `null` only for the pre-apply-1 edge case a fully-backfilled
+   * database should never actually hit.
+   */
+  propertyType: PropertyTypeOption | null
+  frontage: string | null
   pricePhp: number
   priceLabel: string
   townId: string
@@ -507,10 +518,12 @@ export type AdminListingDetail = {
 }
 
 const DETAIL_COLUMNS = `
-  id, slug, property_no, title, status, category, price_php, town_id, area_detail,
+  id, slug, property_no, title, status, category, property_type_id, frontage, price_php,
+  town_id, area_detail,
   lot_area_sqm, floor_area_sqm, bedrooms, bathrooms, description, is_trending,
   created_at, updated_at, published_at, sold_at,
   towns ( name, province ),
+  property_types ( id, slug, name, icon ),
   listing_features ( feature_id ),
   listing_photos ( id, storage_path, alt_text, sort_order, is_primary, created_at )
 `
@@ -522,6 +535,8 @@ type RawDetailRow = {
   title: string
   status: ListingStatus
   category: DbCategory
+  property_type_id: string | null
+  frontage: string | null
   price_php: number
   town_id: string
   area_detail: string | null
@@ -536,6 +551,7 @@ type RawDetailRow = {
   published_at: string | null
   sold_at: string | null
   towns: { name: string; province: string } | null
+  property_types: { id: string; slug: string; name: string; icon: string } | null
   listing_features: { feature_id: string }[]
   listing_photos: {
     id: string
@@ -620,6 +636,9 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     statusLabel: STATUS_LABELS[row.status],
     category: row.category,
     categoryLabel: labelFromDb(row.category),
+    propertyTypeId: row.property_type_id,
+    propertyType: row.property_types,
+    frontage: row.frontage,
     pricePhp: Number(row.price_php),
     priceLabel: peso(Number(row.price_php)),
     townId: row.town_id,
@@ -671,6 +690,34 @@ export async function getFeatureOptions(): Promise<FeatureOption[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase.from('features').select('id, name').order('name')
+
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * The types an encoder may PICK on a listing right now — active, and mapped to a
+ * `legacy_category` (see `sync_listing_property_type()` in
+ * `20260803090000_listing_encoding_v2_apply1.sql`). A type added through the piece-2
+ * CRUD screen has no legacy mapping, and `listings.category` stays NOT NULL until apply
+ * 3 of listing encoding v2 — choosing one before then would fail on save with a raw
+ * database exception. Excluding it here is the same "known limitation" the migration
+ * documents, made unreachable from the form rather than surfacing as an ugly error.
+ *
+ * The caller (the edit page) still has to add the listing's OWN type back in if it was
+ * archived after being used — see `getAdminListingDetail`'s embedded `property_types`.
+ */
+export async function getPropertyTypeOptions(): Promise<PropertyTypeOption[]> {
+  await requireStaff()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('property_types')
+    .select('id, slug, name, icon')
+    .eq('is_active', true)
+    .not('legacy_category', 'is', null)
+    .order('sort_order')
+    .order('name')
 
   if (error) throw error
   return data ?? []

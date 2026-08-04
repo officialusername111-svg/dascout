@@ -1,16 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ListingForm } from '@/components/admin/ListingForm'
-import { getTownOptions } from '@/lib/admin/queries'
+import { getPropertyTypeOptions, getTownOptions } from '@/lib/admin/queries'
 
 export const metadata: Metadata = { title: 'New listing' }
 
 /**
- * Create is fields only. Photos, features, verification and publishing all need a
- * listing id to hang off, so they appear on the edit screen the action redirects to.
+ * Create is fields only. Photos, features, and status all need a listing id to hang
+ * off, so they appear on the edit screen the action redirects to.
  */
 export default async function NewListingPage() {
-  const towns = await getTownOptions()
+  const [towns, propertyTypes] = await Promise.all([getTownOptions(), getPropertyTypeOptions()])
 
   return (
     <>
@@ -19,11 +19,11 @@ export default async function NewListingPage() {
       </Link>
       <h1>New listing</h1>
       <p className="lede">
-        Saved as a draft. Nothing reaches the public site until the verification record is complete
-        and someone publishes it.
+        Saved to the list. Nothing reaches the public site until it&rsquo;s submitted for approval
+        and approved.
       </p>
 
-      <ListingForm mode="create" towns={towns} />
+      <ListingForm mode="create" towns={towns} propertyTypes={propertyTypes} />
     </>
   )
 }

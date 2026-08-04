@@ -456,6 +456,21 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 .achecks label{display:flex;gap:9px;align-items:center;min-height:40px;font-size:13.5px;color:var(--ink-2)}
 .achecks input{width:18px;height:18px;min-height:0;padding:0;flex-shrink:0;accent-color:var(--ink-900)}
 
+/* The property-type picker (listing encoding v2 piece 3). Radios, not a custom widget,
+   for the same reason `.achecks` is checkboxes rather than a JS multi-select: the browser
+   already does keyboard nav and grouping for free, and the visible "chip" is just the
+   `<label>` — `.sr-only` hides the input itself, `:checked + label` carries the state, so
+   there is no React state to keep in sync with what the DOM shows. */
+.typepicker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.typechip{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 16px 0 12px;
+  border:1.5px solid var(--line);border-radius:99px;font-size:13.5px;font-weight:600;
+  color:var(--ink-2);background:#fff;cursor:pointer;transition:background var(--dur-1) var(--ease),
+  color var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease)}
+.typechip .icon{width:16px;height:16px}
+.typepicker input:checked + .typechip{background:var(--ink-900);border-color:var(--ink-900);color:var(--gold-l)}
+.typepicker input:focus-visible + .typechip{outline:2.5px solid var(--gold-d);outline-offset:2px}
+.typepicker input:hover + .typechip{border-color:var(--gold-d)}
+
 .alist{display:grid;gap:10px}
 .alist .arow{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-height:70px;flex-wrap:wrap}
 .alist .arow:hover{border-color:var(--gold-d)}
@@ -583,6 +598,15 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 .aabar-acts form{display:inline-flex}
 .aabar-confirm{display:inline-flex;gap:8px}
 .aabar-err{color:var(--err);font-size:12.5px;font-weight:600;max-width:300px}
+
+/* Status/publishing (listing encoding v2 piece 3): the moves beyond the one promoted
+   into the bar (sell, withdraw, relist, send-back) live behind this trigger instead of
+   a fourth section on the encoding page — see the doc comment on `LifecyclePanel`. The
+   panel rendered inside is untouched; only where it mounts changed. */
+.aabar-status{position:relative}
+.aabar-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:41;width:340px;max-width:calc(100vw - 32px)}
+.aabar-menu .apanel{margin-bottom:0;box-shadow:0 8px 24px rgba(0,0,0,.14)}
+@media (max-width:560px){.aabar-menu{position:fixed;right:16px;left:16px;top:auto;bottom:16px;width:auto}}
 
 /* --- detail: section nav beside the panels --- */
 .adwrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:24px;align-items:start}
