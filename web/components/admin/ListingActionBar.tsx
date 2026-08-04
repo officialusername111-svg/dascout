@@ -81,7 +81,7 @@ export function ListingActionBar({
   return (
     <div className="aabar">
       <div className="aabar-id">
-        <div className="ttl">{title}</div>
+        <h1 className="ttl">{title}</h1>
         <div className="meta">{meta}</div>
       </div>
 

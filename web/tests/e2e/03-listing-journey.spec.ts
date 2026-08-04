@@ -55,9 +55,7 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
     await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     listingId = page.url().split('/').pop()!
 
-    // Not a `role=heading` — the bar renders the title in a plain `.ttl` div, a
-    // pre-existing gap unrelated to this piece (flagged separately, not fixed here).
-    await expect(page.locator('.aabar .ttl')).toHaveText(title)
+    await expect(page.getByRole('heading', { name: title })).toBeVisible()
 
     // AC-35a
     await expect(page.locator('.apanel:has(#photosH) .empty', { hasText: 'No photos yet' })).toBeVisible()
