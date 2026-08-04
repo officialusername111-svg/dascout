@@ -146,13 +146,20 @@ export async function createLiveListing(
   const { data: town, error: townError } = await staff.from('towns').select('id').limit(1).single()
   if (townError) throw townError
 
+  const { data: type, error: typeError } = await staff
+    .from('property_types')
+    .select('id')
+    .eq('slug', 'rlot')
+    .single()
+  if (typeError) throw typeError
+
   const slug = zzSlug(suffix)
   const { data: listing, error } = await staff
     .from('listings')
     .insert({
       title: zzTitle(suffix),
       slug,
-      category: 'residential_lot',
+      property_type_id: type.id,
       price_php: 100000,
       town_id: town.id,
       status: 'list',

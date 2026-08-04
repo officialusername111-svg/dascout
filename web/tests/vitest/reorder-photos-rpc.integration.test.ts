@@ -24,6 +24,7 @@ describe('reorder_listing_photos RPC guards', () => {
   let staff: SupabaseClient<Database>
   let staffId: string
   let townId: string
+  let propertyTypeId: string
 
   beforeAll(async () => {
     staff = await staffClient()
@@ -31,6 +32,14 @@ describe('reorder_listing_photos RPC guards', () => {
     const { data: town, error } = await staff.from('towns').select('id').limit(1).single()
     if (error) throw error
     townId = town.id
+
+    const { data: type, error: typeError } = await staff
+      .from('property_types')
+      .select('id')
+      .eq('slug', 'rlot')
+      .single()
+    if (typeError) throw typeError
+    propertyTypeId = type.id
   })
 
   it('staff session, wrong id set: returns -1 (id-set mismatch, no write)', async () => {
@@ -39,7 +48,7 @@ describe('reorder_listing_photos RPC guards', () => {
       .insert({
         title: zzTitle('BT rpc mismatch fixture'),
         slug: zzSlug('rpc-mismatch'),
-        category: 'residential_lot',
+        property_type_id: propertyTypeId,
         price_php: 100000,
         town_id: townId,
         status: 'list',
@@ -78,7 +87,7 @@ describe('reorder_listing_photos RPC guards', () => {
       .insert({
         title: zzTitle('BT rpc buyer-denied fixture'),
         slug: zzSlug('rpc-buyer-denied'),
-        category: 'residential_lot',
+        property_type_id: propertyTypeId,
         price_php: 100000,
         town_id: townId,
         status: 'list',

@@ -342,8 +342,9 @@ export async function getAdminAttention(): Promise<AdminAttention> {
  * whatever the list query happened to select.
  */
 const INDEX_COLUMNS = `
-  id, slug, property_no, title, status, category, price_php, updated_at,
+  id, slug, property_no, title, status, price_php, updated_at,
   towns ( name, province ),
+  property_types ( name ),
   listing_photos ( id, is_primary )
 `
 
@@ -353,7 +354,7 @@ type RawIndexRow = {
   property_no: string | null
   title: string
   status: ListingStatus
-  category: DbCategory
+  property_types: { name: string } | null
   price_php: number
   updated_at: string
   towns: { name: string; province: string } | null
@@ -438,7 +439,7 @@ export async function getAdminListings(filters: AdminListingFilters): Promise<Ad
       title: row.title,
       status: row.status,
       statusLabel: STATUS_LABELS[row.status],
-      categoryLabel: labelFromDb(row.category),
+      categoryLabel: row.property_types?.name ?? 'Other type',
       priceLabel: peso(Number(row.price_php)),
       location: row.towns ? `${row.towns.name}, ${row.towns.province}` : '—',
       photoCount: row.listing_photos.length,
@@ -480,7 +481,6 @@ export type AdminListingDetail = {
   title: string
   status: ListingStatus
   statusLabel: string
-  category: DbCategory
   categoryLabel: string
   propertyTypeId: string | null
   /**
@@ -518,7 +518,7 @@ export type AdminListingDetail = {
 }
 
 const DETAIL_COLUMNS = `
-  id, slug, property_no, title, status, category, property_type_id, frontage, price_php,
+  id, slug, property_no, title, status, property_type_id, frontage, price_php,
   town_id, area_detail,
   lot_area_sqm, floor_area_sqm, bedrooms, bathrooms, description, is_trending,
   created_at, updated_at, published_at, sold_at,
@@ -534,7 +534,6 @@ type RawDetailRow = {
   property_no: string | null
   title: string
   status: ListingStatus
-  category: DbCategory
   property_type_id: string | null
   frontage: string | null
   price_php: number
@@ -634,8 +633,7 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     title: row.title,
     status: row.status,
     statusLabel: STATUS_LABELS[row.status],
-    category: row.category,
-    categoryLabel: labelFromDb(row.category),
+    categoryLabel: row.property_types?.name ?? 'Other type',
     propertyTypeId: row.property_type_id,
     propertyType: row.property_types,
     frontage: row.frontage,
@@ -696,13 +694,11 @@ export async function getFeatureOptions(): Promise<FeatureOption[]> {
 }
 
 /**
- * The types an encoder may PICK on a listing right now — active, and mapped to a
- * `legacy_category` (see `sync_listing_property_type()` in
- * `20260803090000_listing_encoding_v2_apply1.sql`). A type added through the piece-2
- * CRUD screen has no legacy mapping, and `listings.category` stays NOT NULL until apply
- * 3 of listing encoding v2 — choosing one before then would fail on save with a raw
- * database exception. Excluding it here is the same "known limitation" the migration
- * documents, made unreachable from the form rather than surfacing as an ugly error.
+ * The types an encoder may PICK on a listing right now — every active one. Until listing
+ * encoding v2 apply 3, this was restricted to types mapped to a `legacy_category`, because
+ * `listings.category` was still NOT NULL and picking an unmapped type would fail on save
+ * with a raw database exception. Apply 3 dropped that column, so the restriction is gone —
+ * any active type, mapped or not, is now a valid pick.
  *
  * The caller (the edit page) still has to add the listing's OWN type back in if it was
  * archived after being used — see `getAdminListingDetail`'s embedded `property_types`.
@@ -715,7 +711,6 @@ export async function getPropertyTypeOptions(): Promise<PropertyTypeOption[]> {
     .from('property_types')
     .select('id, slug, name, icon')
     .eq('is_active', true)
-    .not('legacy_category', 'is', null)
     .order('sort_order')
     .order('name')
 

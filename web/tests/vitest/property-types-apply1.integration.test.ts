@@ -4,23 +4,26 @@ import type { Database } from '@/lib/database.types'
 import { staffClient, staffUserId, anonClient, zzTitle, zzSlug } from './helpers'
 
 /**
- * Listing encoding v2, apply 1 — the schema half.
+ * Listing encoding v2, apply 1 — the seed and the grants.
  *
- * THESE TESTS FAIL UNTIL `20260803090000_listing_encoding_v2_apply1.sql` IS APPLIED.
- * That is intentional and is why the file lands in the same commit as the migration:
- * there is no local Postgres on this machine and no staging, so production is the only
- * place the migration can be proved, and the suite is the proof.
+ * ORIGINALLY covered the sync trigger too (`sync_listing_property_type()`, the two-way
+ * `category` <-> `property_type_id` dual-write that let old and new code coexist during
+ * the transition). Apply 3 (`20260804120000_listing_encoding_v2_apply3.sql`) dropped that
+ * trigger, the function behind it, and the `category` column itself — the transition is
+ * over, there is nothing left to dual-write, and a test that inserted `{ category: ... }`
+ * now fails with "column does not exist" rather than proving anything. Those tests were
+ * removed here rather than patched to "pass": the mechanism they proved is gone by design,
+ * not broken. `list -> live` still cannot be reached directly — see
+ * `publish-guard-trigger.integration.test.ts`, which already covers that independent of
+ * category.
  *
- * What is worth testing here is narrow and specific. Column defaults and NOT NULLs are
- * Postgres doing its job. The four things that can actually be wrong are:
+ * What is still worth testing:
  *
  *   1. the seed, because the slugs ARE the public URL keys — get one wrong and every
  *      saved `?cat=` link dies silently;
  *   2. the grants, because `property_types` is a new table and this database's default
  *      privileges hand anon full DML on new tables automatically;
- *   3. the sync trigger, which is the only thing keeping two generations of code writing
- *      complete rows during the transition;
- *   4. the feature foreign key, which is a data-loss guard with no UI in front of it yet.
+ *   3. the feature foreign key, which is a data-loss guard with no UI in front of it yet.
  */
 
 // Every property type as web/lib/categories.ts renders it today. Nothing on screen may
@@ -33,15 +36,15 @@ const SEED = [
   { slug: 'cbdg', name: 'Commercial Bldg', group_key: 'bldgs', legacy: 'commercial_building' },
 ] as const
 
-describe('listing encoding v2 apply 1: property_types, grants, sync trigger, feature FK', () => {
+describe('listing encoding v2 apply 1: property_types, grants, feature FK', () => {
   let staff: SupabaseClient<Database>
   let staffId: string
   let anon: SupabaseClient<Database>
   let townId: string
+  let propertyTypeId: string
   const createdListings: string[] = []
   let zzFeatureId: string | null = null
   let zzFeatureListingId: string | null = null
-  let zzTypeId: string | null = null
 
   beforeAll(async () => {
     staff = await staffClient()
@@ -51,6 +54,14 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
     const { data: town, error } = await staff.from('towns').select('id').limit(1).single()
     if (error) throw error
     townId = town.id
+
+    const { data: type, error: typeError } = await staff
+      .from('property_types')
+      .select('id')
+      .eq('slug', 'rlot')
+      .single()
+    if (typeError) throw typeError
+    propertyTypeId = type.id
   })
 
   afterAll(async () => {
@@ -65,10 +76,6 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
     if (zzFeatureId) {
       await staff.from('features').delete().eq('id', zzFeatureId)
     }
-    // Last: the FK from listings is RESTRICT, so every listing using this type is gone by now.
-    if (zzTypeId) {
-      await staff.from('property_types').delete().eq('id', zzTypeId)
-    }
   })
 
   type ListingInsert = Database['public']['Tables']['listings']['Insert']
@@ -76,10 +83,6 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
   async function newListing(suffix: string, fields: Partial<ListingInsert> = {}) {
     const { data, error } = await staff
       .from('listings')
-      // The cast is the point of the trigger, not a workaround for it. `category` is
-      // NOT NULL until apply 3, so the generated Insert type marks it required — but
-      // one of the tests below deliberately omits it to prove the trigger fills it
-      // from property_type_id. The type is stricter than the database now is.
       .insert({
         title: zzTitle(`apply1 ${suffix}`),
         slug: zzSlug(`apply1-${suffix}`),
@@ -87,9 +90,10 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
         town_id: townId,
         status: 'list',
         created_by: staffId,
+        property_type_id: propertyTypeId,
         ...fields,
-      } as ListingInsert)
-      .select('id, category, property_type_id')
+      })
+      .select('id, property_type_id')
       .single()
     if (error) throw error
     createdListings.push(data.id)
@@ -162,7 +166,7 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
     expect(priceError!.code).toBe('42501')
   })
 
-  // -- 3. the backfill and the sync trigger ----------------------------------
+  // -- 3. backfill, and property_type_id required ---------------------------
 
   it('leaves no listing without a property type', async () => {
     const { count, error } = await staff
@@ -173,110 +177,17 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
     expect(count).toBe(0)
   })
 
-  it('fills property_type_id when only the old category column is written', async () => {
-    // This is what a deployment running the OLD code does on every insert.
-    const row = await newListing('old-code', { category: 'farm_land' })
-    expect(row.property_type_id).not.toBeNull()
-
-    const { data: type } = await staff
-      .from('property_types')
-      .select('slug')
-      .eq('id', row.property_type_id!)
-      .single()
-    expect(type!.slug).toBe('farm')
-  })
-
-  it('fills category when only the new property_type_id column is written', async () => {
-    // ...and this is what the NEW code will do, before apply 3 drops category.
-    const { data: type } = await staff
-      .from('property_types')
-      .select('id')
-      .eq('slug', 'clot')
-      .single()
-
-    const row = await newListing('new-code', { property_type_id: type!.id })
-    expect(row.category).toBe('commercial_lot')
-  })
-
-  it('re-derives category when the property type is CHANGED on an existing listing', async () => {
-    // The regression this file exists for. Deriving only when one side is NULL looks
-    // right and is wrong: on an UPDATE the untouched column holds its previous value,
-    // never NULL, so a type change would leave `category` stale — and the public site
-    // reads `category` until apply 3, so the listing would keep showing its old type.
-    const row = await newListing('retype', { category: 'residential_lot' })
-
-    const { data: rbdg } = await staff
-      .from('property_types')
-      .select('id')
-      .eq('slug', 'rbdg')
-      .single()
-
-    const { error } = await staff
-      .from('listings')
-      .update({ property_type_id: rbdg!.id })
-      .eq('id', row.id)
-    expect(error).toBeNull()
-
-    const { data: after } = await staff
-      .from('listings')
-      .select('category, property_type_id')
-      .eq('id', row.id)
-      .single()
-    expect(after!.category).toBe('residential_building')
-    expect(after!.property_type_id).toBe(rbdg!.id)
-  })
-
-  // -- 3b. apply 1b: a sixth property type is usable before apply 3 ----------
-
-  it('lets a NEW property type be created and used on a draft, leaving category null', async () => {
-    // Apply 1 left listings.category NOT NULL, so a type with no legacy_category could not
-    // be assigned to anything until apply 3. Apply 1b relaxed that. This is the whole point
-    // of that migration: the owner can add a type today and encode against it.
-    const { data: type, error: typeError } = await staff
-      .from('property_types')
-      .insert({
-        slug: zzSlug('apply1b-type').toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-        name: zzTitle('apply1b type'),
-        plural_name: zzTitle('apply1b types'),
-        sort_order: 900,
-      })
-      .select('id, legacy_category')
-      .single()
-    if (typeError) throw typeError
-    zzTypeId = type.id
-
-    // No enum value to map to — that is what makes the null legitimate rather than a bug.
-    expect(type.legacy_category).toBeNull()
-
-    const row = await newListing('sixth-type', { property_type_id: type.id })
-    expect(row.property_type_id).toBe(type.id)
-    expect(row.category).toBeNull()
-  })
-
-  it('refuses to publish a listing that has no category', async () => {
-    // The listing above cannot reach a public status. Two independent things enforce that —
-    // guard_listing_publish (which since apply 2 refuses `list -> live` outright, as it is
-    // not an edge in the lifecycle graph) and the listings_category_required_when_public
-    // CHECK — and the test asserts the outcome rather than which one fired, because either
-    // is correct.
-    const { data: listing } = await staff
-      .from('listings')
-      .select('id')
-      .eq('property_type_id', zzTypeId!)
-      .single()
-
-    const { error } = await staff
-      .from('listings')
-      .update({ status: 'live' })
-      .eq('id', listing!.id)
+  it('refuses to insert a listing with no property type', async () => {
+    const { error } = await staff.from('listings').insert({
+      title: zzTitle('apply1 no-type'),
+      slug: zzSlug('apply1-no-type'),
+      price_php: 100000,
+      town_id: townId,
+      status: 'list',
+      created_by: staffId,
+      // property_type_id omitted on purpose — NOT NULL since apply 3.
+    } as ListingInsert)
     expect(error).not.toBeNull()
-
-    const { data: after } = await staff
-      .from('listings')
-      .select('status')
-      .eq('id', listing!.id)
-      .single()
-    expect(after!.status).toBe('list')
   })
 
   // -- 4. the feature foreign key -------------------------------------------
@@ -294,7 +205,7 @@ describe('listing encoding v2 apply 1: property_types, grants, sync trigger, fea
     if (featureError) throw featureError
     zzFeatureId = feature.id
 
-    const listing = await newListing('feature-fk', { category: 'residential_lot' })
+    const listing = await newListing('feature-fk')
     zzFeatureListingId = listing.id
 
     const { error: linkError } = await staff

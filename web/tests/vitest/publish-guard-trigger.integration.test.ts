@@ -30,6 +30,7 @@ describe('publish guard trigger: DB-level backstop (AC-27, transition matrix)', 
   let staff: SupabaseClient<Database>
   let staffId: string
   let townId: string
+  let propertyTypeId: string
   let listingId: string
 
   beforeAll(async () => {
@@ -40,12 +41,20 @@ describe('publish guard trigger: DB-level backstop (AC-27, transition matrix)', 
     if (townError) throw townError
     townId = town.id
 
+    const { data: type, error: typeError } = await staff
+      .from('property_types')
+      .select('id')
+      .eq('slug', 'rlot')
+      .single()
+    if (typeError) throw typeError
+    propertyTypeId = type.id
+
     const { data: listing, error } = await staff
       .from('listings')
       .insert({
         title: zzTitle('BT guard-trigger fixture'),
         slug: zzSlug('guard-trigger'),
-        category: 'residential_lot',
+        property_type_id: propertyTypeId,
         price_php: 100000,
         town_id: townId,
         status: 'list',
@@ -78,7 +87,7 @@ describe('publish guard trigger: DB-level backstop (AC-27, transition matrix)', 
       .insert({
         title: zzTitle('BT guard insert-live'),
         slug: zzSlug('guard-insert-live'),
-        category: 'residential_lot',
+        property_type_id: propertyTypeId,
         price_php: 100000,
         town_id: townId,
         status: 'live',

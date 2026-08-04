@@ -37,6 +37,13 @@ describe('anon RLS: list/for_approval/withdrawn return zero rows on all three ta
     if (featureError) throw featureError
     featureId = feature.id
 
+    const { data: type, error: typeError } = await staff
+      .from('property_types')
+      .select('id')
+      .eq('slug', 'rlot')
+      .single()
+    if (typeError) throw typeError
+
     // The route each fixture takes from `list` to the status it is meant to hold. Every
     // hop is an edge in the matrix `guard_listing_publish` enforces; there is no shortcut.
     const ROUTE = {
@@ -51,7 +58,7 @@ describe('anon RLS: list/for_approval/withdrawn return zero rows on all three ta
         .insert({
           title: zzTitle(`BT AC30 ${status}`),
           slug: zzSlug(`ac30-${status}`),
-          category: 'residential_lot',
+          property_type_id: type.id,
           price_php: 100000,
           town_id: town.id,
           status: 'list',

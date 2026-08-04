@@ -16,7 +16,10 @@ async function fillTitle(page: Page, title: string) {
   await page.locator('#lf-title').fill(title)
 }
 async function fillCategory(page: Page) {
-  await page.locator('#lf-category').selectOption({ index: 1 })
+  // Property type is a chip picker over the property_types lookup as of listing encoding
+  // v2 piece 3 (see 03-listing-journey.spec.ts) — the first chip is the first real type,
+  // there being no blank placeholder option any more.
+  await page.locator('.typechip').first().click()
 }
 async function fillTown(page: Page) {
   await page.locator('#lf-town').selectOption({ index: 1 })
@@ -62,7 +65,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillCategory(page)
     await fillTown(page)
     await fillPrice(page)
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
 
     await expect(page).toHaveURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     await expect(page.getByRole('heading', { name: title })).toBeVisible()
@@ -74,7 +77,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
       await fillCategory(page)
       await fillTown(page)
       await fillPrice(page)
-      await page.getByRole('button', { name: 'Create draft' }).click()
+      await page.getByRole('button', { name: 'Create listing' }).click()
       await expect(page).toHaveURL(/\/admin\/listings\/new$/)
       await expect(fieldInvalid(page, 'lf-title')).toHaveCount(1)
     })
@@ -83,16 +86,19 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
       await fillTitle(page, zzTitle('AC8 category'))
       await fillTown(page)
       await fillPrice(page)
-      await page.getByRole('button', { name: 'Create draft' }).click()
+      await page.getByRole('button', { name: 'Create listing' }).click()
       await expect(page).toHaveURL(/\/admin\/listings\/new$/)
-      await expect(fieldError(page, 'lf-category')).toContainText('property type')
+      // The chip picker has no id of its own; `lf-ptype-label` (the radiogroup's static
+      // label id) is the only fixed anchor into the field — the radios themselves get
+      // per-type dynamic ids (`lf-ptype-{uuid}`).
+      await expect(fieldError(page, 'lf-ptype-label')).toContainText('property type')
     })
 
     test('blank price -> field error, no row inserted', async ({ page }) => {
       await fillTitle(page, zzTitle('AC8 price'))
       await fillCategory(page)
       await fillTown(page)
-      await page.getByRole('button', { name: 'Create draft' }).click()
+      await page.getByRole('button', { name: 'Create listing' }).click()
       await expect(page).toHaveURL(/\/admin\/listings\/new$/)
       await expect(fieldInvalid(page, 'lf-price')).toHaveCount(1)
     })
@@ -101,7 +107,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
       await fillTitle(page, zzTitle('AC8 town'))
       await fillCategory(page)
       await fillPrice(page)
-      await page.getByRole('button', { name: 'Create draft' }).click()
+      await page.getByRole('button', { name: 'Create listing' }).click()
       await expect(page).toHaveURL(/\/admin\/listings\/new$/)
       await expect(fieldError(page, 'lf-town')).toContainText('Choose a town')
     })
@@ -115,26 +121,31 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillTown(page)
     await removeConstraint(page, '#lf-price', 'min')
     await page.locator('#lf-price').fill('0')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/new$/)
     await expect(fieldError(page, 'lf-price')).toContainText('₱0')
   })
 
-  test('AC-10a: category outside the 5-enum set is rejected (tampered POST value)', async ({ page }) => {
+  test('AC-10a: property_type_id not in the lookup is rejected (tampered POST value)', async ({ page }) => {
     await fillTitle(page, zzTitle('AC10a category tamper'))
     await fillTown(page)
     await fillPrice(page)
-    await page.locator('#lf-category').evaluate((el) => {
-      const select = el as HTMLSelectElement
-      const opt = document.createElement('option')
-      opt.value = 'rental_unit'
-      opt.text = 'rental_unit'
-      select.appendChild(opt)
-      select.value = 'rental_unit'
+    // Same tamper shape as AC-10b's town_id below, adapted for a radio group: inject a
+    // rogue radio sharing `name="property_type_id"` with a value that isn't in the
+    // property_types lookup, then check it — native radio-group exclusivity means setting
+    // `.checked = true` unchecks every real chip sharing that name, so this is what a
+    // tampered POST (no real chip selected) would arrive as.
+    await page.locator('[role="radiogroup"][aria-labelledby="lf-ptype-label"]').evaluate((el) => {
+      const rogue = document.createElement('input')
+      rogue.type = 'radio'
+      rogue.name = 'property_type_id'
+      rogue.value = '00000000-0000-0000-0000-000000000000'
+      el.appendChild(rogue)
+      rogue.checked = true
     })
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/new$/)
-    await expect(fieldError(page, 'lf-category')).toContainText('property type')
+    await expect(fieldError(page, 'lf-ptype-label')).toContainText('property type')
   })
 
   test('AC-10b: a nonexistent town_id is rejected with a field error', async ({ page }) => {
@@ -149,7 +160,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
       select.appendChild(opt)
       select.value = '00000000-0000-0000-0000-000000000000'
     })
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/new$/)
     await expect(page.locator('.fmsg.err')).toContainText(/town/i)
   })
@@ -161,7 +172,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillPrice(page)
     await removeConstraint(page, '#lf-lot', 'min')
     await page.locator('#lf-lot').fill('-5')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/new$/)
     await expect(fieldInvalid(page, 'lf-lot')).toHaveCount(1)
   })
@@ -173,7 +184,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillPrice(page)
     await removeConstraint(page, '#lf-bed', 'min')
     await page.locator('#lf-bed').fill('-1')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/new$/)
     await expect(fieldInvalid(page, 'lf-bed')).toHaveCount(1)
   })
@@ -184,7 +195,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillTown(page)
     await fillPrice(page)
     await page.locator('#lf-bed').fill('0')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
   })
 
@@ -200,12 +211,12 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await page.locator('#lf-desc').fill('Retained description text.')
     await page.locator('#lf-trend').check()
 
-    const categoryValue = await page.locator('#lf-category').inputValue()
+    const categoryValue = await page.locator('input[name="property_type_id"]:checked').getAttribute('value')
     const townValue = await page.locator('#lf-town').inputValue()
 
     await removeConstraint(page, '#lf-bed', 'min')
     await page.locator('#lf-bed').fill('-1')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/new$/)
 
     // Fixed per the builder's verify-fix cycle: failing actions now echo the submitted
@@ -216,14 +227,14 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await expect(page.locator('#lf-price')).toHaveValue('1750000')
     await expect(page.locator('#lf-area')).toHaveValue('Retained Area Detail')
     await expect(page.locator('#lf-desc')).toHaveValue('Retained description text.')
-    await expect(page.locator('#lf-category')).toHaveValue(categoryValue)
+    await expect(page.locator(`input[name="property_type_id"][value="${categoryValue}"]`)).toBeChecked()
     await expect(page.locator('#lf-town')).toHaveValue(townValue)
     await expect(page.locator('#lf-trend')).toBeChecked()
     // The invalid field also echoes what was typed (for redisplay) and is the only one flagged.
     await expect(page.locator('#lf-bed')).toHaveValue('-1')
     await expect(fieldInvalid(page, 'lf-bed')).toHaveCount(1)
     await expect(fieldInvalid(page, 'lf-title')).toHaveCount(0)
-    await expect(fieldInvalid(page, 'lf-category')).toHaveCount(0)
+    await expect(fieldInvalid(page, 'lf-ptype-label')).toHaveCount(0)
     await expect(fieldInvalid(page, 'lf-town')).toHaveCount(0)
     await expect(fieldInvalid(page, 'lf-price')).toHaveCount(0)
   })
@@ -234,7 +245,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillCategory(page)
     await fillTown(page)
     await fillPrice(page)
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     const firstUrl = page.url()
 
@@ -243,7 +254,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillCategory(page)
     await fillTown(page)
     await fillPrice(page)
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await expect(page).toHaveURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     expect(page.url()).not.toBe(firstUrl)
 
@@ -261,7 +272,7 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillTown(page)
     await fillPrice(page)
 
-    await page.getByRole('button', { name: 'Create draft' }).dblclick()
+    await page.getByRole('button', { name: 'Create listing' }).dblclick()
     await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/, { timeout: 15_000 })
 
     const staff = await staffDirectClient()

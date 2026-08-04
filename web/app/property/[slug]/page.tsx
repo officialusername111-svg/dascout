@@ -49,7 +49,7 @@ export default async function PropertyPage({ params }: Props) {
   if (!listing) notFound()
 
   const [similar, features] = await Promise.all([
-    getSimilarListings(listing.categoryKey, listing.id),
+    listing.categoryKey ? getSimilarListings(listing.categoryKey, listing.id) : Promise.resolve([]),
     getPopularFeatures(),
   ])
 

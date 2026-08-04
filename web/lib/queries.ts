@@ -22,7 +22,8 @@ export type ListingCard = {
    * staff have not given one — it is not required to publish.
    */
   propertyNo: string | null
-  categoryKey: CategoryKey
+  /** Null when the listing's property type has no legacy_category mapping (see toCard). */
+  categoryKey: CategoryKey | null
   categoryLabel: string
   location: string
   town: string
@@ -54,9 +55,10 @@ export type TownRow = {
  * card ends up rendering differently on two pages for no reason anyone can find later.
  */
 export const CARD_COLUMNS = `
-  id, slug, title, property_no, category, area_detail, lot_area_sqm, floor_area_sqm,
+  id, slug, title, property_no, property_type_id, area_detail, lot_area_sqm, floor_area_sqm,
   bedrooms, bathrooms, is_trending, published_at,
   towns!inner ( id, name, province, slug ),
+  property_types!inner ( legacy_category ),
   listing_photos ( storage_path, alt_text, sort_order, is_primary ),
   listing_features ( features ( name ) )
 `
@@ -66,7 +68,8 @@ export type RawListing = {
   slug: string
   title: string
   property_no: string | null
-  category: DbCategory
+  property_type_id: string
+  property_types: { legacy_category: DbCategory | null } | null
   area_detail: string | null
   lot_area_sqm: number | null
   floor_area_sqm: number | null
@@ -134,13 +137,14 @@ function locationOf(row: RawListing): string {
 export function toCard(row: RawListing, features?: string[]): ListingCard {
   const photos = sortedPhotos(row)
   const featureNames = features ?? featuresOf(row)
+  const legacyCategory = row.property_types?.legacy_category ?? null
   return {
     id: row.id,
     slug: row.slug,
     title: row.title,
     propertyNo: row.property_no,
-    categoryKey: keyFromDb(row.category),
-    categoryLabel: labelFromDb(row.category),
+    categoryKey: legacyCategory ? keyFromDb(legacyCategory) : null,
+    categoryLabel: labelFromDb(legacyCategory),
     location: locationOf(row),
     town: row.towns?.name ?? '',
     province: row.towns?.province ?? '',
@@ -197,7 +201,7 @@ export async function getListings(filters: ListingFilters): Promise<{ listings: 
     .eq('status', 'live')
 
   const categories = dbCategoriesFor(filters.cat)
-  if (categories) query = query.in('category', categories)
+  if (categories) query = query.in('property_types.legacy_category', categories)
 
   if (filters.trending) query = query.eq('is_trending', true)
 
@@ -303,7 +307,7 @@ export async function getSimilarListings(
     .from('listings')
     .select(CARD_COLUMNS)
     .eq('status', 'live')
-    .eq('category', CATEGORIES[category].db)
+    .eq('property_types.legacy_category', CATEGORIES[category].db)
     .neq('id', excludeId)
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })

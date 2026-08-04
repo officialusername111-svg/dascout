@@ -17,13 +17,14 @@ test.describe('Concurrent edit: last-write-wins on price (AC-34)', () => {
   test('session 2 wins; both changes land in price_history', async ({ browser }) => {
     const staff = await staffDirectClient()
     const { data: town } = await staff.from('towns').select('id').limit(1).single()
+    const { data: type } = await staff.from('property_types').select('id').eq('slug', 'rlot').single()
     const title = zzTitle('BT concurrent edit')
     const { data: listing, error } = await staff
       .from('listings')
       .insert({
         title,
         slug: `zz-test-concurrent-${Date.now()}`,
-        category: 'residential_lot',
+        property_type_id: type!.id,
         price_php: 1000000,
         town_id: town!.id,
         status: 'list',

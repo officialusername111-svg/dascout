@@ -60,7 +60,8 @@ type ListingForAlerts = {
   slug: string
   title: string
   price_php: number
-  category: DbCategory
+  /** Null when the listing's property type has no legacy_category mapping. */
+  category: DbCategory | null
   status: string
   towns: { name: string; province: string } | null
 }
@@ -98,8 +99,13 @@ export function priceMatches(
   return price >= floor && price <= ceiling
 }
 
-/** Whether the request's property type admits this listing. No stated type means any type. */
-export function categoryMatches(wanted: DbCategory | null, listing: DbCategory): boolean {
+/**
+ * Whether the request's property type admits this listing. No stated type means any type.
+ * A listing whose own type has no legacy_category (a type added after listing encoding v2
+ * apply 3, with no mapping to the old enum) never matches a request that named a specific
+ * type — there is nothing to compare against — but still matches an "any type" request.
+ */
+export function categoryMatches(wanted: DbCategory | null, listing: DbCategory | null): boolean {
   return wanted === null || wanted === listing
 }
 
@@ -135,7 +141,9 @@ export async function sendMatchAlerts(listingId: string): Promise<void> {
 
     const { data: listingRow, error: listingError } = await supabase
       .from('listings')
-      .select('id, slug, title, price_php, category, status, towns ( name, province )')
+      .select(
+        'id, slug, title, price_php, status, towns ( name, province ), property_types ( legacy_category )'
+      )
       .eq('id', listingId)
       .maybeSingle()
 
@@ -144,8 +152,17 @@ export async function sendMatchAlerts(listingId: string): Promise<void> {
       return
     }
 
-    const listing = listingRow as unknown as ListingForAlerts | null
-    if (!listing || listing.status !== 'live') return
+    const rawListing = listingRow as unknown as
+      | (Omit<ListingForAlerts, 'category'> & {
+          property_types: { legacy_category: DbCategory | null } | null
+        })
+      | null
+    if (!rawListing || rawListing.status !== 'live') return
+
+    const listing: ListingForAlerts = {
+      ...rawListing,
+      category: rawListing.property_types?.legacy_category ?? null,
+    }
 
     const since = new Date(Date.now() - CANDIDATE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
 

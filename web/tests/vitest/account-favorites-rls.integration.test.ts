@@ -31,12 +31,19 @@ describe('favorites RLS: own-row write, cross-row read denial, anon opacity (C.9
     if (townError) throw townError
     townId = town.id
 
+    const { data: type, error: typeError } = await staff
+      .from('property_types')
+      .select('id')
+      .eq('slug', 'rlot')
+      .single()
+    if (typeError) throw typeError
+
     const { data: listing, error } = await staff
       .from('listings')
       .insert({
         title: zzTitle('BT favorites-rls fixture'),
         slug: zzSlug('favorites-rls'),
-        category: 'residential_lot',
+        property_type_id: type.id,
         price_php: 100000,
         town_id: townId,
         status: 'list',

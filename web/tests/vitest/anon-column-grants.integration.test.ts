@@ -24,15 +24,21 @@ describe('anon column grants on public.listings (run-p8-price-detach)', () => {
   const WITHHELD = ['price_php', 'broker_id', 'created_by', 'sold_at'] as const
 
   /**
-   * Exactly the list granted in `20260802160000_listings_detach_anon_column_grant.sql`.
-   * Kept spelled out rather than imported so that a careless edit to the grant has to be
-   * made twice, in two files, to go unnoticed.
+   * The columns anon needs to read on `public.listings`. Originally exactly the list
+   * granted in `20260802160000_listings_detach_anon_column_grant.sql`; `category` came out
+   * and `property_type_id` / `frontage` went in with
+   * `20260804120000_listing_encoding_v2_apply3.sql` — `property_type_id` and `frontage`
+   * were already anon-granted back in apply 1 (same D7 "widen ahead of need" rule), this
+   * just reflects that the public site now actually reads them. Kept spelled out rather
+   * than imported so that a careless edit to the grant has to be made twice, in two files,
+   * to go unnoticed.
    */
   const GRANTED = [
     'id',
     'slug',
     'title',
-    'category',
+    'property_type_id',
+    'frontage',
     'area_detail',
     'lot_area_sqm',
     'floor_area_sqm',
@@ -78,7 +84,7 @@ describe('anon column grants on public.listings (run-p8-price-detach)', () => {
     const { error } = await anon.from('listings').insert({
       title: 'zz-anon-write-attempt',
       slug: 'zz-anon-write-attempt',
-      category: 'residential_lot',
+      property_type_id: '00000000-0000-0000-0000-000000000000',
       price_php: 1,
       town_id: '00000000-0000-0000-0000-000000000000',
     })

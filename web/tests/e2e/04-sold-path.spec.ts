@@ -22,10 +22,12 @@ test.describe.serial('Sold path: live -> sold, sold is terminal (AC-28a, AC-29b)
     await page.goto('/admin/listings/new')
     const title = zzTitle('BT sold-path')
     await page.locator('#lf-title').fill(title)
-    await page.locator('#lf-category').selectOption({ index: 1 })
+    // Property type is a chip picker over the property_types lookup as of listing
+    // encoding v2 piece 3 — see 03-listing-journey.spec.ts for the same pattern.
+    await page.locator('.typechip').first().click()
     await page.locator('#lf-town').selectOption({ index: 1 })
     await page.locator('#lf-price').fill('1800000')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     listingId = page.url().split('/').pop()!
 

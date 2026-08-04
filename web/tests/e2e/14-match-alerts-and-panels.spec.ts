@@ -160,10 +160,13 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
     await page.goto('/admin/listings/new')
     const title = zzTitle('BT match-alerts')
     await page.locator('#lf-title').fill(title)
-    await page.locator('#lf-category').selectOption('residential_lot')
+    // Property type is a chip picker over the property_types lookup as of listing
+    // encoding v2 piece 3 — 'Residential Lot' is the seeded type whose legacy value is
+    // 'residential_lot', matching the requests fixture above.
+    await page.locator('.typechip', { hasText: 'Residential Lot' }).click()
     await page.locator('#lf-town').selectOption(townId)
     await page.locator('#lf-price').fill('6000000')
-    await page.getByRole('button', { name: 'Create draft' }).click()
+    await page.getByRole('button', { name: 'Create listing' }).click()
     await page.waitForURL(/\/admin\/listings\/[0-9a-f-]{36}$/)
     listingId = page.url().split('/').pop()!
   })

@@ -17,6 +17,11 @@ describe('categoryMatches', () => {
     expect(categoryMatches('residential_lot', 'residential_lot')).toBe(true)
     expect(categoryMatches('residential_lot', 'farm_land')).toBe(false)
   })
+
+  it('a listing with no legacy_category (a post-apply-3 custom type) never matches a stated request', () => {
+    expect(categoryMatches('residential_lot', null)).toBe(false)
+    expect(categoryMatches(null, null)).toBe(true)
+  })
 })
 
 describe('priceMatches', () => {

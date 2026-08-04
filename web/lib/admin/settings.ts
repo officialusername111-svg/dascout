@@ -269,13 +269,16 @@ export function deleteRaceMessage(name: string): string {
 /**
  * The five seeded property types cannot be deleted, and this is why.
  *
- * Each of them carries a `legacy_category` — the join key that maps it back to the
- * `listing_category` enum — and the `sync_listing_property_type` trigger uses that mapping
- * to fill `property_type_id` on every listing the OLD encoding form writes. Delete the row
- * and that lookup returns nothing: listings created afterwards get a NULL
- * `property_type_id`, silently, and apply 3's NOT NULL then has nothing to stand on. A
- * seeded type with no listings on it today would still be deletable without this guard,
+ * Each of them carries a `legacy_category` — the value `web/lib/categories.ts` joins
+ * through to run the public site's fixed `?cat=` system (rlot/farm/clot/rbdg/cbdg), every
+ * bookmark and nav-group link included. Delete the row and that join finds nothing: the
+ * key stops resolving to any listing, silently, for anyone who already had it bookmarked.
+ * A seeded type with no listings on it today would still be deletable without this guard,
  * which is exactly the case that looks harmless and is not.
+ *
+ * Before listing encoding v2 apply 3, this guard also protected `sync_listing_property_type()`'s
+ * backfill mapping from the old `listings.category` column. Apply 3 dropped that trigger and
+ * the column with it, so this is now the only reason the five stay locked.
  */
 export const BUILT_IN_TYPE_BLOCKED =
   'This is one of the five built-in property types and cannot be deleted — listings encoded on the old form still map through it. Set it to Inactive instead, which takes it out of the list without breaking anything.'
