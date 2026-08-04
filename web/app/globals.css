@@ -691,3 +691,31 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
   .adnav{position:static;display:flex;overflow-x:auto;gap:4px}
   .aabar{position:static}
 }
+
+/* ============ LOADING STATE (piece 6) ============
+   The Suspense fallback LoadingMark renders. `.loading-stage` at the root segment
+   (app/loading.tsx) replaces the whole page, header included, because Header/Sidebar/
+   Footer are rendered inside page.tsx itself, not the root layout — so this takes the
+   full viewport. The admin variant (app/admin/(staff)/loading.tsx) only replaces
+   StaffLayout's <main>, with the dark admin bar staying visible above it, so it gets a
+   generous min-height instead of the viewport. */
+.loading-stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:22px;background:var(--bg)}
+.loading-stage.dark{min-height:60vh;background:var(--ink-900)}
+.loading-mark{position:relative;width:220px;max-width:60vw}
+.loading-mark-img{width:100%;display:block}
+/* Sits over the gold pin glyph in the wordmark (the "O" in DASCOUT) — the product's own
+   location-pin motif doing the pinging, not a spinner borrowed from nowhere. */
+.loading-ping{position:absolute;left:63.4%;top:47%;width:34px;height:34px;margin:-17px 0 0 -17px;
+  border-radius:50%;border:2px solid var(--gold);animation:loading-ping 1.8s var(--ease) infinite}
+.loading-ping.d2{animation-delay:.9s}
+.loading-stage.dark .loading-ping{border-color:var(--gold-l)}
+@keyframes loading-ping{
+  0%{transform:scale(.35);opacity:.9}
+  100%{transform:scale(1.9);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .loading-ping{animation:none;opacity:.55;transform:scale(1)}
+}
+.loading-copy{font-size:12.5px;color:var(--ink-3);letter-spacing:.02em}
+.loading-stage.dark .loading-copy{color:rgba(233,206,143,.7)}

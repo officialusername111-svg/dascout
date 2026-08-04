@@ -186,7 +186,10 @@ test.describe.serial('Staff journey: create through publish/withdraw/relist (AC-
   test('AC-16: moving photo C to first position persists sort_order server-side and across reload', async () => {
     async function moveEarlier(photoId: string) {
       const card = page.locator('.aphoto', { has: page.locator(`#alt-${photoId}`) })
-      await card.getByText('↑ Earlier').click()
+      // The reorder buttons went icon-only in the photos panel redesign (piece 5) —
+      // the aria-label is the only thing left to match on, same pattern already used
+      // for the delete button elsewhere in this file.
+      await card.getByRole('button', { name: /move photo \d+ earlier/i }).click()
       // Wait for the mutation's own network round trip to settle rather than a fixed
       // delay — a guessed timeout is exactly the kind of race the RPC fix (migration
       // 20260729140300) was written to eliminate app-side; the test must not reintroduce
