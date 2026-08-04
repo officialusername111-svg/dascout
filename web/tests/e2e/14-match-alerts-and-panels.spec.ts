@@ -313,13 +313,18 @@ test.describe.serial('Match alerts (AC-12..15) and market panels (AC-16) on one 
 
   test('AC-13/R4 idempotency: withdraw -> relist does not duplicate a row, and retries the unsent one', async () => {
     await page.goto(`/admin/listings/${listingId}`)
+    // Withdraw is a secondary move (live -> withdrawn isn't the primary for_approval/live
+    // path) — it lives behind the bar's "Status" menu (piece 3).
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     await page.getByRole('button', { name: 'Withdraw from the site' }).click()
     await page.getByRole('button', { name: /Yes — withdraw/i }).click()
     await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Withdrawn')
 
+    // Relist (withdrawn -> live) IS the primary move — a direct bar button, confirmed by
+    // the pill rather than LifecyclePanel, which isn't mounted for a primary move.
     await page.getByRole('button', { name: 'Relist' }).click()
     await page.getByRole('button', { name: /Yes — relist/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
+    await expect(page.locator('.pill', { hasText: 'Live' }).first()).toBeVisible()
 
     const staff = await staffDirectClient()
     // Give the second after() run (two more sequential Resend calls) a moment, then

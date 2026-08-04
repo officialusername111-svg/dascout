@@ -43,7 +43,11 @@ test.describe('Auth guard and admin unindexability (AC-1, 2, 3, 4a, 5, 6, 36)', 
     await expect(firstOpen).toBeVisible()
     await firstOpen.click()
     await expect(page.locator('.admin-bar')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Status and publishing' })).toBeVisible()
+    // LifecyclePanel ('Status and publishing') only mounts behind the action bar's
+    // "Status ▾" menu for a secondary move (piece 3) — it is not guaranteed for
+    // whatever status this seed listing happens to be in. The action bar's own title
+    // is unconditional and proves the second page resolved real listing data.
+    await expect(page.locator('.aabar-id .ttl')).toBeVisible()
   })
 
   test('AC-6: sign-out clears the session; a subsequent /admin request redirects to sign-in', async ({ page }) => {

@@ -45,7 +45,9 @@ test.describe.serial('Sold path: live -> sold, sold is terminal (AC-28a, AC-29b)
     await page.reload()
     await page.getByRole('button', { name: 'Publish', exact: true }).click()
     await page.getByRole('button', { name: /Yes — publish/i }).click()
-    await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Live')
+    // Publish is the bar's primary move (for_approval -> live) — LifecyclePanel isn't
+    // mounted for it at all (piece 3); the pill flipping is the confirmation.
+    await expect(page.locator('.pill', { hasText: 'Live' }).first()).toBeVisible()
   })
 
   test.afterAll(async () => {
@@ -54,6 +56,9 @@ test.describe.serial('Sold path: live -> sold, sold is terminal (AC-28a, AC-29b)
   })
 
   test('AC-28a: marking sold stamps sold_at', async () => {
+    // Sell is a secondary move (live -> sold isn't the primary for_approval/live path) —
+    // it lives behind the bar's "Status" menu (piece 3).
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     await page.getByRole('button', { name: 'Mark as sold' }).click()
     await page.getByRole('button', { name: /Yes — mark as sold/i }).click()
     await expect(page.locator('.apanel:has(#lifecycleH) .fmsg.ok')).toContainText('Sold')
@@ -66,6 +71,9 @@ test.describe.serial('Sold path: live -> sold, sold is terminal (AC-28a, AC-29b)
 
   test('AC-29b: sold is terminal — no transitions offered at all', async () => {
     await page.reload()
+    // Sold still shows the "Status ▾" trigger (so the "Sold is final" explanation stays
+    // reachable), but LifecyclePanel itself only mounts once the menu is opened.
+    await page.getByRole('button', { name: 'Status ▾' }).click()
     await expect(page.locator('.atrans')).toHaveCount(0)
     await expect(page.locator('.apanel:has(#lifecycleH) .empty', { hasText: 'This listing is sold' })).toBeVisible()
   })

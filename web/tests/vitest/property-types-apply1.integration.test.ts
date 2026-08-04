@@ -140,10 +140,15 @@ describe('listing encoding v2 apply 1: property_types, grants, feature FK', () =
     expect(data).toHaveLength(SEED.length)
   })
 
-  it('does not let anon read legacy_category, the transition scaffolding', async () => {
-    const { error } = await anon.from('property_types').select('legacy_category')
-    expect(error).not.toBeNull()
-    expect(error!.code).toBe('42501')
+  it('lets anon read legacy_category — widened by 20260804110000 ahead of apply 3', async () => {
+    // Originally refused: nothing public read this column before the ?cat= filter's join
+    // needed it. 20260804110000_property_types_grant_anon_legacy_category.sql widened it,
+    // deliberately ahead of the code that depends on it (D7's "widen before the code"
+    // rule) — this asserts the grant that migration exists to add, not the refusal it
+    // exists to remove.
+    const { data, error } = await anon.from('property_types').select('legacy_category')
+    expect(error).toBeNull()
+    expect(data).toHaveLength(SEED.length)
   })
 
   it('does not let anon write property_types — the default-privilege trap', async () => {
