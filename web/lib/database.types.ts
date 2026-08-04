@@ -286,6 +286,48 @@ export type Database = {
           },
         ]
       }
+      listing_status_changes: {
+        Row: {
+          actor_id: string | null
+          changed_at: string
+          from_status: Database["public"]["Enums"]["listing_status"] | null
+          id: string
+          listing_id: string
+          to_status: Database["public"]["Enums"]["listing_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          changed_at?: string
+          from_status?: Database["public"]["Enums"]["listing_status"] | null
+          id?: string
+          listing_id: string
+          to_status: Database["public"]["Enums"]["listing_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          changed_at?: string
+          from_status?: Database["public"]["Enums"]["listing_status"] | null
+          id?: string
+          listing_id?: string
+          to_status?: Database["public"]["Enums"]["listing_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_status_changes_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_status_changes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_views: {
         Row: {
           id: string

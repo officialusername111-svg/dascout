@@ -664,6 +664,74 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
   }
 }
 
+export type ListingStatusChangeRow = {
+  id: string
+  changedAtLabel: string | null
+  /** A name, a short id, or a plain marker when the account itself is gone. */
+  actorName: string
+  fromStatusLabel: string | null
+  toStatusLabel: string
+}
+
+type RawStatusChangeRow = {
+  id: string
+  actor_id: string | null
+  from_status: ListingStatus | null
+  to_status: ListingStatus
+  changed_at: string
+}
+
+/** One listing detail page's worth of history. The table itself keeps everything. */
+export const STATUS_CHANGE_LIMIT = 20
+
+/**
+ * The most recent status changes for one listing, newest first — who moved it, from what,
+ * to what, and when. Written by the `listings_record_status_change` trigger
+ * (`20260804140000_listing_status_audit_trail.sql`); this only reads it.
+ *
+ * Names come from a SECOND read rather than an embed, the same pattern
+ * `listAdminRoleChanges` uses for the same reason: one `in` on the actor ids involved is
+ * smaller than an embed's disambiguated, flattened shape for a single foreign key.
+ *
+ * A missing profile is not an error — `actor_id` is `on delete set null` on purpose, same
+ * as the role-change trail: the record of what was done outlives the account that did it.
+ */
+export async function getListingStatusHistory(listingId: string): Promise<ListingStatusChangeRow[]> {
+  await requireStaff()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('listing_status_changes')
+    .select('id, actor_id, from_status, to_status, changed_at')
+    .eq('listing_id', listingId)
+    .order('changed_at', { ascending: false })
+    .limit(STATUS_CHANGE_LIMIT)
+
+  if (error) throw error
+
+  const rows = (data ?? []) as unknown as RawStatusChangeRow[]
+  if (!rows.length) return []
+
+  const actorIds = [...new Set(rows.flatMap((row) => (row.actor_id ? [row.actor_id] : [])))]
+
+  const { data: people, error: peopleError } = actorIds.length
+    ? await supabase.from('profiles').select('id, full_name').in('id', actorIds)
+    : { data: [], error: null }
+
+  if (peopleError) throw peopleError
+
+  const names = new Map((people ?? []).map((person) => [person.id, person.full_name]))
+  const nameOf = (id: string): string => names.get(id)?.trim() || `Account ${shortId(id)}`
+
+  return rows.map((row) => ({
+    id: row.id,
+    changedAtLabel: stampLabel(row.changed_at),
+    actorName: row.actor_id ? nameOf(row.actor_id) : 'Account since removed',
+    fromStatusLabel: row.from_status ? STATUS_LABELS[row.from_status] : null,
+    toStatusLabel: STATUS_LABELS[row.to_status],
+  }))
+}
+
 export type TownOption = { id: string; label: string }
 
 /** Towns are select-only this run: staff pick from the eight seeded rows, nothing more. */

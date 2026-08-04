@@ -10,6 +10,7 @@ import { displayTitle } from '@/lib/format'
 import {
   getAdminListingDetail,
   getFeatureOptions,
+  getListingStatusHistory,
   getPropertyTypeOptions,
   getTownOptions,
   type CheckAnchor,
@@ -49,11 +50,12 @@ export default async function EditListingPage({ params, searchParams }: Props) {
   const { id } = await params
   const search = await searchParams
 
-  const [listing, towns, features, activePropertyTypes] = await Promise.all([
+  const [listing, towns, features, activePropertyTypes, statusHistory] = await Promise.all([
     getAdminListingDetail(id),
     getTownOptions(),
     getFeatureOptions(),
     getPropertyTypeOptions(),
+    getListingStatusHistory(id),
   ])
 
   if (!listing) notFound()
@@ -118,6 +120,7 @@ export default async function EditListingPage({ params, searchParams }: Props) {
             Photos
             {photosIncomplete && <i className="warn" aria-label="incomplete" />}
           </a>
+          <a href="#history">History</a>
         </nav>
 
         <div className="adbody">
@@ -188,6 +191,40 @@ export default async function EditListingPage({ params, searchParams }: Props) {
               photos={listing.photos}
             />
           </div>
+
+          {/*
+            Written by the listings_record_status_change trigger
+            (20260804140000_listing_status_audit_trail.sql), one row per status move —
+            nothing here can be edited or deleted from the product, same guarantee as the
+            "Recent access changes" trail on the admins screen.
+          */}
+          <section className="apanel" aria-labelledby="historyH" id="history">
+            <h2 id="historyH">History</h2>
+            {statusHistory.length ? (
+              <div className="alist">
+                {statusHistory.map((change) => (
+                  <div className="arow" key={change.id}>
+                    <div className="t">
+                      <b>
+                        {change.fromStatusLabel ? `${change.fromStatusLabel} → ` : 'Created as '}
+                        {change.toStatusLabel}
+                      </b>
+                      <span className="meta">
+                        By {change.actorName}
+                        {change.changedAtLabel ? ` · ${change.changedAtLabel}` : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty">
+                <b>No status changes recorded yet</b>
+                Submitting for approval, approving, or any other status move writes the
+                first line here.
+              </div>
+            )}
+          </section>
 
           <Link className="crumb" href={backHref}>
             ← Back to listings
