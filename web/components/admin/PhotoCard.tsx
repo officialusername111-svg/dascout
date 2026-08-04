@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { updatePhotoMeta, type ActionResult } from '@/app/admin/actions'
+import { Icon } from '@/components/Icon'
 
 export type PhotoCardPhoto = {
   id: string
@@ -70,7 +71,12 @@ export function PhotoCard({
             the photo again.
           </span>
         )}
-        {photo.isPrimary && <span className="pill">Cover</span>}
+        {photo.isPrimary && (
+          <span className="pill">
+            <Icon name="star" />
+            <span className="sr-only">Cover photo</span>
+          </span>
+        )}
       </div>
 
       <form action={formAction}>
@@ -99,24 +105,29 @@ export function PhotoCard({
         </div>
       </form>
 
+      {/* One row, icons doing the work three rows of button text used to: reorder is the
+          most-repeated and most self-explanatory action here, so it drops its label first
+          (direction + the disabled state at either end of the set already say what it
+          does). Make cover and delete keep theirs — one is a state change worth naming,
+          the other is destructive and must never be a guess from an icon alone. */}
       <div className="aactions">
         <button
-          className="btn btn-ghost"
+          className="btn btn-ghost icon-only"
           type="button"
           disabled={busy || index === 0}
           onClick={() => onMove(index, -1)}
           aria-label={`Move photo ${index + 1} earlier`}
         >
-          ↑ Earlier
+          <Icon name="chev" className="icon flip" />
         </button>
         <button
-          className="btn btn-ghost"
+          className="btn btn-ghost icon-only"
           type="button"
           disabled={busy || index === total - 1}
           onClick={() => onMove(index, 1)}
           aria-label={`Move photo ${index + 1} later`}
         >
-          ↓ Later
+          <Icon name="chev" />
         </button>
         {!photo.isPrimary && (
           <button
@@ -125,14 +136,12 @@ export function PhotoCard({
             disabled={busy}
             onClick={() => onMakeCover(photo.id)}
           >
-            Make cover
+            <Icon name="star" /> Make cover
           </button>
         )}
-      </div>
 
-      {/* Two clicks to delete. A photo is the only thing on this screen whose removal
-          also removes a file, so the second click is the confirmation. */}
-      <div className="aactions">
+        {/* Two clicks to delete. A photo is the only thing on this screen whose removal
+            also removes a file, so the second click is the confirmation. */}
         {confirming ? (
           <>
             <button
@@ -152,12 +161,13 @@ export function PhotoCard({
           </>
         ) : (
           <button
-            className="btn btn-ghost"
+            className="btn btn-ghost danger icon-only"
             type="button"
             disabled={busy}
             onClick={() => setConfirming(true)}
+            aria-label="Delete photo"
           >
-            Delete photo
+            <Icon name="trash" />
           </button>
         )}
       </div>

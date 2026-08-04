@@ -481,11 +481,19 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 .aphotos{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .aphoto .card{aspect-ratio:4/3;margin-bottom:9px}
 .aphoto .card img{width:100%;height:100%;object-fit:cover}
-.aphoto .card .pill{position:absolute;top:10px;left:10px}
+.aphoto .card .pill{position:absolute;top:10px;left:10px;padding:7px}
+.aphoto .card .pill .icon{width:14px;height:14px;margin:0}
 .aphoto .ph-missing{position:absolute;inset:0;display:grid;place-items:center;padding:12px;text-align:center;background:var(--bg-2);color:var(--ink-3);font-size:12px}
 .aphoto .field{margin-bottom:8px}
 .aphoto .aactions{gap:6px;margin-top:0}
 .aphoto .aactions button{min-height:38px;padding:0 11px;font-size:11px}
+/* Reorder is icon-only: the most-repeated action on this row, and direction plus the
+   disabled state at either end of the set already say what it does without a label. */
+.aphoto .aactions .icon-only{width:38px;flex:0 0 38px;padding:0}
+.aphoto .aactions .icon-only .icon{width:16px;height:16px}
+.icon.flip{transform:rotate(180deg)}
+.btn.danger{border-color:var(--err);color:var(--err)}
+.btn.danger:hover{background:var(--err);color:#fff}
 
 .aqueue{display:grid;gap:6px;margin-top:14px;font-size:13px}
 .aqueue > div{display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-s);color:var(--ink-2)}

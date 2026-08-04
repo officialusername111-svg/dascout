@@ -30,6 +30,7 @@ export function IconSprite() {
       <symbol id="i-hand" viewBox="0 0 24 24"><path d="M11 12V6a2 2 0 1 1 4 0v6" /><path d="M15 11V8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-1c-3 0-5-1.5-6.5-4L2 14.5a2 2 0 0 1 3.4-2L7 15V5a2 2 0 1 1 4 0" /></symbol>
       <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></symbol>
       <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5 19 12 7 19.5z" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></symbol>
     </svg>
   )
 }
