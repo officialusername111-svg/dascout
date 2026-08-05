@@ -19,6 +19,9 @@
 - [agent-derived] Full-suite E2E account-spec interference — TEST_BUYER password not restored
   across specs 07/09/10/11/15 (HANDOFF-2026-08-04-evening.md §3; task chip task_3f5515f1).
   Needs the human's flip to `approved` before an autonomous run picks it up.
+- [user-intake, recurring] V3 full-battery verification per docs/E2E-V3-RUNBOOK.md — on
+  request, before any release, after any schema/grant change, or when a week has passed
+  without one. Runs in-session (sweep needs the Supabase MCP); never as an OS job.
 
 ## Parked
 
