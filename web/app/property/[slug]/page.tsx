@@ -117,8 +117,21 @@ export default async function PropertyPage({ params }: Props) {
               >
                 <Icon name="mail" /> Inquire About This Property
               </a>
+              {/* The second route to the same enquiry. `tel:` so a phone dials on tap;
+                  the visible text keeps the spaces because a number read aloud over the
+                  counter is the other half of what this is for. Same number the footer
+                  carries — this one sits where the decision is being made. */}
+              <a className="btn btn-ghost" href="tel:+639206685742">
+                <Icon name="phone" /> +63 920 668 5742
+              </a>
               <SaveButton slug={listing.slug} title={listing.title} />
             </div>
+            {/* Sits under the enquiry actions on purpose: it qualifies them. DaScout is
+                the only channel for this property, so a buyer who found the owner some
+                other way is being told, here, that it does not work that way. */}
+            <p className="cta-note">
+              All inquiries for this property are handled exclusively through DaScout.
+            </p>
           </div>
         </div>
 

@@ -325,6 +325,12 @@ body.dialog-open{overflow:hidden}
 .feat-chips span{display:inline-flex;align-items:center;gap:7px;background:var(--bg-2);border-radius:999px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .feat-chips .icon{color:var(--ok)}
 .prop-cta{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+/* The exclusivity note qualifies the buttons above it, so it is tied to them visually —
+   a tighter top margin than the buttons' own, and quieter than `.desc` so it reads as a
+   condition on the action rather than as more property copy. Quieted by SIZE, not by
+   colour — `--ink-3` at 13px only reaches 4.26:1 on white, so this keeps `--ink-2` (7.7:1)
+   and lets the smaller type carry the hierarchy. */
+.cta-note{margin-top:12px;font-size:13px;line-height:1.6;color:var(--ink-2)}
 .notfound{text-align:center;padding:80px 20px}
 .notfound h1{margin-bottom:10px}
 .notfound p{color:var(--ink-2);margin-bottom:22px}
