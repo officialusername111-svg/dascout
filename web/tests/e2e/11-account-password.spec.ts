@@ -22,7 +22,15 @@ import { signInViaModal, signInAsStaff } from './helpers'
  */
 test.describe.serial('Password management (E.21-25)', () => {
   const ORIGINAL_PASSWORD = process.env.TEST_BUYER_PASSWORD!
-  const TEMP_PASSWORD = `Zz-Bt-Temp-${Date.now()}`
+  // FIXED, not `Zz-Bt-Temp-${Date.now()}`. A timestamped temp value is only knowable to the
+  // process that generated it, so a run killed between the rotation and `afterAll` left the
+  // shared fixture on a password NOBODY could sign in with — unrecoverable without a
+  // production auth write. That is exactly what happened on 2026-08-04 and it blocked five
+  // Vitest files for three days. A constant is recoverable by any later run: the candidate
+  // loop below signs in with it and puts the original back. It is a throwaway value on a
+  // `.local` fixture account and is the real password only for the seconds between E.22 and
+  // `afterAll`.
+  const TEMP_PASSWORD = 'Zz-Bt-Temp-Fixture-Rotation'
   let rotated = false
 
   test.afterAll(async () => {
