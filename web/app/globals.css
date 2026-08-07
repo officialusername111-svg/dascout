@@ -100,9 +100,13 @@ nav.main a[aria-current="page"]{color:var(--ink-900);box-shadow:inset 0 -2.5px 0
    v6: the headline block sits on its own, and beneath it the featured photo tile and the
    white glass search card sit on ONE line with `space-between`. The gap that leaves in
    the middle is deliberate — it is where the lit building in the photo stays visible. */
-.hero{position:relative;background:#000 url(/assets/hero-night2.jpg) center/cover no-repeat}
+/* v2 enhancement round (A2): the client asked for the building zoomed into and mostly
+   black. `230%` with the focus at `57% 26%` crops to the lit tower alone, and the scrim
+   is deep enough (96%→90%) that the photo reads as a small lit detail rather than a
+   backdrop. Both numbers are the owner's Option 2 — do not "tidy" them. */
+.hero{position:relative;background:#000 url(/assets/hero-night2.jpg) 57% 26%/230% no-repeat}
 .hero::before{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(0,0,0,.86) 0%,rgba(0,0,0,.66) 46%,rgba(0,0,0,.42) 74%,rgba(0,0,0,.52) 100%)}
+  background:linear-gradient(90deg,rgba(0,0,0,.96) 0%,rgba(0,0,0,.93) 42%,rgba(0,0,0,.74) 66%,rgba(0,0,0,.90) 100%)}
 .hero .in{position:relative;max-width:1220px;margin:0 auto;padding:56px 24px 52px}
 .hero .lead{max-width:640px;margin-bottom:32px}
 .hero .label{display:block;font-size:12px;font-weight:600;letter-spacing:.14em;
@@ -142,28 +146,40 @@ nav.main a[aria-current="page"]{color:var(--ink-900);box-shadow:inset 0 -2.5px 0
   background:rgba(255,255,255,.5)}
 .spot-ctrl .dot[aria-pressed="true"]::after{background:var(--gold);width:18px;border-radius:4px}
 
-/* ============ SEARCH CARD — white glass, inside the hero ============ */
-.searchcard{width:562px;max-width:100%;border-radius:18px;padding:20px 20px 18px;position:relative;
-  background:rgba(255,255,255,.80);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
-  border:1px solid rgba(255,255,255,.72);box-shadow:0 20px 54px rgba(0,0,0,.46)}
-/* solid fallback where backdrop blur is unsupported (keeps the fields legible over the photo) */
+/* ============ SEARCH CARD — dark glass, inside the hero ============
+   v2 enhancement round (A3): the white card was replaced by a smoked panel — white values,
+   gold labels, gold-tinted edge. It also closes a pre-existing contrast failure: the field
+   labels were `--ink-3` compositing to 2.70:1 on the white card, and are 12.64:1 here. */
+.searchcard{width:562px;max-width:100%;border-radius:18px;padding:20px 20px 18px;position:relative;color:#fff;
+  background:linear-gradient(146deg,rgba(22,20,16,.62) 0%,rgba(14,13,11,.52) 100%);
+  -webkit-backdrop-filter:blur(40px) saturate(1.5);backdrop-filter:blur(40px) saturate(1.5);
+  border:1.5px solid rgba(233,206,143,.34);
+  box-shadow:0 30px 70px rgba(0,0,0,.6), inset 0 1.5px 0 rgba(255,255,255,.22)}
+/* solid fallback where backdrop blur is unsupported. It must be an opaque DARK — the old
+   near-white fallback would now put white type on a white card. */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .searchcard{background:rgba(255,255,255,.95)}
+  .searchcard{background:rgba(16,14,11,.96)}
 }
-.searchcard h2{font-size:18px;margin-bottom:14px}
+.searchcard h2{font-size:18px;margin-bottom:14px;color:#fff}
 .sfrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.sf{border:1px solid rgba(0,0,0,.10);border-radius:11px;padding:7px 12px;background:rgba(255,255,255,.72);min-width:0}
-.sf label{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:1px}
-.sf select{width:100%;border:none;font:inherit;font-size:14px;color:var(--ink);background:none;min-height:26px;appearance:none;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2352525B' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+.sf{border:1px solid rgba(255,255,255,.20);border-radius:11px;padding:7px 12px;background:rgba(255,255,255,.09);min-width:0}
+.sf label{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-l);margin-bottom:1px}
+.sf select{width:100%;border:none;font:inherit;font-size:14px;color:#fff;background:none;min-height:26px;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E9CE8F' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
   background-repeat:no-repeat;background-position:right 0 center;background-size:15px;padding-right:19px;text-overflow:ellipsis}
+/* the popup list is drawn by the OS, so its options need a dark background of their own or
+   they inherit white-on-white from the control */
+.sf select option{color:var(--ink);background:#fff}
 .sf select:focus{outline:none}
-.sf:focus-within{border-color:var(--gold-d)}
-.searchcard .go{margin-top:14px;width:100%;min-height:52px;background:var(--ink-900);color:#fff;border-radius:12px;
+.sf:focus-within{border-color:var(--gold-l)}
+.searchcard .go{margin-top:14px;width:100%;min-height:52px;
+  background:linear-gradient(180deg,var(--gold-l),var(--gold));color:var(--on-gold);border-radius:12px;
   display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;
   font-weight:700;font-size:15.5px;position:relative}
-.searchcard .go:hover{background:var(--ink-800)}
-.searchcard .go .circ{position:absolute;right:8px;width:36px;height:36px;border-radius:50%;background:#fff;color:var(--ink-900);display:grid;place-items:center}
+/* brightness, not a colour swap: the button is gold now, and the old dark hover would put
+   `--on-gold` text on a near-black fill. Matches `.btn-gold:hover`. */
+.searchcard .go:hover{filter:brightness(1.05)}
+.searchcard .go .circ{position:absolute;right:8px;width:36px;height:36px;border-radius:50%;background:var(--ink-900);color:var(--gold-l);display:grid;place-items:center}
 
 /* ============ LISTING CARDS ============ */
 .tabs{display:flex;gap:8px;flex-wrap:wrap}
@@ -223,26 +239,42 @@ nav.main a[aria-current="page"]{color:var(--ink-900);box-shadow:inset 0 -2.5px 0
 .topitem .t .meta{display:block;font-size:12px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 
 /* ============ EXPECT-FROM-US BAND — dark band, copy left, 2x2 cards right ============ */
-.expect{background:var(--ink-900);border-radius:20px;padding:42px 40px;display:grid;
+/* v2 enhancement round (A4): band and cards follow the client artwork's own gradient,
+   sampled off `Dascout.png` rather than matched by eye. The band is NOT flat black — it is
+   a soft warm glow anchored at the LEFT EDGE, MID-HEIGHT (#332f22 there), falling away to
+   near-black by about 45% across. Every value is warm (R > G > B); an earlier pass used
+   cool blue-greys and read visibly grey beside the artwork. */
+.expect{background:radial-gradient(128% 112% at 0% 50%,
+    #332f22 0%, #2b2719 20%, #211e15 34%, #1b1811 52%, #17150f 100%);
+  border-radius:20px;padding:42px 40px;display:grid;
   grid-template-columns:minmax(260px,.85fr) 1.15fr;gap:40px;align-items:center}
 .expect .lead h2{color:#fff;font-size:clamp(24px,2.5vw,32px);max-width:14ch}
 .expect .lead h2 em{color:var(--gold)}
 .expect .lead p{color:rgba(240,240,244,.78);font-size:14.5px;line-height:1.7;margin:16px 0 22px;max-width:38ch}
 .ecards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.ecard{background:#fff;border-radius:14px;padding:20px}
-.ecard .ic{width:38px;height:38px;border-radius:10px;background:var(--bg-2);color:var(--gold-d);display:grid;place-items:center;margin-bottom:12px}
-.ecard .ic .icon{width:20px;height:20px;stroke-width:1.7}
-.ecard b{display:block;font-family:var(--font-head),system-ui,sans-serif;font-size:14.5px;color:var(--ink-900);margin-bottom:6px}
-.ecard span{color:var(--ink-2);font-size:13px;line-height:1.6;display:block}
+/* the artwork's dark glossy tile: a bright specular top rim at #3e3c38, down through warm
+   greys, then a little bounce light returning along the bottom edge */
+.ecard{border-radius:26px;padding:22px 22px 24px;
+  background:linear-gradient(177deg,#3e3c38 0%,#2c2a26 30%,#211f1b 62%,#1a1815 84%,#272522 100%);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.26), inset 0 -1px 0 rgba(255,255,255,.07),
+    0 14px 34px rgba(0,0,0,.5)}
+/* gold glyph centred at the top — no cream square, no top-left placement */
+.ecard .ic{display:flex;justify-content:center;margin-bottom:13px;color:var(--gold)}
+.ecard .ic .icon{width:30px;height:30px}
+.ecard b{display:block;font-family:var(--font-head),system-ui,sans-serif;font-size:15px;color:#fff;margin-bottom:7px;letter-spacing:-.01em}
+.ecard span{color:rgba(226,226,230,.80);font-size:13px;line-height:1.6;display:block}
 .btn-sm{min-height:40px;padding:0 18px;font-size:12px}
 
-/* ============ VERIFIED BAND — photo left, statement + account CTA right ============ */
-.verify{background:var(--bg-2);border-radius:20px;padding:26px;display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
-.verify .shot{width:100%;height:100%;min-height:330px;object-fit:cover;border-radius:16px}
-.verify .vtext{padding-right:12px}
-.verify h2{font-size:clamp(23px,2.4vw,30px);max-width:20ch}
-.verify h2 em{color:var(--gold-d)}
-.verify p{color:var(--ink-2);font-size:14.5px;line-height:1.75;margin:16px 0 22px;max-width:52ch}
+/* ============ BUYERS & SELLERS BAND — the client's flat artwork, account CTA beneath ====
+   v2 enhancement round (A6): was a photo-left/statement-right grid; the owner chose to ship
+   the supplied picture as-is, so the band is now one image with the button centred under
+   it. The statement lives inside the picture — see the `alt` in Sections.tsx. */
+.verify{display:flex;flex-direction:column;align-items:center;gap:22px}
+/* the <picture> needs a width of its own: it is an inline flex item, so `align-items:center`
+   shrinks it to content and the img's `width:100%` would resolve against nothing — the band
+   measured 0x0 and srcset picked the smallest file */
+.verify picture{display:block;width:100%}
+.verify .banner{display:block;width:100%;height:auto;border-radius:20px}
 
 /* ============ FOOTER — brand / get in touch / browse, then the bottom bar ============ */
 footer{background:var(--ink-950);color:rgba(255,255,255,.68);margin-top:56px;padding:38px 24px 30px;font-size:13px}
@@ -361,15 +393,14 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 @media (max-width:1020px){
   .toplist{grid-template-columns:1fr}
   .grid{grid-template-columns:repeat(3,1fr)}
-  .expect,.verify{grid-template-columns:1fr}
-  .verify .shot{min-height:240px}
-  .verify .vtext{padding-right:0}
+  .expect{grid-template-columns:1fr}
 }
 @media (max-width:880px){
   nav.main{display:none}
   .burger{display:flex}
-  /* mobile hero: the tile and the search card stack, both full width */
-  .hero{background-position:70% center}
+  /* mobile hero: the tile and the search card stack, both full width. The crop itself is
+     NOT re-pointed here any more — `57% 26%` at 230% is the owner's chosen framing and it
+     holds at every width; the old `70% center` predates the zoom and fought it. */
   .hero .in{padding:48px 24px 52px}
   .hero h1{max-width:none}
   .hero .ctas .btn{width:100%}
@@ -467,7 +498,7 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
    already does keyboard nav and grouping for free, and the visible "chip" is just the
    `<label>` — `.sr-only` hides the input itself, `:checked + label` carries the state, so
    there is no React state to keep in sync with what the DOM shows. */
-.typepicker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.typepicker{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:2px}
 .typechip{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 16px 0 12px;
   border:1.5px solid var(--line);border-radius:99px;font-size:13.5px;font-weight:600;
   color:var(--ink-2);background:#fff;cursor:pointer;transition:background var(--dur-1) var(--ease),

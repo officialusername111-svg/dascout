@@ -31,6 +31,14 @@ export function IconSprite() {
       <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></symbol>
       <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5 19 12 7 19.5z" /></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></symbol>
+      {/* The expectations band draws SOLID glyphs, which the stroked set above cannot do.
+          `fill`/`stroke` sit on the <symbol> so they beat `.icon`'s inherited stroke, the
+          same trick `i-facebook` uses. The knocked-out detail is a fixed near-black
+          because it reads as a hole in the gold disc, not as a second colour. */}
+      <symbol id="i-check-fill" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10" /><path d="m8 12.3 2.7 2.7L16.2 9" fill="none" stroke="#1C1403" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></symbol>
+      <symbol id="i-target-fill" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6.6" fill="none" stroke="#1C1403" strokeWidth="2" /><circle cx="12" cy="12" r="2.4" fill="#1C1403" /></symbol>
+      <symbol id="i-key-fill" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M14.5 2a7.5 7.5 0 0 0-7.1 9.9l-5.1 5.1a1.4 1.4 0 0 0-.4 1v3.6c0 .2.2.4.4.4h3.9c.3 0 .5-.2.5-.5v-2h2c.3 0 .5-.2.5-.5v-2h2c.4 0 .8-.2 1-.4l.7-.7A7.5 7.5 0 1 0 14.5 2m2.6 6.4a1.9 1.9 0 1 1 0-3.8 1.9 1.9 0 0 1 0 3.8" /></symbol>
+      <symbol id="i-gem-fill" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6.4 2.6h11.2l4.2 5.8H2.2zM2.6 10h6.1l2.6 11zM10.3 10h3.4L12 21.6zM15.3 10h6.1L12.7 21z" /></symbol>
     </svg>
   )
 }
