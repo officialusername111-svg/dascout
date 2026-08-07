@@ -26,3 +26,6 @@ REVIEW-PENDING.md
 # test runner output
 web/test-results/
 web/playwright-report/
+
+# batch queue state (loop-me)
+LOOP-STATE.md
