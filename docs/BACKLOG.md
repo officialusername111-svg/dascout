@@ -27,8 +27,37 @@
   (Phases C and D) were NOT started — see `## Next`. **Run closed `done-parked`; commits
   `61556ca` `522ae3d` `ecbc0ab` `e4105aa` pushed to `origin/main` at the owner's OK.**
 
-- **Buyers & Sellers band rebuild — SAMPLE PRESENTED 2026-08-07, awaiting approval. No code
-  written.** Source: `C:\Users\USER\Downloads\Partnering with Buyers and Sellers\` — the three
+- **Buyers & Sellers band REDESIGN — 3 arrangements presented 2026-08-07, awaiting the owner's
+  pick. No code written. SUPERSEDES the layered rebuild below.** New source:
+  `C:\Users\USER\Downloads\new_asset\` — `PwBS_2.png` (2136×805, background+silk ALREADY
+  composited, alpha) and `icon-removebg.png` (313×450 gold pin, **real transparency**).
+  Sample: https://claude.ai/code/artifact/3106391e-0206-4c09-abb4-779d1d0563c4
+  - These assets change the approach: no `mix-blend-mode: screen` compositing needed, the pin
+    is a placeable element, and the wordmark is NOT supplied — so kicker, wordmark and
+    paragraph all become live text. One image + one pin, everything else HTML.
+  - Three arrangements offered: **A** split billboard (faithful to the artwork), **B** statement
+    → 3 proof chips → body (**recommended**), **C** conversion strip with the paragraph behind
+    a disclosure. Primary task of the band = get an unregistered visitor to press
+    "Get started today"; B serves it without losing a word.
+  - Old→new map is in the sample; nothing from the current band is dropped, and the
+    462-character `alt` string disappears because the words stop being pixels.
+  - Weight: backdrop 29 KB + pin 7 KB = **36 KB**, retiring 307 KB of `buyers-sellers-*`.
+  - **Settled, found in code not asked:** `app/layout.tsx:18-19` records that the artwork's
+    display face has no licensed files in the repo and **Montserrat Bold is the stand-in the
+    owner already approved in the mockup**. The wordmark uses it. Do not re-ask.
+  - **Montserrat ships at weights 600 and 700 ONLY** (`layout.tsx:23`). A first pass set the
+    wordmark at 800 and the browser silently faked it — corrected to 700. Anything setting
+    `--font-head` above 700 is synthesising.
+  - Verified at 375 / 768 / 1385 px: no page-level horizontal scroll, both assets resolve in
+    all five band instances, wordmark scales 26 → 47.6 → 52 px, and Montserrat is **measurably
+    rendering** (244 px vs 208 px for the fallback) — the earlier sample was silently showing
+    Segoe UI, which `document.fonts.check` reports as a pass and only a width probe catches.
+  - THREE open points: (1) B moves the "title-checked / boundary-walked / confirmed on the
+    ground" clause onto its own line — no words added or removed, but the sentence order
+    changes; (2) "Dascout" → "DaScout"; (3) the CTA sits inside the band.
+
+- ~~Buyers & Sellers band rebuild from the 3-layer folder~~ — SUPERSEDED by the entry above,
+  kept for the measurements. Source: `C:\Users\USER\Downloads\Partnering with Buyers and Sellers\` — the three
   LAYERS of the banner that shipped flat this morning (`_Background.png` faceted panel,
   `_2.png` silk drape, `_1.png` gold pin + wordmark lockup), all 5063×1906, plus `Words.txt`
   carrying the paragraph as text. Confirmed by inspection that `Dascout2.png` is these three
