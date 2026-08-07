@@ -24,7 +24,20 @@
 - **Blocker sweep — run `do-me-2026-08-07-blockers`, pre-run HEAD `5cd2e58`.** Surface lock:
   `app/loading.tsx`, `app/admin/(staff)/loading.tsx`, `app/admin/(staff)/listings/[id]/page.tsx`,
   `tests/e2e/11-account-password.spec.ts`. Items 1 and 2 of the owner's 1–4 list; items 3 and 4
-  (Phases C and D) were NOT started — see `## Next`.
+  (Phases C and D) were NOT started — see `## Next`. **Run closed `done-parked`; commits
+  `61556ca` `522ae3d` `ecbc0ab` `e4105aa` pushed to `origin/main` at the owner's OK.**
+
+- **Phase C — SAMPLE PRESENTED 2026-08-07, awaiting approval. No code written.** The owner
+  picked C as the next phase. The sample is a working mock (type in it, the buyer view
+  updates live): https://claude.ai/code/artifact/12d5691d-bd7d-491b-8602-bcbfdc9c66c2
+  Five points put to the owner — three open, two settled by default:
+  - OPEN: no typeface picker (read "font" as size/weight; a typeface list breaks the brand).
+  - OPEN: five fixed colours (ink / muted / gold / green / red), not a colour wheel.
+  - OPEN: no links and no images (images are already blocked by `img-src` in `proxy.ts:57`).
+  - SETTLED: the 12 existing descriptions carry over as plain paragraphs, no retyping.
+  - SETTLED: plain `description` stays beside `description_html`, because
+    `lib/match-alerts.ts:120` and the SEO meta path must never receive markup.
+  Nothing may be built until the owner approves — standing sample-before-build rule.
 
 ## Next
 
@@ -78,13 +91,15 @@
     the live password is a timestamp only that dead process ever knew.
   - **Recurrence is now fixed** — that temp value is a constant (`Zz-Bt-Temp-Fixture-Rotation`),
     so any later run's restore loop can always sign in and put the original back.
-  - **The one remaining action is the owner's**: a scoped write to production auth,
+  - **DONE 2026-08-07** — the owner approved the write; it was applied through the Supabase
+    MCP, scoped to that one email. **Vitest is now 25/25 files, 453/453 tests, fully green
+    for the first time since 2026-08-04.** The statement that was run, kept for the record:
     `update auth.users set encrypted_password = crypt('<the .env.local value>', gen_salt('bf'))
     where email = 'test-buyer-p4@dascout.local'`, applied through the Supabase MCP. Nothing
     else unblocks those five files: the account is a `.local` address with no mailbox, so
     password recovery cannot reach it, and there is no service-role key by policy.
-  - Until then the honest bar stays "no new failures against a stashed baseline": 5 files
-    failed / 20 passed / 418 assertions passed, identical before and after this run's changes.
+  - The "no new failures against a stashed baseline" bar is retired with it. The standing bar
+    is once again **Vitest green + `03-listing-journey.spec.ts` green**, both reachable.
 - [agent-derived, 2026-08-07] `web/public/assets/verified-fields.jpg` is now unreferenced
   (Phase A retired the aerial photo). Left on disk deliberately; a `/clean-me` job.
 - [agent-derived, 2026-08-06] ~~**Admin server actions hang without ever reporting back.**~~
