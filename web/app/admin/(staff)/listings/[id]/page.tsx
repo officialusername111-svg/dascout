@@ -46,6 +46,28 @@ const ANCHOR_LABEL: Record<CheckAnchor, string> = {
  * blocking a publish. None of those are decisions a browser gets to make, and each is
  * re-derived inside the action before anything is written.
  */
+/**
+ * NO SUSPENSE BOUNDARY MAY WRAP THIS PAGE. Not a segment `loading.tsx`, not an in-page
+ * `<Suspense>` — both were measured, both break it the same way.
+ *
+ * Piece 6 added `app/admin/(staff)/loading.tsx` to cure the freeze-then-blink navigation. On
+ * Next 16 a boundary above `ListingActionBar` (a client component holding `useActionState`)
+ * makes the browser keep TWO copies of this page after a server action's `revalidatePath`
+ * re-render — proved by a strict-mode violation where `#lf-title` resolved to two inputs. The
+ * stale copy never leaves `pending === true`, so the clerk watches "Working…" forever while
+ * the publish has in fact already been written. Measured on `03-listing-journey.spec.ts`:
+ * boundary present 11/19, boundary absent 19/19, and moving it into the page changed nothing
+ * (5/19) — it is the boundary, not the file convention.
+ *
+ * So this page navigates the pre-piece-6 way: the router blocks for the ~2 s these five
+ * queries take. That is the deliberate trade — a slow navigation beats a control that lies
+ * about whether the work happened. The public half of piece 6 (`app/loading.tsx`) is
+ * untouched and still streams; only the staff segment gives up its boundary.
+ *
+ * Fixing this properly means splitting the fetch so the action bar renders from one fast
+ * query while the heavy panels stream behind their own boundaries BELOW it. That is a
+ * redesign of this page's data loading, not a patch, and it is filed in BACKLOG.md.
+ */
 export default async function EditListingPage({ params, searchParams }: Props) {
   const { id } = await params
   const search = await searchParams
