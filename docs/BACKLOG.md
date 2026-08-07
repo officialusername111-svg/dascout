@@ -27,6 +27,32 @@
   (Phases C and D) were NOT started — see `## Next`. **Run closed `done-parked`; commits
   `61556ca` `522ae3d` `ecbc0ab` `e4105aa` pushed to `origin/main` at the owner's OK.**
 
+- **Buyers & Sellers band rebuild — SAMPLE PRESENTED 2026-08-07, awaiting approval. No code
+  written.** Source: `C:\Users\USER\Downloads\Partnering with Buyers and Sellers\` — the three
+  LAYERS of the banner that shipped flat this morning (`_Background.png` faceted panel,
+  `_2.png` silk drape, `_1.png` gold pin + wordmark lockup), all 5063×1906, plus `Words.txt`
+  carrying the paragraph as text. Confirmed by inspection that `Dascout2.png` is these three
+  composited with the paragraph set as type.
+  Sample: https://claude.ai/code/artifact/b43490e8-5e92-4b7c-80ae-2cba642c94ab
+  - **What it fixes:** the "known consequence the owner accepted" on A8 — the paragraph is
+    ~50 px in a 5063 px image, so ~12 px desktop / 8 px tablet / **4 px on a phone**, and it
+    exists only as pixels plus a 462-character `alt` string. Rebuilt it is real text.
+  - **It is also lighter:** three layers at 2000px = 25 + 12 + 20 = **57 KB** against the
+    current flat **82 KB**, and retires 307 KB of `buyers-sellers-*` assets. A texture, a
+    shape and a wordmark each compress better than one image containing small type.
+  - Approach: background as `background-image` cover, silk and lockup as `mix-blend-mode:
+    screen` layers (the PNGs have NO alpha — 3 channels, black matte, so screen is what drops
+    the black), paragraph in a card reusing Phase A's dark-glass recipe verbatim.
+  - Verified in-browser at 375 / 768 / 1385 px: no page-level horizontal scroll, all three
+    layers resolve, two-column split fires at ≥700 px. **Screenshots unavailable this session**
+    (the Browser-pane compositing quirk) — verification was by `getBoundingClientRect` and
+    computed style, per the standing workaround.
+  - THREE open points for the owner: (1) "Dascout" → "DaScout" in live text, matching the rest
+    of the site — the artwork and `Words.txt` both write it "Dascout"; (2) the comma splice
+    and double space in "trust alone,  it should run on proof" set as an em dash; (3) the
+    "Get started today" button moved INSIDE the band rather than below it.
+  - No database change, no dependency, no server work. Same two files Phase A touched.
+
 - **Phase C — SAMPLE PRESENTED 2026-08-07, awaiting approval. No code written.** The owner
   picked C as the next phase. The sample is a working mock (type in it, the buyer view
   updates live): https://claude.ai/code/artifact/12d5691d-bd7d-491b-8602-bcbfdc9c66c2
