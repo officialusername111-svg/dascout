@@ -30,9 +30,21 @@
 - **Phase C — SAMPLE PRESENTED 2026-08-07, awaiting approval. No code written.** The owner
   picked C as the next phase. The sample is a working mock (type in it, the buyer view
   updates live): https://claude.ai/code/artifact/12d5691d-bd7d-491b-8602-bcbfdc9c66c2
-  Five points put to the owner — three open, two settled by default:
-  - OPEN: no typeface picker (read "font" as size/weight; a typeface list breaks the brand).
-  - OPEN: five fixed colours (ink / muted / gold / green / red), not a colour wheel.
+  **Revision 2, 2026-08-07** — the owner overruled two of the three open points. Both risks
+  were stated once and the owner's call stands; do not re-litigate:
+  - DECIDED: **typeface picker is IN.** Four faces only — Figtree (already loaded),
+    Montserrat (already loaded as `--font-head`), Georgia and a monospace stack (both
+    system fonts, no download). A fifth face means shipping a font file on every listing
+    view and is a separate decision.
+  - DECIDED: **free colour codes are IN**, hex or `rgb()`, alongside the five swatches. The
+    control computes contrast against white live and warns below 4.5:1 — it warns, it never
+    blocks. **Consequence for C3:** the sanitiser can no longer allowlist five literal
+    colours. It must allow `style` carrying ONLY `color` (a parsed, valid colour),
+    `font-family` (one of the four) and `text-align`, and drop every other declaration
+    rather than try to repair it.
+  - Found while building the control: the proposed gold swatch `#B8923E` measures **2.91:1**
+    on white and fails the body-text floor. Swapped to `#8F6E28` (**4.74:1**), same hue.
+    `#B8923E` stays correct for headings and buttons, not for paragraphs.
   - OPEN: no links and no images (images are already blocked by `img-src` in `proxy.ts:57`).
   - SETTLED: the 12 existing descriptions carry over as plain paragraphs, no retyping.
   - SETTLED: plain `description` stays beside `description_html`, because
