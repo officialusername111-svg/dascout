@@ -64,6 +64,13 @@
     padding top and bottom. Renamed `.arrA/.arrB/.arrC` and `.wm-gold/.wm-white`.
     Never distinguish class names by case alone; and a fragment served without a doctype
     does not parse like the same markup inside a real page.
+  - **ARRANGEMENT A CHOSEN by the owner 2026-08-07.** Final sample, built in full and with the
+    pin proven non-deforming: https://claude.ai/code/artifact/83903f57-f665-43a0-b95f-13f72b4dabe6
+    The pin ships as an `<img width=313 height=450>` with only `height` set in CSS, plus
+    `object-fit:contain` and `flex:none` — three independent guards, none needing anyone to
+    remember the ratio. Measured 0.6956 at 375 / 768 / desktop and at forced heights of 16 px
+    and 900 px. B and C are not being built.
+  - **Next-session prompt written to `docs/NEXT-SESSION.md`** — paste it into a fresh session.
   - THREE open points: (1) B moves the "title-checked / boundary-walked / confirmed on the
     ground" clause onto its own line — no words added or removed, but the sentence order
     changes; (2) "Dascout" → "DaScout"; (3) the CTA sits inside the band.
