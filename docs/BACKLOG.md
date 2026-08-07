@@ -52,6 +52,18 @@
     all five band instances, wordmark scales 26 → 47.6 → 52 px, and Montserrat is **measurably
     rendering** (244 px vs 208 px for the fallback) — the earlier sample was silently showing
     Segoe UI, which `document.fonts.check` reports as a pass and only a width probe catches.
+  - **Lockup proportions matched to the artwork 2026-08-07**: the pin is ~1.73x the height
+    of the whole text block there, so the lockup now derives pin height, kicker size and gap
+    from one `--wm` variable. Measured after: 1.69 desktop and tablet, 1.55 on the phone
+    (the wordmark's clamp floor), pin taller than the text at every width.
+  - **CSS trap found and fixed — do not reintroduce:** the arrangements were `.A/.B/.C` and
+    the wordmark's lines `.a/.b`, differing only by CASE. Class selectors are
+    case-INSENSITIVE in a document with no doctype, so `.A{padding:56px}` applied to
+    `<span class="a">` and inflated its line box to 163px. It presented as a text-wrapping
+    bug and was not one — a Range `getClientRects()` showed a single line box with 56px
+    padding top and bottom. Renamed `.arrA/.arrB/.arrC` and `.wm-gold/.wm-white`.
+    Never distinguish class names by case alone; and a fragment served without a doctype
+    does not parse like the same markup inside a real page.
   - THREE open points: (1) B moves the "title-checked / boundary-walked / confirmed on the
     ground" clause onto its own line — no words added or removed, but the sentence order
     changes; (2) "Dascout" → "DaScout"; (3) the CTA sits inside the band.
