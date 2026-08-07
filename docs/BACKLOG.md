@@ -30,7 +30,7 @@
 - **Buyers & Sellers band REDESIGN — 3 arrangements presented 2026-08-07, awaiting the owner's
   pick. No code written. SUPERSEDES the layered rebuild below.** New source:
   `C:\Users\USER\Downloads\new_asset\` — `PwBS_2.png` (2136×805, background+silk ALREADY
-  composited, alpha) and `icon-removebg.png` (313×450 gold pin, **real transparency**).
+  composited, alpha) and `icon-removebg.png` (313×450 gold pin, **fully transparent — including the inner ring hole**, replaced by the owner at 16:49; verified alpha 0 at the hole and 255 on the body, before and after WebP).
   Sample: https://claude.ai/code/artifact/3106391e-0206-4c09-abb4-779d1d0563c4
   - These assets change the approach: no `mix-blend-mode: screen` compositing needed, the pin
     is a placeable element, and the wordmark is NOT supplied — so kicker, wordmark and
