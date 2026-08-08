@@ -108,6 +108,11 @@ every listing page down — the same ordering mistake as the 2026-08-02 outage.
 3. In `app/admin/actions.ts`, take `description_html` from the form, run it through
    `sanitizeDescriptionHtml`, and derive `description` from it with `htmlToPlainText` —
    one editor, two stored columns, so they cannot drift.
+   **The trap in this step:** the zod schema at `:172` still reads `description` out of the
+   form, and `blankToNull` turns a missing field into `null`. The moment the textarea stops
+   posting `description` and nothing replaces it, the first save on any listing silently
+   WIPES its description — no error, because null is a legal value for that column. Change
+   the schema in the same edit as the form, not after it.
 4. Swap the `<textarea>` in `components/admin/ListingForm.tsx` for `<DescriptionEditor>`.
 5. Render `description_html` at `app/property/[slug]/page.tsx:92-97` via
    `dangerouslySetInnerHTML`. It is safe there **only** because step 3 sanitised it on the

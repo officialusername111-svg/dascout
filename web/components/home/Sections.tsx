@@ -82,10 +82,16 @@ export function AboutRows() {
  * intrinsic ratio decide the rest, `object-fit:contain` letterboxes rather than stretches
  * if some ancestor ever forces a width, and `flex:none` stops the row squashing it.
  * Three independent guards, none of which needs anyone to remember 0.6956.
+ *
+ * The <section> carries NO aria-label. It used to, and it had to, because the band's words
+ * were pixels and the label was the only way to reach them. Now that the kicker and the
+ * wordmark are real text, a label repeating them makes a screen reader announce the same
+ * phrase twice — once as the region name, then again as content. Removing it is part of the
+ * same change that made the words real, not an oversight.
  */
 export function VerifiedBand() {
   return (
-    <section aria-label="Partnering you with the best buyers and sellers">
+    <section>
       <div className="verify">
         <div className="pwbs-band">
           <div className="pwbs-grid">

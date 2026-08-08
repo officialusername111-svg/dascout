@@ -25,6 +25,9 @@
     - BUILT BUT NOT WIRED (C2/C6): `components/admin/DescriptionEditor.tsx` and its styles.
       **Do not wire it before the migration** — the code would read a column that does not
       exist and take the admin screen and every listing page down.
+      `DescriptionEditor.tsx` is therefore UNREFERENCED on purpose, exactly like
+      `components/LoadingMark.tsx`. **Do not let `/clean-me` sweep either of them** — this
+      one is finished, verified work waiting on a database change, not junk.
     - The six remaining steps, in order, are listed in docs/HANDOFF.md.
   - **Phase D — sample presented**, https://claude.ai/code/artifact/6e1e8f65-6b00-4c51-a45f-2f475222796d
     No code. Both migrations unapplied.
