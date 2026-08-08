@@ -39,12 +39,18 @@ here on purpose — the commit that writes it is always one ahead of it. Check w
 Nothing here is started. Ordered roughly by dependency, not by priority.
 
 - **Enhancement round v2 — Phase E, and only Phase E, is left.** Clear the listing database
-  (client item 9). **Runs ONLY on the owner's explicit signal.** All site data is test data
+  (client item 9). **The owner gave the signal 2026-08-08; the opening prompt is written to
+  `docs/NEXT-SESSION.md`, with the measured counts and two corrections to the plan.** All site data is test data
   (owner, 2026-08-06), so it is lower risk than first assessed, but it is irreversible and
   runs alone. Tasks E1–E5 in `docs/PLAN-enhancement-v2.md`: back up via the MCP (no Docker,
   so no `pg_dump`), clear listings and dependents, clear BOTH storage buckets — deleting
   rows never removes the files — decide whether `property_no` restarts at `001`, then verify
   `sitemap.ts` and the live site render cleanly empty.
+  - **Two corrections to the plan, measured 2026-08-08.** E2 is SIMPLER: all seven foreign
+    keys into `listings` already CASCADE, so deleting the rows cleans dependents by itself.
+    E3 is BIGGER: there are **134 stored files against 42 photo rows** — ~99 are already
+    orphaned from past deletions — so the buckets need emptying, not a per-row file sweep.
+  - Rows first, then files. Files first would leave a live page pointing at a missing photo.
 - **Piece 6 done properly — the loading indicator.** Navigation blocks again with no
   indicator (~450–670 ms public, ~2 s on the admin listing detail page). That is the
   deliberate trade recorded below: a slow navigation beats a publish button that lies.
@@ -60,8 +66,9 @@ Nothing here is started. Ordered roughly by dependency, not by priority.
 - [recurring] V3 full-battery verification per `docs/E2E-V3-RUNBOOK.md` — on request, before
   any release, after any schema/grant change, or when a week has passed without one. Runs
   in-session (the sweep needs the Supabase MCP); never as an OS job.
-- [hygiene] `/clean-me` candidates: `docs/NEXT-SESSION.md` and `docs/NEXT-SESSION-PROMPT.md`
-  are both spent — the sessions they were written for have run. Keep `LoadingMark.tsx`.
+- [hygiene] `/clean-me` candidate: `docs/NEXT-SESSION-PROMPT.md` is spent (its session ran
+  on 2026-08-03). `docs/NEXT-SESSION.md` was REWRITTEN 2026-08-08 and is live — it is the
+  Phase E opening prompt. Keep `LoadingMark.tsx`.
 
 ## Parked
 
