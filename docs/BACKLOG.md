@@ -13,8 +13,9 @@
 
 Three open items. None is blocking; two are one-line decisions.
 
-**Everything is pushed.** `origin/main` is at `82f0696` as of 2026-08-08; the working tree
-is clean and nothing is waiting to go up.
+**Everything is pushed** as of 2026-08-08 and the working tree is clean. (No SHA recorded
+here on purpose — the commit that writes it is always one ahead of it. Check with
+`git rev-list --count origin/main..main`.)
 
 - **`D:\Workspace\DaScout\CLAUDE.md` is edited but UNCOMMITTABLE.** Phase D's D5 retired the
   "no peso anywhere public" rule there as well as here, but that file sits ABOVE the
