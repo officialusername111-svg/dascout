@@ -248,7 +248,13 @@ function listingFieldsFrom(formData: FormData) {
     floor_area_sqm: formData.get('floor_area_sqm'),
     bedrooms: formData.get('bedrooms'),
     bathrooms: formData.get('bathrooms'),
-    description_html: descriptionHtml === '' ? null : descriptionHtml,
+    /*
+     * The PLAIN reading decides whether there is a description at all. Markup carrying no
+     * words — an empty bold, a paragraph of formatting somebody deleted the text out of —
+     * is not a description, and storing it would put an "About this property" heading on
+     * the public page above nothing at all. Both columns go null together or neither does.
+     */
+    description_html: plain === '' ? null : descriptionHtml,
     description: plain === '' ? null : plain,
     is_trending: formData.get('is_trending'),
   }
