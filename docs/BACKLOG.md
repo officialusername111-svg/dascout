@@ -7,7 +7,54 @@
 
 ## Now
 
-- **Enhancement round v2 — Phases B and A DONE, pushed and live. C, D, E not started.**
+- **Run `do-me-2026-08-08-band-c`, pre-run HEAD `6a7e2d8`. Surface lock: released.**
+  Three commits on `main`, **none pushed**: `3411ff4` band · `fa6186d` Phase C sanitiser ·
+  `4df8d86` Phase C editor. Detail in docs/HANDOFF.md.
+  - **Buyers & Sellers band, arrangement A — DONE.** Built to the approved sample. Pin
+    holds 0.6956 at 375/768/1385; pin-to-text 1.686 desktop, 1.548 phone. Two traps now
+    commented in the code: every class is prefixed `pwbs-` because `.grid` and `.copy` were
+    already taken, and `-webkit-backdrop-filter` MUST precede the unprefixed property or the
+    minifier drops the unprefixed one and the glass loses its blur.
+    - Cosmetic, open, NOT a defect: between ~748 and ~890 px viewport the kicker wraps to
+      two lines (the real page's container is 705 px at a 768 px viewport, where the
+      sample's tablet frame was 768 px). One-number fix if wanted: raise the two-column
+      `@container` threshold from `700px` to `890px`. Left exactly as approved.
+  - **Phase C — HALF BUILT, blocked on the migration below.**
+    - DONE (C3/C4): `lib/listing-description.ts` + 36 tests. Allowlist drops rather than
+      repairs; `style` may carry only colour, typeface and alignment.
+    - BUILT BUT NOT WIRED (C2/C6): `components/admin/DescriptionEditor.tsx` and its styles.
+      **Do not wire it before the migration** — the code would read a column that does not
+      exist and take the admin screen and every listing page down.
+    - The six remaining steps, in order, are listed in docs/HANDOFF.md.
+  - **Phase D — sample presented**, https://claude.ai/code/artifact/6e1e8f65-6b00-4c51-a45f-2f475222796d
+    No code. Both migrations unapplied.
+  - **`03-listing-journey.spec.ts` did not run** — another session holds port 3000 and the
+    Playwright config sets `reuseExistingServer: false`. Vitest is 26 files / 489 tests green.
+
+- **BLOCKED, NEEDS THE OWNER — the Phase C migration (C1).** The Supabase MCP call was
+  refused by the permission classifier before it reached the owner, so this has not been
+  declined, it has not been asked. Everything left in Phase C waits on it. The statement,
+  grants included — the grant is not optional, `listings` is column-granted, so a new column
+  is invisible to `anon` until it is named:
+
+  ```sql
+  alter table public.listings add column if not exists description_html text;
+
+  update public.listings
+  set description_html =
+    '<p>' || replace(replace(regexp_replace(
+      replace(replace(replace(description,'&','&amp;'),'<','&lt;'),'>','&gt;'),
+      E'\r\n', E'\n', 'g'), E'\n\n', '</p><p>'), E'\n', '<br>') || '</p>'
+  where description is not null and btrim(description) <> '' and description_html is null;
+
+  grant select (description_html) on public.listings to anon, authenticated;
+  grant insert (description_html), update (description_html) on public.listings to authenticated;
+  ```
+
+  The backfill was dry-run as a SELECT against the real rows first: paragraphs, line breaks
+  and characters like `✔` and apostrophes all survive it.
+
+- **Enhancement round v2 — Phases B and A DONE, pushed and live. C half built, D sampled, E not started.**
   Run `do-me-2026-08-06-enhv2`, pre-run HEAD `12b415d`. Surface lock: released.
   - **Phase B** — commit `a0a7dc7`. Exclusivity note + `tel:` phone on
     `app/property/[slug]/page.tsx`, `.cta-note` in `globals.css`.
@@ -120,6 +167,8 @@
     on white and fails the body-text floor. Swapped to `#8F6E28` (**4.74:1**), same hue.
     `#B8923E` stays correct for headings and buttons, not for paragraphs.
   - OPEN: no links and no images (images are already blocked by `img-src` in `proxy.ts:57`).
+    **Built without links**, per the recommendation — adding them later means adding `a` to
+    the sanitiser WITH an href scheme allowlist, never just to the tag list.
   - SETTLED: the 12 existing descriptions carry over as plain paragraphs, no retyping.
   - SETTLED: plain `description` stays beside `description_html`, because
     `lib/match-alerts.ts:120` and the SEO meta path must never receive markup.
@@ -222,6 +271,13 @@
 - 2026-08-03 — test-data cleanup is NEVER automated: no service-role key, no purge function,
   no separate project/branch. Sweep zz- rows through the Supabase MCP only; scope by zz-
   prefix, never by status alone.
+- 2026-08-08 — Phase D: a HIDDEN price shows **nothing at all**. No "price on request", no
+  placeholder line — the price is absent and the layout closes up. The concern was raised
+  once (a card with no price gives a buyer nothing to ask about, so the question arrives
+  through Inquire instead) and the owner's call stands. D4 needs no wording decision.
+- 2026-08-08 — the Buyers & Sellers band is spelled **DaScout**, not the artwork's
+  "Dascout", and the "Get started today" button sits INSIDE the band beneath the wordmark.
+  Both were the standing recommendations; taken rather than blocked on, per the owner.
 - 2026-08-04 — public `?cat=` taxonomy fixed at the five seeded types ("Split"); later types
   are visible but not in `?cat=`/nav. `DbCategory`/`CategoryKey` stays, sourced via join.
 - Standing verification bar = Vitest + 03-listing-journey.spec.ts (both against a production
