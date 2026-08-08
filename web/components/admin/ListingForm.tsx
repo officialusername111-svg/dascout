@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { createListing, updateListing, type ActionResult } from '@/app/admin/actions'
 import { Icon } from '@/components/Icon'
+import { DescriptionEditor } from '@/components/admin/DescriptionEditor'
 import type { PropertyTypeOption } from '@/lib/admin/queries'
 
 /**
@@ -34,6 +35,8 @@ export type ListingFormValues = {
   bedrooms: number | null
   bathrooms: number | null
   description: string | null
+  /** Sanitised HTML. The editor's starting content; the plain one is derived on save. */
+  descriptionHtml: string | null
   isTrending: boolean
 }
 
@@ -361,13 +364,15 @@ export function ListingForm(props: Props) {
           <label htmlFor="lf-desc">
             Description <span className="amuted">(optional)</span>
           </label>
-          <textarea
+          {/* Phase C: one field posts the HTML; the plain text is derived server-side in
+              `listingFieldsFrom`, so nothing here has to keep two versions in step. The
+              echo carries `description_html` for the same reason — after a failed save the
+              editor has to come back with the formatting the person had, not a flattened
+              copy of it. */}
+          <DescriptionEditor
             id="lf-desc"
-            name="description"
-            rows={5}
-            maxLength={4000}
-            defaultValue={initial('description', listing?.description ?? '')}
-            placeholder="What a buyer walking the property would want to know."
+            name="description_html"
+            defaultValue={initial('description_html', listing?.descriptionHtml ?? '')}
           />
           <div className="ferr">{errors.description ?? 'Keep this under 4000 characters.'}</div>
         </div>

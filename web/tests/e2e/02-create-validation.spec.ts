@@ -208,7 +208,11 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await fillTown(page)
     await fillPrice(page, '1750000')
     await page.locator('#lf-area').fill('Retained Area Detail')
-    await page.locator('#lf-desc').fill('Retained description text.')
+    // Phase C: the description is a rich-text editor now, not a <textarea>. Typed rather
+    // than filled, because `fill()` rewrites the DOM under the editor and the editor's own
+    // state — which is what actually gets posted — would not necessarily follow.
+    await page.locator('#lf-desc').click()
+    await page.keyboard.type('Retained description text.')
     await page.locator('#lf-trend').check()
 
     const categoryValue = await page.locator('input[name="property_type_id"]:checked').getAttribute('value')
@@ -226,7 +230,10 @@ test.describe('Create listing: happy path + validation spot checks (AC-7..12, AC
     await expect(page.locator('#lf-title')).toHaveValue(title)
     await expect(page.locator('#lf-price')).toHaveValue('1750000')
     await expect(page.locator('#lf-area')).toHaveValue('Retained Area Detail')
-    await expect(page.locator('#lf-desc')).toHaveValue('Retained description text.')
+    // `toHaveValue` only works on inputs, textareas and selects. The description is a
+    // contenteditable now, so retention is asserted on its rendered text. The intent is
+    // unchanged: a rejected submission must not throw away what was typed.
+    await expect(page.locator('#lf-desc')).toContainText('Retained description text.')
     await expect(page.locator(`input[name="property_type_id"][value="${categoryValue}"]`)).toBeChecked()
     await expect(page.locator('#lf-town')).toHaveValue(townValue)
     await expect(page.locator('#lf-trend')).toBeChecked()

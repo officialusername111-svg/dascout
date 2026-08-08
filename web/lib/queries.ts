@@ -36,6 +36,8 @@ export type ListingCard = {
 
 export type ListingDetail = ListingCard & {
   description: string | null
+  /** Sanitised on the way IN (see app/admin/actions.ts). Safe to render as HTML. */
+  descriptionHtml: string | null
   features: string[]
   photos: { url: string; alt: string }[]
 }
@@ -278,7 +280,7 @@ export async function getListingBySlug(slug: string): Promise<ListingDetail | nu
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('listings')
-    .select(`${CARD_COLUMNS}, description`)
+    .select(`${CARD_COLUMNS}, description, description_html`)
     .eq('status', 'live')
     .eq('slug', slug)
     .maybeSingle()
@@ -286,12 +288,16 @@ export async function getListingBySlug(slug: string): Promise<ListingDetail | nu
   if (error) throw error
   if (!data) return null
 
-  const row = data as unknown as RawListing & { description: string | null }
+  const row = data as unknown as RawListing & {
+    description: string | null
+    description_html: string | null
+  }
   const features = featuresOf(row)
 
   return {
     ...toCard(row, features),
     description: row.description,
+    descriptionHtml: row.description_html,
     features,
     photos: sortedPhotos(row),
   }

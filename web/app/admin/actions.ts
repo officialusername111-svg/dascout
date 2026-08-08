@@ -6,6 +6,11 @@ import { after } from 'next/server'
 import * as z from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { sendMatchAlerts } from '@/lib/match-alerts'
+import {
+  MAX_DESCRIPTION_HTML,
+  htmlToPlainText,
+  sanitizeDescriptionHtml,
+} from '@/lib/listing-description'
 import { sendEmail } from '@/lib/email'
 import { getStaffUser, getSuperAdmin, isStaffRole } from '@/lib/admin/auth'
 import {
@@ -169,6 +174,20 @@ const listingFieldShape = {
       .max(999, { error: 'That bathroom count looks like a typo.' })
       .nullable()
   ),
+  /*
+   * Both of these are DERIVED in `listingFieldsFrom`, not typed by anyone — `description`
+   * is the plain-text reading of the sanitised html. The length rule stays on the plain
+   * one so the limit still means what the editor's counter shows: words the reader sees,
+   * not markup. The html cap is a backstop against a paste bomb, and the sanitiser
+   * enforces it too.
+   */
+  description_html: z.preprocess(
+    blankToNull,
+    z
+      .string()
+      .max(MAX_DESCRIPTION_HTML, { error: 'That description is too long to store.' })
+      .nullable()
+  ),
   description: z.preprocess(
     blankToNull,
     z.string().trim().max(4000, { error: 'Keep the description under 4000 characters.' }).nullable()
@@ -201,6 +220,22 @@ const UpdateListingSchema = z.object({
 const StatusEnum = z.enum(['list', 'for_approval', 'live', 'sold', 'withdrawn'])
 
 function listingFieldsFrom(formData: FormData) {
+  /*
+   * Phase C. The editor posts ONE field — the HTML — and this is the only door any
+   * description comes through, which is what makes it the right place to sanitise.
+   *
+   * The plain `description` is DERIVED from the sanitised result rather than posted
+   * beside it. Two reasons. It cannot drift from the formatted version, and it cannot
+   * contain markup no matter what was submitted, which is the guarantee the SEO meta path
+   * depends on. It also means nothing can post a plain `description` directly any more —
+   * the previous shape read `formData.get('description')`, so leaving that in place while
+   * the form stopped sending it would have written null over every description on the
+   * first save, silently, because null is a legal value for that column.
+   */
+  const posted = formData.get('description_html')
+  const descriptionHtml = sanitizeDescriptionHtml(typeof posted === 'string' ? posted : '')
+  const plain = htmlToPlainText(descriptionHtml)
+
   return {
     property_no: formData.get('property_no'),
     title: formData.get('title'),
@@ -213,7 +248,8 @@ function listingFieldsFrom(formData: FormData) {
     floor_area_sqm: formData.get('floor_area_sqm'),
     bedrooms: formData.get('bedrooms'),
     bathrooms: formData.get('bathrooms'),
-    description: formData.get('description'),
+    description_html: descriptionHtml === '' ? null : descriptionHtml,
+    description: plain === '' ? null : plain,
     is_trending: formData.get('is_trending'),
   }
 }

@@ -89,10 +89,30 @@ export default async function PropertyPage({ params }: Props) {
               <Specs specs={listing.specs} />
             </div>
 
-            {listing.description && (
+            {/*
+              Phase C. `dangerouslySetInnerHTML` is safe HERE and only here, because this
+              value cannot arrive unsanitised: `listingFieldsFrom` runs every description
+              through `sanitizeDescriptionHtml` on the way IN, and the backfill that
+              created this column escaped the plain text it came from. Never render a
+              description that has not been through that filter, and never widen the
+              filter's allowlist to make something on this page look better.
+
+              `description` stays plain and is what the SEO meta above reads. The fallback
+              is not defensive noise — a listing written before Phase C that has somehow
+              not been backfilled still has its words, and showing them beats showing a
+              gap where the description used to be.
+            */}
+            {(listing.descriptionHtml || listing.description) && (
               <>
                 <h4>About this property</h4>
-                <p className="desc">{listing.description}</p>
+                {listing.descriptionHtml ? (
+                  <div
+                    className="desc"
+                    dangerouslySetInnerHTML={{ __html: listing.descriptionHtml }}
+                  />
+                ) : (
+                  <p className="desc">{listing.description}</p>
+                )}
               </>
             )}
 
