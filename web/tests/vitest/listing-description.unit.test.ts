@@ -192,6 +192,52 @@ describe('sanitizeDescriptionHtml — the formatting the toolbar produces surviv
   })
 })
 
+/**
+ * THE TEST THAT EARNS ITS KEEP. Everything above proves the filter blocks what it should;
+ * this proves it does not block what it must not. The string below is not hand-written —
+ * it was copied out of the editor's own hidden input in a browser after using the toolbar,
+ * so it is exactly what the server will be handed.
+ *
+ * It caught a real one: `span` was missing from the tag allowlist, so every colour and
+ * every typeface was silently dropped on save. Nothing errored, the editor looked correct,
+ * and the listing simply came back plain. Only a round-trip finds that class of bug —
+ * hostile-input tests never would have.
+ */
+describe('round trip — what the toolbar produces survives the filter', () => {
+  const FROM_EDITOR =
+    '<p style="text-align: center;"><span style="color: rgb(143, 110, 40); ' +
+    'font-family: Georgia, &quot;Times New Roman&quot;, serif;">A <strong>corner residential lot</strong> ' +
+    'in a gated subdivision.</span></p><ul><li><p><span style="color: rgb(143, 110, 40);">Title clean</span>' +
+    '</p></li></ul><p></p>'
+
+  it('keeps every piece of formatting the toolbar applied', () => {
+    const clean = sanitizeDescriptionHtml(FROM_EDITOR)
+    expect(clean).toContain('color:#8F6E28')
+    expect(clean).toContain('font-family:Georgia')
+    expect(clean).toContain('text-align:center')
+    expect(clean).toContain('<strong>')
+    expect(clean).toContain('<li>')
+    expect(clean).toContain('<span')
+  })
+
+  it('drops the editor’s trailing empty paragraph rather than shipping a blank gap', () => {
+    expect(sanitizeDescriptionHtml(FROM_EDITOR)).not.toMatch(/<p><\/p>$/)
+    // an empty paragraph BETWEEN two others is spacing the author chose, and stays
+    expect(sanitizeDescriptionHtml('<p>a</p><p></p><p>b</p>')).toBe('<p>a</p><p></p><p>b</p>')
+  })
+
+  it('derives readable plain text from it for the meta description', () => {
+    expect(htmlToPlainText(sanitizeDescriptionHtml(FROM_EDITOR))).toBe(
+      'A corner residential lot in a gated subdivision.\n\nTitle clean'
+    )
+  })
+
+  it('is stable — re-saving an already-saved description changes nothing', () => {
+    const once = sanitizeDescriptionHtml(FROM_EDITOR)
+    expect(sanitizeDescriptionHtml(once)).toBe(once)
+  })
+})
+
 describe('htmlToPlainText — what the SEO meta path and alerts receive', () => {
   it('never returns markup', () => {
     const text = htmlToPlainText('<p style="color:#8F6E28">A <strong>corner lot</strong></p>')

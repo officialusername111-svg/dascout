@@ -177,7 +177,14 @@ export function sanitizeDescriptionHtml(input: string | null | undefined): strin
 
 function sanitizeOnce(input: string): string {
   const clean = sanitizeHtml(input, {
-    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'h4'],
+    /*
+     * `span` is here because that is how colour and typeface actually arrive: the editor
+     * writes them as `<span style="color:...;font-family:...">`, not as attributes on the
+     * paragraph. Leaving it out silently threw away every colour and every face on save —
+     * the editor looked right, the saved listing came back plain, and nothing errored.
+     * A bare span carries no meaning of its own, so the style filter is what makes it safe.
+     */
+    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'h4', 'span'],
     allowedAttributes: { '*': ['style'] },
     // no schemes at all: nothing that survives can carry a URL in the first place
     allowedSchemes: [],
@@ -195,14 +202,22 @@ function sanitizeOnce(input: string): string {
        */
       '*': (tagName, attribs) => {
         const name = tagName === 'b' ? 'strong' : tagName === 'i' ? 'em' : tagName
-        if (!STYLEABLE.has(name)) return { tagName: name, attribs: {} }
-        const style = filterStyle(attribs.style)
-        return { tagName: name, attribs: style ? { style } : {} }
+        const attrs: Record<string, string> = {}
+        if (STYLEABLE.has(name)) {
+          const style = filterStyle(attribs.style)
+          if (style) attrs.style = style
+        }
+        return { tagName: name, attribs: attrs }
       },
     },
   })
 
-  return clean.trim()
+  /*
+   * The editor keeps an empty paragraph at the end as somewhere to click, and it is real
+   * markup that would ship as a blank gap under every description. Trailing ones only:
+   * an empty paragraph the author put BETWEEN two others is spacing they chose.
+   */
+  return clean.replace(/(?:<p>(?:\s|<br\s*\/?>)*<\/p>)+$/i, '').trim()
 }
 
 /**

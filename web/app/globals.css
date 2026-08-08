@@ -423,6 +423,25 @@ body.dialog-open{overflow:hidden}
 .prop-specs span{display:inline-flex;gap:6px;align-items:center}
 .prop-info h4{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:16px 0 8px;font-family:var(--font-figtree),sans-serif}
 .desc{color:var(--ink-2);line-height:1.75}
+/* Phase C (C5): the description is now sanitised HTML rather than one text node, so the
+   block needs rules for what the editor can produce. `description_html` is the ONLY html
+   rendered here and it has been through `sanitizeDescriptionHtml` on the server.
+   The editor's own heading is an <h4>, and `.prop-info h4` above turns an h4 into the
+   small uppercase SECTION LABEL ("About this property"). Same tag, opposite job — so this
+   rule is written at `.prop-info .desc h4` to beat it on specificity rather than relying
+   on which of two equal selectors happens to come last in the file. */
+.desc p{margin:0 0 .8em}
+.desc p:last-child{margin-bottom:0}
+.desc ul,.desc ol{margin:0 0 .8em 1.3em}
+.desc li{margin-bottom:.25em}
+/* the editor nests a <p> inside every <li>, which is correct markup and how Tiptap models
+   a list item — without this the paragraph's own bottom margin makes every list loose */
+.desc li p{margin:0}
+.desc strong{color:var(--ink);font-weight:700}
+.desc u{text-underline-offset:2px}
+.prop-info .desc h4{font-size:16px;font-weight:700;letter-spacing:-.01em;text-transform:none;
+  color:var(--ink-900);margin:1.1em 0 .45em;font-family:var(--font-head),"Segoe UI",system-ui,sans-serif}
+.prop-info .desc h4:first-child{margin-top:0}
 .feat-chips{display:flex;flex-wrap:wrap;gap:8px}
 .feat-chips span{display:inline-flex;align-items:center;gap:7px;background:var(--bg-2);border-radius:999px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .feat-chips .icon{color:var(--ok)}
@@ -547,6 +566,62 @@ nav.main a,.sb-links a,.sb-links button,.foot a,.foot button,.tabs a,.tabs butto
 
 .agrid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
 .agrid .wide{grid-column:1 / -1}
+/* ============ RICH-TEXT DESCRIPTION EDITOR — Phase C (C2/C6) ============
+   Built to the sample approved 2026-08-07. Admin-only: none of this ships to the public
+   listing page, which renders the sanitised html through `.desc` instead. */
+.rte-tb{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--line);border-bottom:0;
+  border-radius:var(--r-s) var(--r-s) 0 0;background:var(--bg-2)}
+.rte-grp{display:flex;gap:3px}
+.rte-sep{width:1px;background:var(--line);margin:2px 4px}
+.rte-tb button{min-width:34px;height:34px;padding:0 9px;border-radius:6px;border:1px solid transparent;
+  background:var(--bg);color:var(--ink-2);font-size:14px;font-weight:600;display:inline-flex;
+  align-items:center;justify-content:center;transition:background var(--dur-1) var(--ease),color var(--dur-1) var(--ease),border-color var(--dur-1) var(--ease)}
+.rte-tb button:hover{background:#fff;border-color:var(--line);color:var(--ink)}
+.rte-tb button[aria-pressed="true"]{background:var(--ink-900);color:var(--gold-l);border-color:var(--ink-900)}
+.rte-tb select{height:34px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  font-size:13.5px;font-weight:600;padding:0 8px;max-width:190px;width:auto}
+/* the alignment glyphs are drawn rather than typed: the three Unicode bars that read as
+   "align left/centre/right" are the SAME character at different widths in most faces, so
+   the buttons were indistinguishable */
+.rte-al{display:block;width:15px;height:11px;
+  background-image:linear-gradient(currentColor,currentColor),linear-gradient(currentColor,currentColor),linear-gradient(currentColor,currentColor);
+  background-repeat:no-repeat;background-size:100% 2px,64% 2px,100% 2px;
+  background-position:left top,left center,left bottom}
+.rte-al-center{background-position:center top,center center,center bottom}
+.rte-al-right{background-position:right top,right center,right bottom}
+.rte-sw{width:26px;min-width:26px;height:26px;border-radius:50%;padding:0;border:2px solid var(--line)}
+.rte-sw[aria-pressed="true"]{border-color:var(--ink-900);box-shadow:0 0 0 2px #fff inset}
+.rte-more{background:var(--bg);color:var(--ink-2);font-size:17px;line-height:1;border-style:dashed}
+.rte-more[aria-expanded="true"]{background:var(--ink-900);color:var(--gold-l);border-color:var(--ink-900);border-style:solid}
+.rte-custom{flex-basis:100%;border-top:1px solid var(--line);padding-top:10px;margin-top:2px;
+  display:flex;flex-direction:column;gap:8px}
+.rte-custom-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rte-custom input[type="color"]{width:38px;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.rte-custom input[type="text"]{flex:1;min-width:172px;height:34px;border:1px solid var(--line);border-radius:6px;
+  padding:0 10px;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:13px;color:var(--ink);background:var(--bg)}
+.rte-apply{height:34px;padding:0 14px;border-radius:6px;background:var(--ink-900);color:var(--gold-l);font-size:13.5px;font-weight:700}
+.rte-apply:disabled{opacity:.5;cursor:not-allowed}
+/* it WARNS, it never blocks — the owner's call. Colour alone never carries the verdict:
+   each state also changes the words, for anyone who cannot tell the three dots apart. */
+.rte-readout{font-size:13px;margin:0;display:flex;align-items:center;gap:7px;line-height:1.5}
+.rte-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.rte-pass{color:var(--ok)} .rte-pass .rte-dot{background:var(--ok)}
+.rte-warn{color:var(--warn-ink)} .rte-warn .rte-dot{background:var(--warn)}
+.rte-fail{color:var(--err)} .rte-fail .rte-dot{background:var(--err)}
+
+.rte{border:1px solid var(--line);border-radius:0 0 var(--r-s) var(--r-s);background:var(--bg)}
+.rte-loading{min-height:184px}
+.rte .rte-body{min-height:184px;padding:14px 15px;font-size:15px;line-height:1.7;color:var(--ink);outline:0}
+.rte:focus-within{border-color:transparent;outline:2.5px solid var(--gold-d);outline-offset:1px}
+.rte .rte-body p{margin:0 0 .7em}
+.rte .rte-body p:last-child{margin-bottom:0}
+.rte .rte-body ul,.rte .rte-body ol{margin:0 0 .7em 1.25em}
+.rte .rte-body li p{margin:0}
+.rte .rte-body h4{font-size:16px;font-weight:700;color:var(--ink-900);margin:.9em 0 .4em}
+.rte .rte-body h4:first-child{margin-top:0}
+.rte-count{margin-top:8px;font-size:12.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px}
+.rte-over{color:var(--err);font-weight:700}
+
 .aactions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .amuted{color:var(--ink-3);font-size:12.5px}
 .abtn-sm{min-height:40px;padding:0 16px;font-size:11.5px}
