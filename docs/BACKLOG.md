@@ -23,8 +23,7 @@
     "Phase C — DONE AND WIRED" entry below, which connected them. `DescriptionEditor.tsx`
     is referenced now, so the earlier "do not let /clean-me sweep it" warning is retired.
     `components/LoadingMark.tsx` is still unreferenced on purpose and still must not be swept.
-  - **Phase D — sample presented**, https://claude.ai/code/artifact/6e1e8f65-6b00-4c51-a45f-2f475222796d
-    No code. Both migrations unapplied.
+  - **Phase D — SUPERSEDED; built and done, see its own entry below.**
 
 - **Phase C — DONE AND WIRED, run `do-me-2026-08-08-phasec-wire`, pre-run HEAD `4bed3ec`.**
   Commit `d3f3f40`. Migration `add_listings_description_html` applied 2026-08-08: column
@@ -46,7 +45,32 @@
     without them. Adding them means adding `a` to the sanitiser WITH an href scheme
     allowlist, never just to the tag list.
 
-- **Enhancement round v2 — B, A and C DONE. D sampled and awaiting build. E not started.**
+- **Phase D — DONE, run `do-me-2026-08-08-phased`, pre-run HEAD `a0f4413`.** Commit `a0b6b74`.
+  Sample: https://claude.ai/code/artifact/6e1e8f65-6b00-4c51-a45f-2f475222796d
+  Migration `add_listings_price_public` applied 2026-08-08. Off for every existing listing;
+  no real listing has it on.
+  - **The per-row rule is a generated COLUMN, not a view — a deliberate departure from the
+    plan's D2, and do not "correct" it back.** A view granted to `anon` runs with its
+    owner's rights unless declared `security_invoker`, so it would BYPASS row-level
+    security on `listings` and would have to re-implement the `status='live'` filter in a
+    second place. Declaring it `security_invoker` instead needs `anon` to hold SELECT on
+    `price_php` — the exact grant the 2026-08-02 detach removed. `price_public_php`
+    (`case when price_public then price_php end`, stored) has neither problem: RLS keeps
+    applying, and it is granted per column like every other public field on this table.
+  - `price_php` remains ungranted to `anon` and is selected by no public query. Nothing
+    writes `price_public_php`; the database maintains it from the switch.
+  - A hidden price renders NO line at all — no placeholder wording (owner, 2026-08-08).
+  - The listing page's meta description still carries no amount on purpose: link previews
+    are cached and reshared, so a price switched on in March would outlive being switched off.
+  - **D5 shipped in the same change:** the "no peso anywhere public" rule is retired in
+    `docs/BACKLOG.md ## Standing` and in `D:\Workspace\DaScout\CLAUDE.md` (which lives
+    ABOVE the repo root and is therefore not in the commit). The map half stands.
+  - Verified: a throwaway spec (deleted) walked the whole chain on a real listing including
+    an anon read of `price_php` being refused both before and after the switch;
+    journey **19/19**, create/validation **14/14**, Vitest **26 files / 489 tests**.
+    0 zz- rows left.
+
+- **Enhancement round v2 — B, A, C and D DONE. E not started, and runs only on the owner's explicit signal.**
   Run `do-me-2026-08-06-enhv2`, pre-run HEAD `12b415d`. Surface lock: released.
   - **Phase B** — commit `a0a7dc7`. Exclusivity note + `tel:` phone on
     `app/property/[slug]/page.tsx`, `.cta-note` in `globals.css`.

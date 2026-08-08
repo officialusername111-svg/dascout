@@ -14,9 +14,13 @@
 
 ## State of play — 2026-08-08
 
-Two runs, both closed. `do-me-2026-08-08-band-c` (pre-run HEAD `6a7e2d8`) built the band and
-the Phase C parts that needed no database change; `do-me-2026-08-08-phasec-wire` (pre-run
-HEAD `4bed3ec`) applied the migration and connected them.
+Three runs, all closed. `do-me-2026-08-08-band-c` (pre-run HEAD `6a7e2d8`) built the band
+and the Phase C parts needing no database change; `do-me-2026-08-08-phasec-wire` (pre-run
+HEAD `4bed3ec`) applied the Phase C migration and connected them; `do-me-2026-08-08-phased`
+(pre-run HEAD `a0f4413`) built Phase D.
+
+**The enhancement round is now B, A, C and D done. Only E is left, and E runs only on the
+owner's explicit signal.**
 
 | Commit | What |
 |---|---|
@@ -24,6 +28,8 @@ HEAD `4bed3ec`) applied the migration and connected them.
 | `fa6186d` | Phase C sanitiser + 36-test hostile-input suite |
 | `4df8d86` | Phase C editor + styles |
 | `d3f3f40` | Phase C wired: migration applied, form and public page switched over |
+| `a0f4413` | Phase C sweep fix: markup with no words is not a description |
+| `a0b6b74` | Phase D: the price show/hide switch, and D5's rule correction |
 
 ### The three "waiting on you" items from the last run
 
@@ -103,39 +109,64 @@ page look better.**
 **Still open, one question:** should the editor offer links? Built without them. Adding them
 means adding `a` to the sanitiser WITH an href scheme allowlist, never just to the tag list.
 
-### Phase D — sample presented, and the owner settled the open question.
+### Phase D — DONE. Staff can show or hide each listing's price.
 
+Run `do-me-2026-08-08-phased`, pre-run HEAD `a0f4413`, commit `a0b6b74`. Sample:
 https://claude.ai/code/artifact/6e1e8f65-6b00-4c51-a45f-2f475222796d
 
-**Decided 2026-08-08: a hidden price shows NOTHING.** No "price on request", no placeholder
-line — the price is simply absent and the layout closes up. This was raised as a concern
-(a card with no price gives a buyer nothing to ask about, so the question arrives through
-Inquire instead) and the owner's call stands. D4 no longer needs a wording decision.
+Off for every existing listing, so nothing became visible because this shipped. A hidden
+price shows **no line at all** — no "price on request", no placeholder (the owner's call,
+2026-08-08); the layout closes up as if the field had never been filled in.
 
-No Phase D code exists. Both its migrations are still unapplied.
+**The per-row rule is a generated COLUMN, not a view. Do not "correct" this back.** The
+plan's D2 said to create `listings_public` and grant it to `anon`. That is the obvious
+shape and the wrong one: a Postgres view runs with its OWNER's rights unless declared
+`security_invoker`, so it would bypass row-level security on `listings` entirely — the
+public side would stop being governed by the policies protecting it, and the view would
+have to re-implement the `status='live'` filter in a second place forever. Declaring it
+`security_invoker` only moves the problem, because `anon` would then need SELECT on
+`price_php`, which is exactly the grant the 2026-08-02 detach removed.
+
+`price_public_php` is a stored generated column, `case when price_public then price_php
+end`. The database evaluates the per-row decision on write; RLS keeps applying unchanged;
+and it is granted per column the same way every other public field on this table already
+is. `price_php` stays ungranted to `anon` and is selected by no public query. **Nothing
+writes the generated column** — it follows the switch on its own, so there is no second
+place for the two to disagree.
+
+**D5 shipped in the same change**, as the plan required. The standing "no peso amounts
+anywhere public" rule is retired in `docs/BACKLOG.md` and in
+`D:\Workspace\DaScout\CLAUDE.md` — note that CLAUDE.md lives ABOVE the repository root,
+so it is **not** in the commit and will not travel with a clone. The map half stands.
+
+The listing page's meta description still carries no amount, deliberately: link previews
+are cached and reshared far beyond the page, so a price switched on in March would keep
+circulating after it was switched off again.
 
 ---
 
 ## Verification that ran
 
-- `tsc --noEmit` clean · `npm run build` clean.
-- **Vitest: 26 files, 489 tests, all passing.**
-- **`03-listing-journey.spec.ts`: 19/19** against a production build. The standing bar's
-  E2E half, reachable again now that port 3000 is free.
-- **`02-create-validation.spec.ts`: 14/14**, including the retention test.
-- A throwaway spec, since deleted, proved the one link nothing else covers: bold, gold and
-  centre applied with the real toolbar buttons, saved through the real form, arriving in
-  the column as `<strong>`, `color:#8F6E28` and `text-align:center`, with the plain column
-  derived as clean text and the formatting restored into the editor on reload.
+- `tsc --noEmit` clean · `npm run build` clean · **Vitest 26 files / 489 tests**.
+- **`03-listing-journey.spec.ts` 19/19** and **`02-create-validation.spec.ts` 14/14**
+  against a production build.
+- Two throwaway specs, both since deleted, each proving a link nothing else covered:
+  - **Phase C** — bold, gold and centre applied with the real toolbar buttons, saved
+    through the real form, arriving as `<strong>`, `color:#8F6E28` and
+    `text-align:center`, with the plain column derived clean and the formatting restored
+    into the editor on reload.
+  - **Phase D** — the whole chain on a real listing: off by default with no `.prop-price`
+    element; an anonymous reader REFUSED when asking for `price_php`; staff switching it
+    on through the real form; the generated column following with no code writing it; the
+    amount then appearing publicly; and `price_php` still refused anonymously afterwards,
+    which is what proves the amount arrived by the derived column rather than by a widened
+    grant. It withdrew and deleted its own row.
 - The public page of a real backfilled listing renders four paragraphs and seven line
-  breaks where it used to render one run-on block; its meta description carries no markup.
+  breaks where it used to render one run-on block; its meta description carries no markup
+  and no amount.
 
-`02-create-validation.spec.ts` changed because the field changed, not to make it pass: the
-description is a contenteditable now, so it is typed rather than filled and retention is
-asserted with `toContainText` (`toHaveValue` only works on inputs). Intent unchanged.
-
-**Test residue: none.** The throwaway spec deleted its own row in a `finally`; 0 `zz-` rows
-remain, confirmed through the Supabase MCP.
+**Test residue: none.** 0 `zz-` rows, confirmed through the Supabase MCP, and no real
+listing has `price_public` on.
 
 ## Session quirks worth knowing
 
