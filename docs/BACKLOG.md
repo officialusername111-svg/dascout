@@ -279,7 +279,10 @@
 
 (mirror — `D:\Workspace\DaScout\CLAUDE.md` is authoritative)
 
-- No peso amounts and no map anywhere public; admin may show peso.
+- No map anywhere public. Peso amounts are public ONLY on listings whose `price_public`
+  switch is on (Phase D, 2026-08-08) — the blanket "no peso anywhere public" rule is
+  retired. `anon` still has no grant on `price_php`; the public side reads the generated
+  `price_public_php`. A hidden price renders no line at all.
 - Commits go straight to main; NEVER push without asking.
 - No Docker — production Supabase is the only reachable database; migrations apply via the
   Supabase MCP at the owner's OK, or not at all.

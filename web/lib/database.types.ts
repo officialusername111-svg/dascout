@@ -387,6 +387,8 @@ export type Database = {
           is_trending: boolean
           lot_area_sqm: number | null
           price_php: number
+          price_public: boolean
+          price_public_php: number | null
           property_no: string | null
           property_type_id: string | null
           published_at: string | null
@@ -414,6 +416,7 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php: number
+          price_public?: boolean
           property_no?: string | null
           property_type_id?: string | null
           published_at?: string | null
@@ -441,6 +444,7 @@ export type Database = {
           is_trending?: boolean
           lot_area_sqm?: number | null
           price_php?: number
+          price_public?: boolean
           property_no?: string | null
           property_type_id?: string | null
           published_at?: string | null

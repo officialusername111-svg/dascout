@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { CATEGORIES, dbCategoriesFor, keyFromDb, labelFromDb, type CategoryKey, type DbCategory } from '@/lib/categories'
-import { area } from '@/lib/format'
+import { area, peso } from '@/lib/format'
 
 const BUCKET = 'listing-photos'
 
@@ -32,6 +32,16 @@ export type ListingCard = {
   photo: string | null
   photoAlt: string
   trending: boolean
+  /**
+   * Phase D. The asking price, but ONLY when staff switched it on for this listing —
+   * otherwise null, and no price line is rendered at all (the owner's call, 2026-08-08:
+   * a hidden price shows nothing, not "price on request").
+   *
+   * This comes from `price_public_php`, a generated column the database fills in from the
+   * switch. `price_php` itself is still ungranted to anon and is never selected here, so
+   * there is no code path on the public side that can read a hidden amount.
+   */
+  priceLabel: string | null
 }
 
 export type ListingDetail = ListingCard & {
@@ -59,6 +69,7 @@ export type TownRow = {
 export const CARD_COLUMNS = `
   id, slug, title, property_no, property_type_id, area_detail, lot_area_sqm, floor_area_sqm,
   bedrooms, bathrooms, is_trending, published_at,
+  price_public_php,
   towns!inner ( id, name, province, slug ),
   property_types!inner ( legacy_category ),
   listing_photos ( storage_path, alt_text, sort_order, is_primary ),
@@ -69,6 +80,7 @@ export type RawListing = {
   id: string
   slug: string
   title: string
+  price_public_php: number | string | null
   property_no: string | null
   property_type_id: string
   property_types: { legacy_category: DbCategory | null } | null
@@ -154,6 +166,9 @@ export function toCard(row: RawListing, features?: string[]): ListingCard {
     photo: photos[0]?.url ?? null,
     photoAlt: photos[0]?.alt ?? row.title,
     trending: row.is_trending,
+    priceLabel: row.price_public_php === null || row.price_public_php === undefined
+      ? null
+      : peso(Number(row.price_public_php)),
   }
 }
 

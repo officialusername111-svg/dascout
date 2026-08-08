@@ -22,7 +22,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await getListingBySlug(slug)
   if (!listing) return { title: 'Listing not found' }
 
-  /* No amounts in public metadata either — prices are an admin-only surface. */
+  /* Still no amount in the metadata, even now that a price CAN be public (Phase D).
+     Search results and link previews are cached and reshared far beyond the page, so a
+     price that was switched on in March would keep circulating after it was switched off
+     again. The page shows the current answer; the preview text does not carry one. */
   const description =
     listing.description ??
     `${listing.categoryLabel} in ${listing.location}. Title-verified by DaScout.`
@@ -85,6 +88,12 @@ export default async function PropertyPage({ params }: Props) {
             <div className="loc">
               <Icon name="pin" /> {listing.location} · Mindanao
             </div>
+            {/* Phase D. Present only when staff switched this listing's price on; when
+                they have not there is no line here at all and the specs move up (the
+                owner's call, 2026-08-08 — no "price on request" placeholder). The value
+                comes from the database's generated column, so a hidden amount has no
+                route to this page even if something above it changed. */}
+            {listing.priceLabel && <div className="prop-price">{listing.priceLabel}</div>}
             <div className="prop-specs">
               <Specs specs={listing.specs} />
             </div>

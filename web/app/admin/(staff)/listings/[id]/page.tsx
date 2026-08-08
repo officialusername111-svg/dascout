@@ -193,6 +193,7 @@ export default async function EditListingPage({ params, searchParams }: Props) {
                 bathrooms: listing.bathrooms,
                 description: listing.description,
                 descriptionHtml: listing.descriptionHtml,
+                pricePublic: listing.pricePublic,
                 isTrending: listing.isTrending,
               }}
             />

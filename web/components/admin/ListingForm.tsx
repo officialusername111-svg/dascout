@@ -37,6 +37,7 @@ export type ListingFormValues = {
   description: string | null
   /** Sanitised HTML. The editor's starting content; the plain one is derived on save. */
   descriptionHtml: string | null
+  pricePublic: boolean
   isTrending: boolean
 }
 
@@ -231,6 +232,23 @@ export function ListingForm(props: Props) {
             placeholder="1500000"
           />
           <div className="hint">Sale price in pesos. DaScout does not list rentals.</div>
+          {/* Phase D. The switch sits with the price rather than off in its own section,
+              because "how much" and "who may see it" are one decision made at one moment.
+              Unchecked is the default and the safe direction: a listing nobody has thought
+              about shows no price. When it is off there is no price line on the public
+              page at all — no placeholder wording (the owner's call, 2026-08-08). */}
+          <label className="pricepub" htmlFor="lf-pricepub">
+            <input
+              id="lf-pricepub"
+              name="price_public"
+              type="checkbox"
+              defaultChecked={echoed ? echoed.price_public === 'on' : (listing?.pricePublic ?? false)}
+            />
+            <span>
+              Show this price on the website
+              <small>Left off, buyers see no amount and no price line at all.</small>
+            </span>
+          </label>
           <div className="ferr">{errors.price_php ?? 'Enter the asking price in pesos.'}</div>
         </div>
 

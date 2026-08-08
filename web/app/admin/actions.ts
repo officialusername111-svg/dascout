@@ -192,6 +192,13 @@ const listingFieldShape = {
     blankToNull,
     z.string().trim().max(4000, { error: 'Keep the description under 4000 characters.' }).nullable()
   ),
+  /*
+   * Phase D. A checkbox posts 'on' or nothing at all, so absence means off — the same
+   * shape is_trending already uses. Nothing writes `price_public_php`: it is a generated
+   * column the database maintains from this switch, which is why the public side can read
+   * an amount without anyone granting it `price_php`.
+   */
+  price_public: z.preprocess((value) => value === 'on', z.boolean()),
   is_trending: z.preprocess((value) => value === 'on', z.boolean()),
 }
 
@@ -256,6 +263,7 @@ function listingFieldsFrom(formData: FormData) {
      */
     description_html: plain === '' ? null : descriptionHtml,
     description: plain === '' ? null : plain,
+    price_public: formData.get('price_public'),
     is_trending: formData.get('is_trending'),
   }
 }

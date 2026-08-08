@@ -502,6 +502,8 @@ export type AdminListingDetail = {
   bathrooms: number | null
   description: string | null
   descriptionHtml: string | null
+  /** Phase D: may the public see this listing's asking price? Off by default. */
+  pricePublic: boolean
   isTrending: boolean
   createdAtLabel: string | null
   updatedAtLabel: string | null
@@ -519,7 +521,7 @@ export type AdminListingDetail = {
 }
 
 const DETAIL_COLUMNS = `
-  id, slug, property_no, title, status, property_type_id, frontage, price_php,
+  id, slug, property_no, title, status, property_type_id, frontage, price_php, price_public,
   town_id, area_detail,
   lot_area_sqm, floor_area_sqm, bedrooms, bathrooms, description, description_html, is_trending,
   created_at, updated_at, published_at, sold_at,
@@ -546,6 +548,7 @@ type RawDetailRow = {
   bathrooms: number | null
   description: string | null
   description_html: string | null
+  price_public: boolean
   is_trending: boolean
   created_at: string
   updated_at: string
@@ -650,6 +653,7 @@ export async function getAdminListingDetail(id: string): Promise<AdminListingDet
     bathrooms: row.bathrooms,
     description: row.description,
     descriptionHtml: row.description_html,
+    pricePublic: row.price_public,
     isTrending: row.is_trending,
     createdAtLabel: stampLabel(row.created_at),
     updatedAtLabel: stampLabel(row.updated_at),

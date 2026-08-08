@@ -54,6 +54,12 @@ export function ListingCardTile({
         <span className="loc">
           <Icon name="pin" /> {listing.location}
         </span>
+        {/* Phase D. Rendered only when staff switched the price on for this listing.
+            When they have not, there is NO line here at all — not a placeholder, not
+            "price on request" — and the card closes up (the owner's call, 2026-08-08).
+            `priceLabel` is null unless the database's own generated column produced an
+            amount, so this cannot show a price that was meant to stay hidden. */}
+        {listing.priceLabel && <span className="cprice">{listing.priceLabel}</span>}
         {seen ? (
           <span className="seen">{seen}</span>
         ) : (
