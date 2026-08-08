@@ -8,7 +8,7 @@
 ## Now
 
 - **Run `do-me-2026-08-08-band-c`, pre-run HEAD `6a7e2d8`. Surface lock: released.**
-  Three commits on `main`, **none pushed**: `3411ff4` band · `fa6186d` Phase C sanitiser ·
+  Three commits: `3411ff4` band · `fa6186d` Phase C sanitiser ·
   `4df8d86` Phase C editor. Detail in docs/HANDOFF.md.
   - **Buyers & Sellers band, arrangement A — DONE.** Built to the approved sample. Pin
     holds 0.6956 at 375/768/1385; pin-to-text 1.686 desktop, 1.548 phone. Two traps now
@@ -19,45 +19,34 @@
       two lines (the real page's container is 705 px at a 768 px viewport, where the
       sample's tablet frame was 768 px). One-number fix if wanted: raise the two-column
       `@container` threshold from `700px` to `890px`. Left exactly as approved.
-  - **Phase C — HALF BUILT, blocked on the migration below.**
-    - DONE (C3/C4): `lib/listing-description.ts` + 36 tests. Allowlist drops rather than
-      repairs; `style` may carry only colour, typeface and alignment.
-    - BUILT BUT NOT WIRED (C2/C6): `components/admin/DescriptionEditor.tsx` and its styles.
-      **Do not wire it before the migration** — the code would read a column that does not
-      exist and take the admin screen and every listing page down.
-      `DescriptionEditor.tsx` is therefore UNREFERENCED on purpose, exactly like
-      `components/LoadingMark.tsx`. **Do not let `/clean-me` sweep either of them** — this
-      one is finished, verified work waiting on a database change, not junk.
-    - The six remaining steps, in order, are listed in docs/HANDOFF.md.
+  - **Phase C sanitiser (`fa6186d`) and editor (`4df8d86`)** — both SUPERSEDED by the
+    "Phase C — DONE AND WIRED" entry below, which connected them. `DescriptionEditor.tsx`
+    is referenced now, so the earlier "do not let /clean-me sweep it" warning is retired.
+    `components/LoadingMark.tsx` is still unreferenced on purpose and still must not be swept.
   - **Phase D — sample presented**, https://claude.ai/code/artifact/6e1e8f65-6b00-4c51-a45f-2f475222796d
     No code. Both migrations unapplied.
-  - **`03-listing-journey.spec.ts` did not run** — another session holds port 3000 and the
-    Playwright config sets `reuseExistingServer: false`. Vitest is 26 files / 489 tests green.
 
-- **BLOCKED, NEEDS THE OWNER — the Phase C migration (C1).** The Supabase MCP call was
-  refused by the permission classifier before it reached the owner, so this has not been
-  declined, it has not been asked. Everything left in Phase C waits on it. The statement,
-  grants included — the grant is not optional, `listings` is column-granted, so a new column
-  is invisible to `anon` until it is named:
+- **Phase C — DONE AND WIRED, run `do-me-2026-08-08-phasec-wire`, pre-run HEAD `4bed3ec`.**
+  Commit `d3f3f40`. Migration `add_listings_description_html` applied 2026-08-08: column
+  added, 13/13 descriptions backfilled as paragraphs, `grant select (description_html)` to
+  `anon` and `authenticated` landed WITH the column, before any code read it.
+  - One field posts (`description_html`), two columns are written. `listingFieldsFrom` in
+    `app/admin/actions.ts` is the only door a description comes through and is where the
+    sanitiser runs; plain `description` is DERIVED from the sanitised html, so it cannot
+    drift and cannot contain markup. **Nothing may post a plain `description` again.**
+  - The public page uses `dangerouslySetInnerHTML`. Safe there ONLY because the value is
+    sanitised on the way IN. Never render a description that has not been through
+    `sanitizeDescriptionHtml`, and never widen its allowlist to make the page look better.
+  - Verified: journey spec **19/19**, create/validation **14/14**, Vitest **26 files /
+    489 tests**, plus a throwaway spec (since deleted) that proved bold + gold + centre
+    survive a real save into the real column and come back into the editor. 0 zz- rows left.
+  - `02-create-validation.spec.ts` changed because the field changed: the description is a
+    contenteditable, so it is typed rather than filled and asserted with `toContainText`.
+  - **Remaining Phase C question, still open:** should the editor offer links? Built
+    without them. Adding them means adding `a` to the sanitiser WITH an href scheme
+    allowlist, never just to the tag list.
 
-  ```sql
-  alter table public.listings add column if not exists description_html text;
-
-  update public.listings
-  set description_html =
-    '<p>' || replace(replace(regexp_replace(
-      replace(replace(replace(description,'&','&amp;'),'<','&lt;'),'>','&gt;'),
-      E'\r\n', E'\n', 'g'), E'\n\n', '</p><p>'), E'\n', '<br>') || '</p>'
-  where description is not null and btrim(description) <> '' and description_html is null;
-
-  grant select (description_html) on public.listings to anon, authenticated;
-  grant insert (description_html), update (description_html) on public.listings to authenticated;
-  ```
-
-  The backfill was dry-run as a SELECT against the real rows first: paragraphs, line breaks
-  and characters like `✔` and apostrophes all survive it.
-
-- **Enhancement round v2 — Phases B and A DONE, pushed and live. C half built, D sampled, E not started.**
+- **Enhancement round v2 — B, A and C DONE. D sampled and awaiting build. E not started.**
   Run `do-me-2026-08-06-enhv2`, pre-run HEAD `12b415d`. Surface lock: released.
   - **Phase B** — commit `a0a7dc7`. Exclusivity note + `tel:` phone on
     `app/property/[slug]/page.tsx`, `.cta-note` in `globals.css`.

@@ -14,22 +14,29 @@
 
 ## State of play — 2026-08-08
 
-Run `do-me-2026-08-08-band-c`, pre-run HEAD `6a7e2d8`. Three commits, none pushed:
+Two runs, both closed. `do-me-2026-08-08-band-c` (pre-run HEAD `6a7e2d8`) built the band and
+the Phase C parts that needed no database change; `do-me-2026-08-08-phasec-wire` (pre-run
+HEAD `4bed3ec`) applied the migration and connected them.
 
 | Commit | What |
 |---|---|
 | `3411ff4` | Buyers & Sellers band, arrangement A — **complete** |
-| `fa6186d` | Phase C sanitiser + 36-test hostile-input suite — **complete** |
-| `4df8d86` | Phase C editor + styles — **built, deliberately not wired** |
+| `fa6186d` | Phase C sanitiser + 36-test hostile-input suite |
+| `4df8d86` | Phase C editor + styles |
+| `d3f3f40` | Phase C wired: migration applied, form and public page switched over |
 
 ### The three "waiting on you" items from the last run
+
+All three are now closed.
 
 1. **TEST_BUYER production auth write — already done.** It was applied on 2026-08-07 and the
    marker file was simply stale. Confirmed rather than assumed: Vitest is green, and the five
    files that failed were exactly the five that call `buyerClient()`.
-2. **Phases C and D — started.** See below.
-3. **Push — already done.** The seven docs commits went to `origin/main` on 2026-08-08
-   (`e4105aa` → `6a7e2d8`). The marker's "4 commits unpushed" was stale too.
+2. **Phases C and D — C is finished; D has an approved sample and no code yet.** See below.
+3. **Push — done.** The seven docs commits had already gone up on 2026-08-08
+   (`e4105aa` → `6a7e2d8`); this session's six followed at the owner's OK.
+4. **`03-listing-journey.spec.ts` — ran, 19/19.** Port 3000 was held by another process
+   during the first run and is free again.
 
 ### Task 1 — the band. Done.
 
@@ -64,62 +71,37 @@ because of the page gutters. The one-number fix, if wanted: raise the two-column
 `@container` threshold in `.pwbs-band`'s block from `700px` to `890px`, which is where the
 lockup first has room. Not applied, because the instruction was to build the sample exactly.
 
-### Task 2 — Phase C. Half built, and BLOCKED on the migration.
+### Phase C — DONE, wired, and verified end to end.
 
-**The blocker: `alter table listings add column description_html` was never applied.** The
-Supabase MCP call was refused by the permission classifier before it could reach the owner,
-so it is not a "no" — it has not been asked yet. Everything else in Phase C waits on it.
+Run `do-me-2026-08-08-phasec-wire`, pre-run HEAD `4bed3ec`, commit `d3f3f40`. The migration
+that blocked this yesterday was applied at the owner's OK.
 
-**What is done and proven (C3, C4):** `lib/listing-description.ts` is the server-side
-sanitiser, with 36 tests. It allows `p br strong em u ul ol li h4 span`, no anchors and no
-images, and a `style` attribute carrying only `color`, `font-family` and `text-align` —
-each validated against a closed rule, anything else **dropped rather than repaired**, which
-is what the owner's free-colour-codes decision forces.
+**Migration `add_listings_description_html`.** Column added, 13/13 existing descriptions
+backfilled as ordinary paragraphs, and `grant select (description_html)` to `anon` and
+`authenticated` landed WITH the column — `listings` is column-granted, not table-granted,
+so a new column is invisible to anon until it is named. The backfill was dry-run as a
+SELECT against the real rows before it was applied.
 
-**What is built but NOT wired (C2, C6):** `components/admin/DescriptionEditor.tsx`, the
-Tiptap editor and toolbar from the approved sample, plus its styles and the `.desc` rules
-the public page will need. Nothing imports it.
+**One field posts, two columns are written.** `listingFieldsFrom` in `app/admin/actions.ts`
+is the only door a description comes through, which is why the sanitiser runs there. The
+plain `description` is DERIVED from the sanitised html rather than posted beside it, so the
+two cannot drift and the plain one can never carry markup — the guarantee the SEO meta path
+depends on. **Nothing may post a plain `description` again.**
 
-**Why it is not wired, and do not "finish" it before the migration:** every remaining step
-needs the column. Wiring the form or the public page first would take the admin screen and
-every listing page down — the same ordering mistake as the 2026-08-02 outage.
+**The trap the last handoff predicted was real and is closed.** The old shape read
+`formData.get('description')`, and `blankToNull` turns a missing field into null. Had the
+form stopped sending it without the shape changing in the same edit, the first save on any
+listing would have written null over its description with no error at all.
 
-**Three bugs the verification found, all fixed, worth knowing because two are invisible:**
+**The public page renders `description_html` through `dangerouslySetInnerHTML`.** That is
+safe there and only there, because the value cannot arrive unsanitised: it is filtered on
+the way IN, and the backfill escaped the plain text it came from. A listing with no html
+falls back to its plain text rather than showing a gap. **Never render a description that
+has not been through `sanitizeDescriptionHtml`, and never widen that allowlist to make this
+page look better.**
 
-- **`span` was missing from the tag allowlist.** Colour and typeface arrive as
-  `<span style="...">`, not as attributes on the paragraph, so every colour and every face
-  would have been silently dropped on save — no error, editor looks right, listing comes
-  back plain. The hostile-input tests could never have caught it: it was the filter being
-  too *strict*. Only a round trip of real editor output finds this class of bug, and that
-  round trip is now a permanent test.
-- **Slicing the input did not bound the output.** The parser writes back the closing tags
-  the slice broke, so a cut at the limit came back over it. It re-runs with headroom now.
-- **Stripping markup ESCAPES the text it keeps**, so the derived plain text carried
-  `&amp;` — and that string goes into the page's `<meta name="description">`. Entities are
-  decoded in a single pass, because decoding `&lt;` and `&amp;` separately turns a literal
-  `&amp;lt;` into a `<` nobody typed.
-
-**To finish Phase C, in this order:**
-
-1. Apply the migration in `docs/BACKLOG.md ## Now` (the full SQL is recorded there,
-   grants included).
-2. Add `description_html` to the two column lists in `lib/queries.ts` and
-   `lib/admin/queries.ts`.
-3. In `app/admin/actions.ts`, take `description_html` from the form, run it through
-   `sanitizeDescriptionHtml`, and derive `description` from it with `htmlToPlainText` —
-   one editor, two stored columns, so they cannot drift.
-   **The trap in this step:** the zod schema at `:172` still reads `description` out of the
-   form, and `blankToNull` turns a missing field into `null`. The moment the textarea stops
-   posting `description` and nothing replaces it, the first save on any listing silently
-   WIPES its description — no error, because null is a legal value for that column. Change
-   the schema in the same edit as the form, not after it.
-4. Swap the `<textarea>` in `components/admin/ListingForm.tsx` for `<DescriptionEditor>`.
-5. Render `description_html` at `app/property/[slug]/page.tsx:92-97` via
-   `dangerouslySetInnerHTML`. It is safe there **only** because step 3 sanitised it on the
-   way in; never render an unsanitised value.
-6. Update `tests/e2e/02-create-validation.spec.ts:211,229` — it fills `#lf-desc` and asserts
-   `toHaveValue`, which does not work against a contenteditable. The field's nature changed,
-   so the spec has to change with it.
+**Still open, one question:** should the editor offer links? Built without them. Adding them
+means adding `a` to the sanitiser WITH an href scheme allowlist, never just to the tag list.
 
 ### Phase D — sample presented, and the owner settled the open question.
 
@@ -136,21 +118,24 @@ No Phase D code exists. Both its migrations are still unapplied.
 
 ## Verification that ran
 
-- `tsc --noEmit` clean.
-- `npm run build` clean.
-- **Vitest: 26 files, 489 tests, all passing** (was 25/453; the 36 new sanitiser tests).
-- Band measured in a browser against a production build at 375 / 768 / 1385 px.
-- Editor mounted and driven in a browser against a production build, on a temporary route
-  that was deleted afterwards.
+- `tsc --noEmit` clean · `npm run build` clean.
+- **Vitest: 26 files, 489 tests, all passing.**
+- **`03-listing-journey.spec.ts`: 19/19** against a production build. The standing bar's
+  E2E half, reachable again now that port 3000 is free.
+- **`02-create-validation.spec.ts`: 14/14**, including the retention test.
+- A throwaway spec, since deleted, proved the one link nothing else covers: bold, gold and
+  centre applied with the real toolbar buttons, saved through the real form, arriving in
+  the column as `<strong>`, `color:#8F6E28` and `text-align:center`, with the plain column
+  derived as clean text and the formatting restored into the editor on reload.
+- The public page of a real backfilled listing renders four paragraphs and seven line
+  breaks where it used to render one run-on block; its meta description carries no markup.
 
-**`03-listing-journey.spec.ts` did NOT run.** Another session holds port 3000 and
-`playwright.config.ts` sets `reuseExistingServer: false`, so Playwright cannot start its
-own server. Nothing in this run touches the admin journey — no server action, no query, no
-loading boundary — but the E2E half of the standing bar is unproven and should be run once
-port 3000 is free.
+`02-create-validation.spec.ts` changed because the field changed, not to make it pass: the
+description is a contenteditable now, so it is typed rather than filled and retention is
+asserted with `toContainText` (`toHaveValue` only works on inputs). Intent unchanged.
 
-No test was deleted, skipped or weakened. No `zz-` rows were created, so there is nothing
-to sweep.
+**Test residue: none.** The throwaway spec deleted its own row in a `finally`; 0 `zz-` rows
+remain, confirmed through the Supabase MCP.
 
 ## Session quirks worth knowing
 
