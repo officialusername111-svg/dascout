@@ -265,16 +265,86 @@ nav.main a[aria-current="page"]{color:var(--ink-900);box-shadow:inset 0 -2.5px 0
 .ecard span{color:rgba(226,226,230,.80);font-size:13px;line-height:1.6;display:block}
 .btn-sm{min-height:40px;padding:0 18px;font-size:12px}
 
-/* ============ BUYERS & SELLERS BAND — the client's flat artwork, account CTA beneath ====
-   v2 enhancement round (A6): was a photo-left/statement-right grid; the owner chose to ship
-   the supplied picture as-is, so the band is now one image with the button centred under
-   it. The statement lives inside the picture — see the `alt` in Sections.tsx. */
-.verify{display:flex;flex-direction:column;align-items:center;gap:22px}
-/* the <picture> needs a width of its own: it is an inline flex item, so `align-items:center`
-   shrinks it to content and the img's `width:100%` would resolve against nothing — the band
-   measured 0x0 and srcset picked the smallest file */
-.verify picture{display:block;width:100%}
-.verify .banner{display:block;width:100%;height:auto;border-radius:20px}
+/* ============ BUYERS & SELLERS BAND — arrangement A, the split billboard ============
+   v2 enhancement round, owner's pick 2026-08-07. Replaces the flat 5063px artwork: the
+   backdrop (panel + silk, pre-composited by the client) is a background image, the gold
+   pin is a placeable <img>, and kicker/wordmark/statement are all live text.
+
+   EVERY CLASS HERE IS PREFIXED `pwbs-` ON PURPOSE. The approved sample used bare `.band`,
+   `.grid`, `.copy`, `.glass` — and this stylesheet already owns `.grid` (the 4-up listing
+   cards, :191) and `.copy` (the footer bottom bar, :293). Unprefixed they would have
+   silently restyled both. Related trap from the same sample: never distinguish two class
+   names by CASE alone — class selectors are case-insensitive in a document without a
+   doctype, which cost an hour and presented as a text-wrapping bug that was not one. */
+.verify{container-type:inline-size;border-radius:20px;overflow:hidden}
+
+/* ONE variable drives the whole lockup, so the proportions the artwork sets cannot drift:
+   off the supplied artwork the pin is ~1.73x the height of the entire text block, which
+   is what pin=--wm*4, kicker=--wm*.33 and gap=--wm*.18 reproduce. Measured after: 1.69 at
+   desktop and tablet, 1.55 on the phone (where the wordmark hits its clamp floor). */
+.pwbs-band{position:relative;isolation:isolate;color:#fff;overflow:hidden;padding:44px 34px;
+  background:var(--ink-900) url("/assets/pwbs-bg-1200.webp") center/cover no-repeat;
+  --wm:clamp(26px,6.2cqw,52px)}
+@media (min-width:700px){.pwbs-band{background-image:url("/assets/pwbs-bg-2000.webp")}}
+/* the scrim: darkest at the left edge and across the right two-thirds, near-clear over the
+   silk at 34% so the drape still reads behind the lockup */
+.pwbs-band::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.18) 34%,rgba(0,0,0,.62) 68%,rgba(0,0,0,.78) 100%)}
+.pwbs-band > *{position:relative;z-index:1}
+
+/* THE PIN CANNOT DEFORM — see the note on VerifiedBand(). `height` is the only dimension
+   set here; the other two declarations are guards, not layout. */
+.pwbs-pin{height:calc(var(--wm) * 4);width:auto;object-fit:contain;flex:none;display:block}
+
+.pwbs-lock{display:flex;align-items:center;gap:calc(var(--wm) * .18);margin-bottom:20px}
+.pwbs-lock > div{flex:0 1 auto;min-width:0}
+.pwbs-kicker{font-style:italic;font-size:clamp(13px,calc(var(--wm) * .33),19px);
+  color:rgba(255,255,255,.86);letter-spacing:.01em;line-height:1.25}
+/* Montserrat ships at 600 and 700 ONLY (layout.tsx:23) — anything heavier is the browser
+   faking it, which a first pass did at 800 before it was caught. Both lines need nowrap:
+   "Buyers&" breaking after the ampersand is the failure this prevents. */
+.pwbs-wordmark{font-family:var(--font-head),"Segoe UI",system-ui,sans-serif;font-weight:700;
+  line-height:.98;letter-spacing:.02em;text-transform:uppercase;font-size:var(--wm)}
+.pwbs-wordmark .pwbs-wm-gold{color:var(--gold-l);display:block;white-space:nowrap}
+.pwbs-wordmark .pwbs-wm-white{color:#fff;display:block;white-space:nowrap}
+
+.pwbs-grid{display:grid;grid-template-columns:1fr;gap:24px;align-items:center}
+.pwbs-glass{background:linear-gradient(146deg,rgba(22,20,16,.62),rgba(14,13,11,.52));
+  /* PREFIXED FIRST, exactly like `.searchcard` above. Written the other way round the
+     build's CSS minifier drops the UNPREFIXED property and only `-webkit-` ships, which
+     Chromium does not honour — the card then has no blur at all and the silk shows
+     through the words. Caught by reading the built chunk, not the source. */
+  -webkit-backdrop-filter:blur(40px) saturate(1.5);backdrop-filter:blur(40px) saturate(1.5);
+  border:1.5px solid rgba(233,206,143,.34);border-radius:18px;padding:22px 24px;
+  box-shadow:0 30px 70px rgba(0,0,0,.55), inset 0 1.5px 0 rgba(255,255,255,.22)}
+/* without backdrop-filter the translucent fill would let the silk show through the words */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .pwbs-glass{background:rgba(16,14,11,.94)}
+}
+.pwbs-copy{margin:0;color:rgba(255,255,255,.88);font-size:15px;line-height:1.72;text-wrap:pretty}
+.pwbs-copy strong{color:#fff;font-weight:700}
+.pwbs-copy .brand{color:var(--gold-l);font-weight:700}
+.pwbs-cta{margin-top:22px}
+/* the sample's button, scoped to the band: sentence case in a pill rather than the site's
+   uppercase 8px-radius gold button. Deleting this block returns it to the site default. */
+.pwbs-cta .btn{text-transform:none;letter-spacing:normal;font-size:15px;
+  padding:0 22px;min-height:44px;border-radius:999px}
+
+/* container queries, not viewport ones: --wm is 6.2cqw, so the lockup scales with the band's
+   own width. The approved sample measured this way and it is what `.verify` contains. */
+@container (min-width:700px){
+  .pwbs-band{padding:56px 48px}
+  .pwbs-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px}
+  .pwbs-lock{margin-bottom:18px}
+  .pwbs-glass{padding:26px 28px}
+  .pwbs-copy{font-size:15.5px}
+}
+@container (max-width:480px){
+  .pwbs-band{padding:28px 18px}
+  .pwbs-copy{font-size:14px}
+  .pwbs-glass{padding:18px;border-radius:15px}
+  .pwbs-cta .btn{width:100%}
+}
 
 /* ============ FOOTER — brand / get in touch / browse, then the bottom bar ============ */
 footer{background:var(--ink-950);color:rgba(255,255,255,.68);margin-top:56px;padding:38px 24px 30px;font-size:13px}

@@ -68,36 +68,69 @@ export function AboutRows() {
  * before Top Properties, so the invitation to sign up lands while someone is still
  * deciding rather than after they have started browsing rankings.
  *
- * v2 enhancement round (A6/A7/A8): this band is now the client's supplied artwork as a
- * FLAT image (owner's decision D1), which retired the aerial photo and the "We Don't Just
- * List Properties" heading. The statement now exists only as pixels inside the picture,
- * so `alt` carries the whole paragraph verbatim — that string is the accessible copy of
- * the band, not a description of it, and must stay in step with the artwork.
- * The 6.5 MB source is never served: `<picture>` picks a 32–80 KB webp, with a 134 KB
- * jpg for browsers without webp.
+ * v2 enhancement round, arrangement A (owner's pick 2026-08-07): the split billboard.
+ * Two pictures only — a pre-composited backdrop (panel + silk already flattened by the
+ * client) and the transparent gold pin. Kicker, wordmark and statement are all LIVE TEXT.
+ *
+ * That is the whole point of this rebuild. The band it replaces was one flat 5063px
+ * artwork, so the paragraph rendered at roughly 4px on a phone and existed only as a
+ * 462-character `alt` string. Nothing here is pixels-of-words any more, so no alt string
+ * carries the copy and the text reflows, scales and can be selected.
+ *
+ * THE PIN CANNOT DEFORM. It is an <img> carrying its own intrinsic 313x450, not a box
+ * with a hand-kept aspect-ratio. Only `height` is set in CSS; `width:auto` lets the
+ * intrinsic ratio decide the rest, `object-fit:contain` letterboxes rather than stretches
+ * if some ancestor ever forces a width, and `flex:none` stops the row squashing it.
+ * Three independent guards, none of which needs anyone to remember 0.6956.
  */
 export function VerifiedBand() {
   return (
     <section aria-label="Partnering you with the best buyers and sellers">
       <div className="verify">
-        <picture>
-          <source
-            type="image/webp"
-            srcSet="/assets/buyers-sellers-900.webp 900w, /assets/buyers-sellers-1400.webp 1400w, /assets/buyers-sellers-2000.webp 2000w"
-            sizes="(max-width:1268px) 100vw, 1220px"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="banner"
-            src="/assets/buyers-sellers-2000.jpg"
-            width={2000}
-            height={753}
-            alt="Partnering you with the best buyers and sellers. DaScout exists because real estate shouldn’t run on trust alone, it should run on proof. We’re Mindanao’s exclusive, verified real estate platform, built for buyers who can’t be everywhere at once: OFWs, investors, and professionals purchasing property from thousands of miles away. Every listing is title-checked, boundary-walked, and confirmed on the ground before it ever reaches you, because owning property should feel like a decision, not a leap of faith."
-          />
-        </picture>
-        <CreateAccountButton className="btn btn-gold">
-          Get started today <Icon name="arrow" />
-        </CreateAccountButton>
+        <div className="pwbs-band">
+          <div className="pwbs-grid">
+            <div>
+              <div className="pwbs-lock">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="pwbs-pin"
+                  src="/assets/pin-320.webp"
+                  srcSet="/assets/pin-160.webp 160w, /assets/pin-320.webp 320w"
+                  sizes="(max-width:560px) 80px, 150px"
+                  width={313}
+                  height={450}
+                  alt=""
+                  aria-hidden="true"
+                />
+                <div>
+                  <div className="pwbs-kicker">Partnering You with the Best</div>
+                  <div className="pwbs-wordmark">
+                    <span className="pwbs-wm-gold">Buyers&amp;</span>
+                    <span className="pwbs-wm-white">Sellers</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pwbs-cta">
+                <CreateAccountButton className="btn btn-gold">
+                  Get started today <Icon name="arrow" />
+                </CreateAccountButton>
+              </div>
+            </div>
+            <div className="pwbs-glass">
+              <p className="pwbs-copy">
+                <span className="brand">DaScout</span> exists because real estate
+                shouldn&rsquo;t run on trust alone &mdash; it should run on proof.
+                We&rsquo;re Mindanao&rsquo;s exclusive, verified real estate platform, built
+                for buyers who can&rsquo;t be everywhere at once:{' '}
+                <strong>OFWs, investors,</strong> and <strong>professionals</strong>{' '}
+                purchasing property from thousands of miles away. Every listing is
+                title-checked, boundary-walked, and confirmed on the ground before it ever
+                reaches you, because owning property should feel like a decision, not a leap
+                of faith.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )
