@@ -11,10 +11,10 @@
 
 ## Now
 
-Four open items. None is blocking; two are one-line decisions.
+Three open items. None is blocking; two are one-line decisions.
 
-- **Push — 2 commits sit on `main`, unpushed** (`a0b6b74` Phase D, `df9dd73` its record).
-  Everything before them is on `origin/main`. Standing rule: never push without asking.
+**Everything is pushed.** `origin/main` is at `82f0696` as of 2026-08-08; the working tree
+is clean and nothing is waiting to go up.
 
 - **`D:\Workspace\DaScout\CLAUDE.md` is edited but UNCOMMITTABLE.** Phase D's D5 retired the
   "no peso anywhere public" rule there as well as here, but that file sits ABOVE the
